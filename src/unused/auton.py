@@ -1,6 +1,3 @@
-# separate for autonomous testing
-# will need to integrate into robot when complete
-# from math import dist, sqrt
 #####################################################
 from vex import *
 

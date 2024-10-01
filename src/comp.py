@@ -1,6 +1,5 @@
 # competition code :)
 from vex import *
-import json
 
 #region variables
 

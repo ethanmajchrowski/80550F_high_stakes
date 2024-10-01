@@ -1,3 +1,7 @@
+# Filename: test_files.py
+# Devices & variables last updated:
+	# 2024-10-01 12:27:39.097644
+####################
 from vex import *
 
 # region variables
@@ -54,3 +58,13 @@ while imu.is_calibrating(): wait(5)
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False
+####################
+#DO NOT CHANGE THE FOLLOWING LINE:#
+#end_1301825
+
+print(1)
+
+print(2)
+
+for i in range(5):
+    print(i)
