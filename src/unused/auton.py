@@ -1,8 +1,10 @@
 # separate for autonomous testing
 # will need to integrate into robot when complete
 # from math import dist, sqrt
+#####################################################
 from vex import *
 
+# region variables
 brain = Brain()
 con = Controller()
 
@@ -33,22 +35,30 @@ motors = {
 }
 # wire_expander = Triport(Ports.PORT5)
 # DigitalOut(wire_expander.a)
-
+misc_devices = {
+    # pneumatics
+    "mogo_pneu": DigitalOut(brain.three_wire_port.c),
+    "intake_pneu": DigitalOut(brain.three_wire_port.b),
+    "side_scoring_a": DigitalOut(brain.three_wire_port.a), 
+    "side_scoring_b": DigitalOut(brain.three_wire_port.d), 
+}
 # pneumatics
 mogo_pneu = DigitalOut(brain.three_wire_port.c)
 intake_pneu = DigitalOut(brain.three_wire_port.b)
 side_scoring_a = DigitalOut(brain.three_wire_port.a)
 side_scoring_b = DigitalOut(brain.three_wire_port.d)
 
+leftEnc = motors["left"]["A"]
+rightEnc = motors["right"]["A"]
+
 imu = Inertial(Ports.PORT9)
-# calibrate inertial
+
 imu.calibrate()
 while imu.is_calibrating():
     wait(5)
-# "leftEnc": Rotation(Ports.PORT1),
-# "rightEnc": Rotation(Ports.PORT1)
-leftEnc = motors["left"]["A"]
-rightEnc = motors["right"]["A"]
+
+# end variables
+#####################################################
 
 # slow right turn
 """
@@ -74,6 +84,7 @@ path = (
 )
 """
 # loop
+"""
 path = (
     (-120,121.433),
     (-95.003,120.993),
@@ -101,6 +112,25 @@ path = (
     (-121.258,-120.085),
     (-121.433,-120.086),
 )
+"""
+# squiggle
+path = (
+    (35.518,148.666),
+    (29.59,129.79),
+    (16.636,114.679),
+    (1.595,101.504),
+    (-12.853,87.698),
+    (-23.093,70.69),
+    (-25.801,51.107),
+    (-21.511,31.763),
+    (-9.756,15.863),
+    (5.787,3.299),
+    (20.616,-10.065),
+    (30.747,-27.095),
+    (34.795,-46.543),
+    (35.518,-54.868),
+)
+
 
 class Logger:
     def __init__(self) -> None:
@@ -338,13 +368,16 @@ class MultipurposePID:
         return output
 
 class AutonomousController():
-    def __init__(self, path) -> None:
+    def __init__(self, path, log = True) -> None:
+        # loop wait time in msec
+        self.clock_time = 10
+
         self.running = True
         self.position = [0, 0]
         self.position = list(path[0])
         self.path = path
+        imu.set_rotation(-180)
 
-        self.logger = Logger()
 
         self.heading_pid = MultipurposePID(0.1, 0, 0, 0)
         self.heading = imu.rotation()
@@ -352,54 +385,85 @@ class AutonomousController():
         self.position_controller = DeltaPositioning(leftEnc, rightEnc, imu)
         self.path_controller = PurePursuit(100, 10, self.path)
 
-        self.logger.log("Position: {}, Heading: {}, Look Ahead: {}, Finish Margin: {}".format(self.position, self.heading, 100, 10))
+        self.logging = log
+        if self.logging:
+            self.logger = Logger()
+            self.logger.log("Position: {}, Heading: {}, Look Ahead: {}, Finish Margin: {}".format(self.position, self.heading, 100, 10))
 
     def run(self):
-        while self.running:
-            dpos = self.position_controller.update()
-            self.position[0] += dpos[0]
-            self.position[1] += dpos[1]
-            target_point = self.path_controller.goal_search(self.position)
+        dpos = self.position_controller.update()
+        self.position[0] += dpos[0]
+        self.position[1] += dpos[1]
+        target_point = self.path_controller.goal_search(self.position)
 
-            dx, dy = target_point[0] - self.position[0], target_point[1] - self.position[1] # type: ignore
-            heading_to_target = math.degrees(math.atan2(dy, dx))
+        dx, dy = target_point[0] - self.position[0], target_point[1] - self.position[1] # type: ignore
+        heading_to_target = math.degrees(math.atan2(dy, dx))
 
-            self.heading = imu.rotation()
-            heading_output = self.heading_pid.calculate(heading_to_target, self.heading)
+        self.heading = imu.rotation()
+        heading_output = self.heading_pid.calculate(heading_to_target, self.heading)
 
-            constant_forwards_speed = 5
-            turn_max_speed = 5
+        constant_forwards_speed = 5
+        turn_max_speed = 5
 
-            heading_output = (heading_output / 50) * turn_max_speed
+        heading_output = (heading_output / 50) * turn_max_speed
 
-            motors["left"]["A"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
-            motors["left"]["B"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
-            motors["left"]["C"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
-            motors["left"]["D"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
-            # leftMotorC.spin(FORWARD, forwardVolts + turnVolts, VOLT)
-            motors["right"]["A"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
-            motors["right"]["B"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
-            motors["right"]["C"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
-            motors["right"]["D"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
+        motors["left"]["A"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
+        motors["left"]["B"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
+        motors["left"]["C"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
+        motors["left"]["D"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
+        # leftMotorC.spin(FORWARD, forwardVolts + turnVolts, VOLT)
+        motors["right"]["A"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
+        motors["right"]["B"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
+        motors["right"]["C"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
+        motors["right"]["D"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
 
-            #time, x, y, heading, heading_to_target, point_x, point_y, point, len_points
+        #time, x, y, heading, heading_to_target, point_x, point_y, point, len_points
+        if self.logging:
             time = str(brain.timer.time())
             posx, posy = str(self.position[0]), str(self.position[1])
             tx, ty = str(target_point[0]), str(target_point[1]) #type: ignore
             hpid = str(heading_output)
             self.logger.log(time + ", " + posx + ", " + posy + ", " + str(self.heading) + ", " + str(heading_to_target) + ", " + hpid + ", " + tx + ", " + ty)
 
-            scr = brain.screen
-            scr.clear_screen()
-            scr.set_font(FontType.MONO30)
-            scr.set_cursor(1, 1)
+        scr = brain.screen
+        scr.clear_screen()
+        scr.set_font(FontType.MONO30)
+        scr.set_cursor(1, 1)
 
-            scr.print("X: " + str(self.position[0]))
-            scr.new_line()
-            scr.print("Y: " + str(self.position[1]))
-            scr.new_line()
+        scr.print("X: " + str(self.position[0]))
+        scr.new_line()
+        scr.print("Y: " + str(self.position[1]))
+        scr.new_line()
 
-            scr.render()
+        scr.render()
+
+        # queue next run, or stop
+        if self.running:
+            brain.timer.event(self.run, self.clock_time)
+        else:
+            if self.logging:
+                self.logger.log("END")
+
+    def test(self):
+        dpos = self.position_controller.update()
+        self.position[0] += dpos[0]
+        self.position[1] += dpos[1]
+
+        scr = brain.screen
+        scr.clear_screen()
+        scr.set_cursor(1, 1)
+
+        scr.print("({}mm, {}mm)".format(int(self.position[0]), int(self.position[1])))
+        scr.next_row()
+
+        scr.render()
+
+        if self.running:
+            brain.timer.event(self.test, self.clock_time)
+        else:
+            if self.logging:
+                self.logger.log("END")
 
 auton = AutonomousController(path)
-auton.run()
+# auton.run()
+auton.test()

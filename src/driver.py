@@ -2,7 +2,7 @@
 
 from vex import *
 
-# Brain should be defined by default
+# region variables
 brain = Brain()
 con = Controller()
 
@@ -40,8 +40,23 @@ misc_devices = {
     "side_scoring_a": DigitalOut(brain.three_wire_port.a), 
     "side_scoring_b": DigitalOut(brain.three_wire_port.d), 
 }
+# pneumatics
+mogo_pneu = DigitalOut(brain.three_wire_port.c)
+intake_pneu = DigitalOut(brain.three_wire_port.b)
+side_scoring_a = DigitalOut(brain.three_wire_port.a)
+side_scoring_b = DigitalOut(brain.three_wire_port.d)
 
-distance_sensor = Distance(Ports.PORT16)
+leftEnc = motors["left"]["A"]
+rightEnc = motors["right"]["A"]
+
+imu = Inertial(Ports.PORT9)
+
+imu.calibrate()
+while imu.is_calibrating():
+    wait(5)
+
+# end variables
+#####################################################
 
 class Logger:
     def __init__(self, interval: int, data: list[tuple[Callable, str]]) -> None:
@@ -140,6 +155,8 @@ while True:
         motors["intake"].stop()
     
     # Pneumatic Hold Controls
+
+    # Grabber sensors
 
 
     brain.screen.render()

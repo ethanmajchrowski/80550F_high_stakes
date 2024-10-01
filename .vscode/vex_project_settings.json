@@ -12,7 +12,7 @@
 		"slot": 4,
 		"sdkVersion": "V5_1_0_1_19",
 		"python": {
-			"main": "src/auton.py"
+			"main": "src/unused/auton.py"
 		}
 	}
 }
