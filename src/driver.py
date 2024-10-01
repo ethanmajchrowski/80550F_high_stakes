@@ -1,9 +1,10 @@
-# driver code
-
-#####################################################
+# Filename: driver.py
+# Devices & variables last updated:
+	# 2024-10-01 12:33:04.856022
+####################
+#region Devices
 from vex import *
 
-# region variables
 brain = Brain()
 con = Controller()
 
@@ -53,14 +54,15 @@ rightDistance = Distance(Ports.PORT17)
 imu = Inertial(Ports.PORT9)
 
 imu.calibrate()
-while imu.is_calibrating():
+while imu.is_calibrating(): 
     wait(5)
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False
-
-# end variables
-#####################################################
+#endregion Devices####################
+#DO NOT CHANGE THE FOLLOWING LINE:#
+#end_1301825#
+####################
 
 class Logger:
     def __init__(self, interval: int, data: list[tuple[Callable, str]]) -> None:

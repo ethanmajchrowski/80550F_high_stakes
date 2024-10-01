@@ -1,6 +1,5 @@
 from vex import *
 
-# region variables
 brain = Brain()
 con = Controller()
 
@@ -50,7 +49,8 @@ rightDistance = Distance(Ports.PORT17)
 imu = Inertial(Ports.PORT9)
 
 imu.calibrate()
-while imu.is_calibrating(): wait(5)
+while imu.is_calibrating(): 
+    wait(5)
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False

@@ -27,12 +27,12 @@ for file in os.scandir(r"C:\Users\ethan\Documents\vex-vscode-projects\80550F_hig
             lines = edited_lines
             try: 
                 end_index = lines.index("#end_1301825#")
-                print(f"END TAG FOUND AT INDEX {end_index}")
+                print(f"END TAG FOUND AT INDEX {end_index} FOR FILE {file.name}")
                 found_tag = True
             except:
-                print("NO END TAG FOUND")
+                print(f"NO END TAG FOUND FOR FILE {file.name}")
                 found_tag = False
-            
+
             if found_tag:
                 with open(file, "w") as f:
                     # start_writing = False
@@ -41,10 +41,12 @@ for file in os.scandir(r"C:\Users\ethan\Documents\vex-vscode-projects\80550F_hig
                     f.write(f"# Filename: {file.name}\n")
                     f.write(f"# Devices & variables last updated:\n\t# {datetime.datetime.now()}\n")
                     f.write("#"*20 + "\n")
+                    f.write("#region Devices\n")
 
                     for line in edited_devices:
                         f.write(line + "\n")
 
+                    f.write("#endregion Devices")
                     f.write("#"*20)
                     f.write("\n#DO NOT CHANGE THE FOLLOWING LINE:#\n")
                     f.write("#end_1301825#")
