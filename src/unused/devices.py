@@ -34,23 +34,21 @@ motors = {
     },
     "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)
 }
-# wire_expander = Triport(Ports.PORT5)
-# DigitalOut(wire_expander.a)
-misc_devices = {
-    # pneumatics
-    "mogo_pneu": DigitalOut(brain.three_wire_port.c),
-    "intake_pneu": DigitalOut(brain.three_wire_port.b),
-    "side_scoring_a": DigitalOut(brain.three_wire_port.a), 
-    "side_scoring_b": DigitalOut(brain.three_wire_port.d), 
-}
-# pneumatics
+
+# PNEUMATICS
 mogo_pneu = DigitalOut(brain.three_wire_port.c)
 intake_pneu = DigitalOut(brain.three_wire_port.b)
 side_scoring_a = DigitalOut(brain.three_wire_port.a)
 side_scoring_b = DigitalOut(brain.three_wire_port.d)
 
+# wire_expander = Triport(Ports.PORT5)
+# DigitalOut(wire_expander.a)
+
+# SENSORS
 leftEnc = motors["left"]["A"]
 rightEnc = motors["right"]["A"]
+leftDistance = Distance(Ports.PORT14)
+rightDistance = Distance(Ports.PORT17)
 
 imu = Inertial(Ports.PORT9)
 

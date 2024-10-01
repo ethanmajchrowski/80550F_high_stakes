@@ -1,5 +1,6 @@
 # driver code
 
+#####################################################
 from vex import *
 
 # region variables
@@ -9,11 +10,12 @@ con = Controller()
 controls = {
     "DRIVE_FORWARD_AXIS":  con.axis3,
     "DRIVE_TURN_AXIS":     con.axis4,
-    "MOGO_GRABBER_TOGGLE": con.buttonA,
     "INTAKE_IN_HOLD":      con.buttonR1,
     "INTAKE_OUT_HOLD":     con.buttonR2,
     "INTAKE_HEIGHT_TOGGLE":con.buttonL1,
-    "SIDE_SCORING_TOGGLE": con.buttonB
+    "SIDE_SCORING_TOGGLE": con.buttonB,
+    "MOGO_GRABBER_TOGGLE": con.buttonA,
+    "AUTO_MOGO_ENGAGE_TOGGLE": con.buttonY,
 }
 motors = {
     "left": {
@@ -31,29 +33,31 @@ motors = {
     },
     "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)
 }
-# wire_expander = Triport(Ports.PORT5)
-# DigitalOut(wire_expander.a)
-misc_devices = {
-    # pneumatics
-    "mogo_pneu": DigitalOut(brain.three_wire_port.c),
-    "intake_pneu": DigitalOut(brain.three_wire_port.b),
-    "side_scoring_a": DigitalOut(brain.three_wire_port.a), 
-    "side_scoring_b": DigitalOut(brain.three_wire_port.d), 
-}
-# pneumatics
+
+# PNEUMATICS
 mogo_pneu = DigitalOut(brain.three_wire_port.c)
+mogo_pneu.set(1)
 intake_pneu = DigitalOut(brain.three_wire_port.b)
 side_scoring_a = DigitalOut(brain.three_wire_port.a)
 side_scoring_b = DigitalOut(brain.three_wire_port.d)
 
+# wire_expander = Triport(Ports.PORT5)
+# DigitalOut(wire_expander.a)
+
+# SENSORS
 leftEnc = motors["left"]["A"]
 rightEnc = motors["right"]["A"]
+leftDistance = Distance(Ports.PORT14)
+rightDistance = Distance(Ports.PORT17)
 
 imu = Inertial(Ports.PORT9)
 
 imu.calibrate()
 while imu.is_calibrating():
     wait(5)
+
+mogo_pneu_engaged = False
+mogo_pneu_status = False
 
 # end variables
 #####################################################
@@ -114,17 +118,26 @@ class Logger:
     def start(self):
         Thread(self.log)
 
+def switch_mogo_engaged():
+    global mogo_pneu_engaged
+    mogo_pneu_engaged = not mogo_pneu_engaged
+
 def switch_mogo():
-    misc_devices["mogo_pneu"].set(not misc_devices["mogo_pneu"].value())
+    global mogo_pneu_engaged
+    if mogo_pneu.value() == 1 and mogo_pneu_engaged:
+        mogo_pneu_engaged = False
+
+    mogo_pneu.set(not mogo_pneu.value())
 
 def switch_intake_height():
-    misc_devices["intake_pneu"].set(not misc_devices["intake_pneu"].value())
+    intake_pneu.set(not intake_pneu.value())
 
 def toggle_side_scoring():
-    misc_devices["side_scoring_a"].set(not misc_devices["side_scoring_a"].value())
-    misc_devices["side_scoring_b"].set(not misc_devices["side_scoring_b"].value())
+    side_scoring_a.set(not side_scoring_a.value())
+    side_scoring_b.set(not side_scoring_b.value())
 
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
+controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
 
@@ -157,6 +170,24 @@ while True:
     # Pneumatic Hold Controls
 
     # Grabber sensors
+    if mogo_pneu_engaged == True:
+        if leftDistance.object_distance() < 50 and rightDistance.object_distance() < 50:
+            mogo_pneu.set(True)
 
+    # Screen debugging
+    scr = brain.screen
+    scr.clear_screen()
+    scr.set_cursor(1,1)
+
+    scr.print("Left distance: {}".format(leftDistance.object_distance()))
+    scr.next_row()
+    scr.print("Right distance: {}".format(rightDistance.object_distance()))
+    scr.next_row()
+
+    scr = con.screen
+    scr.clear_screen()
+    scr.set_cursor(1,1)
+
+    if mogo_pneu_engaged: scr.print("MOGO ENGAGED")
 
     brain.screen.render()
