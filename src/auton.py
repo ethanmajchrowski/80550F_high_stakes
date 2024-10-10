@@ -393,12 +393,23 @@ class AutonomousController():
             heading_to_target = 360 + heading_to_target
 
         self.heading = imu.rotation()
-        heading_output = self.heading_pid.calculate(heading_to_target, self.heading)
 
-        constant_forwards_speed = 2
+        # logic to handle the edge case of the target heading rolling over
+        heading_error = self.heading - heading_to_target
+        rollover = False
+        if heading_error > 180:
+            heading_error = 360 - heading_error
+            rollover = True
+
+        # heading_output = self.heading_pid.calculate(heading_to_target, self.heading)
+        heading_output = self.heading_pid.calculate(0, heading_error)
+
+        constant_forwards_speed = 5
         turn_max_speed = 5
 
-        heading_output = (heading_output / 8) * turn_max_speed
+        heading_output = (heading_output / 2) * turn_max_speed
+        if rollover:
+            heading_output *= -1
 
         motors["left"]["A"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
         motors["left"]["B"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
