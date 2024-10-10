@@ -12,6 +12,8 @@ controls = {
     "SIDE_SCORING_TOGGLE": con.buttonB,
     "MOGO_GRABBER_TOGGLE": con.buttonA,
     "AUTO_MOGO_ENGAGE_TOGGLE": con.buttonY,
+    "ELEVATION_RELEASE_1": con.buttonDown,
+    "ELEVATION_RELEASE_2": con.buttonLeft,
 }
 motors = {
     "left": {
@@ -36,6 +38,7 @@ mogo_pneu.set(1)
 intake_pneu = DigitalOut(brain.three_wire_port.b)
 side_scoring_a = DigitalOut(brain.three_wire_port.a)
 side_scoring_b = DigitalOut(brain.three_wire_port.d)
+elevation_pneu = DigitalOut(brain.three_wire_port.e)
 
 # wire_expander = Triport(Ports.PORT5)
 # DigitalOut(wire_expander.a)

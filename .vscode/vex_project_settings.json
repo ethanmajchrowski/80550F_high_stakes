@@ -9,10 +9,10 @@
 		"creationDate": "4/28/2024, 1:23:04 PM",
 		"platform": "V5",
 		"language": "python",
-		"slot": 3,
+		"slot": 4,
 		"sdkVersion": "V5_1_0_1_19",
 		"python": {
-			"main": "src/driver.py"
+			"main": "src/auton.py"
 		}
 	}
 }

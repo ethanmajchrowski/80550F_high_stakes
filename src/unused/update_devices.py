@@ -56,3 +56,4 @@ for file in os.scandir(r"C:\Users\ethan\Documents\vex-vscode-projects\80550F_hig
                         f.write("\n")
                         f.write(line)
                         # print(line)
+print(f"COMPLETE AT {datetime.datetime.now()}")

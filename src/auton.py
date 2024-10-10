@@ -1,18 +1,24 @@
-#####################################################
+# Filename: auton.py
+# Devices & variables last updated:
+	# 2024-10-09 18:25:15.381051
+####################
+#region Devices
 from vex import *
 
-# region variables
 brain = Brain()
 con = Controller()
 
 controls = {
     "DRIVE_FORWARD_AXIS":  con.axis3,
     "DRIVE_TURN_AXIS":     con.axis4,
-    "MOGO_GRABBER_TOGGLE": con.buttonA,
     "INTAKE_IN_HOLD":      con.buttonR1,
     "INTAKE_OUT_HOLD":     con.buttonR2,
     "INTAKE_HEIGHT_TOGGLE":con.buttonL1,
-    "SIDE_SCORING_TOGGLE": con.buttonB
+    "SIDE_SCORING_TOGGLE": con.buttonB,
+    "MOGO_GRABBER_TOGGLE": con.buttonA,
+    "AUTO_MOGO_ENGAGE_TOGGLE": con.buttonY,
+    "ELEVATION_RELEASE_1": con.buttonDown,
+    "ELEVATION_RELEASE_2": con.buttonLeft,
 }
 motors = {
     "left": {
@@ -30,32 +36,35 @@ motors = {
     },
     "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)
 }
-# wire_expander = Triport(Ports.PORT5)
-# DigitalOut(wire_expander.a)
-misc_devices = {
-    # pneumatics
-    "mogo_pneu": DigitalOut(brain.three_wire_port.c),
-    "intake_pneu": DigitalOut(brain.three_wire_port.b),
-    "side_scoring_a": DigitalOut(brain.three_wire_port.a), 
-    "side_scoring_b": DigitalOut(brain.three_wire_port.d), 
-}
-# pneumatics
+
+# PNEUMATICS
 mogo_pneu = DigitalOut(brain.three_wire_port.c)
+mogo_pneu.set(1)
 intake_pneu = DigitalOut(brain.three_wire_port.b)
 side_scoring_a = DigitalOut(brain.three_wire_port.a)
 side_scoring_b = DigitalOut(brain.three_wire_port.d)
+elevation_pneu = DigitalOut(brain.three_wire_port.e)
 
+# wire_expander = Triport(Ports.PORT5)
+# DigitalOut(wire_expander.a)
+
+# SENSORS
 leftEnc = motors["left"]["A"]
 rightEnc = motors["right"]["A"]
+leftDistance = Distance(Ports.PORT14)
+rightDistance = Distance(Ports.PORT17)
 
 imu = Inertial(Ports.PORT9)
 
 imu.calibrate()
-while imu.is_calibrating():
+while imu.is_calibrating(): 
     wait(5)
 
-# end variables
-#####################################################
+mogo_pneu_engaged = False
+mogo_pneu_status = False
+#endregion Devices####################
+#DO NOT CHANGE THE FOLLOWING LINE:#
+#end_1301825#
 
 # slow right turn
 """
@@ -110,24 +119,7 @@ path = (
     (-121.433,-120.086),
 )
 """
-# squiggle
-path = (
-    (35.518,148.666),
-    (29.59,129.79),
-    (16.636,114.679),
-    (1.595,101.504),
-    (-12.853,87.698),
-    (-23.093,70.69),
-    (-25.801,51.107),
-    (-21.511,31.763),
-    (-9.756,15.863),
-    (5.787,3.299),
-    (20.616,-10.065),
-    (30.747,-27.095),
-    (34.795,-46.543),
-    (35.518,-54.868),
-)
-
+path = ((1193.69, -1193.69, 270), (993.69, -1194.01), (793.69, -1194.33), (593.7, -1193.09), (393.72, -1190.23), (193.83, -1184.7), (-5.85, -1173.48), (-204.8, -1154.67), (-402.9, -1127.2), (-595.66, -1074.5), (-777.68, -994.58), (-936.09, -876.15), (-1055.72, -718.63), (-1134.5, -535.92), (-1179.09, -340.95), (-1196.48, -141.99), (-1202.14, 57.34), (-1177.15, 255.77), (-1122.2, 446.42), (-1035.91, 625.2), (-911.32, 781.65), (-750.56, 900.2), (-573.66, 991.29), (-386.65, 1060.62), (-192.84, 1109.99), (4.62, 1140.87), (203.08, 1164.79), (402.61, 1178.53), (602.39, 1186.92), (802.33, 1191.92), (1002.32, 1193.25), (1186.52, 1193.96))
 
 class Logger:
     def __init__(self) -> None:
@@ -286,7 +278,7 @@ class DeltaPositioning():
         # change in left & right encoders (degrees)
         dl = self.leftEnc.position() - self.last_left_encoder
         dr = self.rightEnc.position() - self.last_right_encoder
-        dHeadingTheta = self.imu.rotation() - self.last_heading
+        # dHeadingTheta = self.imu.rotation() - self.last_heading
 
         # proportion
         # (dTheta / 360) = (x mm / Circumference mm)
@@ -299,8 +291,8 @@ class DeltaPositioning():
 
         # x = cos
         # y = sin
-        dx = dNet * math.cos(math.radians(dHeadingTheta))
-        dy = dNet * math.sin(math.radians(dHeadingTheta))
+        dx = dNet * math.sin(math.radians(self.imu.rotation()))
+        dy = dNet * math.cos(math.radians(self.imu.rotation()))
 
         self.last_time = brain.timer.time()
         self.last_heading = self.imu.rotation()
@@ -371,16 +363,18 @@ class AutonomousController():
 
         self.running = True
         self.position = [0, 0]
-        self.position = list(path[0])
+        self.position = list(path[0][:2])
         self.path = path
-        imu.set_rotation(-180)
 
+        if len(self.path[0]) == 3:
+            # we know data[0] has a heading
+            imu.set_rotation(self.path[0][2])
 
         self.heading_pid = MultipurposePID(0.1, 0, 0, 0)
         self.heading = imu.rotation()
 
         self.position_controller = DeltaPositioning(leftEnc, rightEnc, imu)
-        self.path_controller = PurePursuit(100, 10, self.path)
+        self.path_controller = PurePursuit(200, 10, self.path)
 
         self.logging = log
         if self.logging:
@@ -388,21 +382,23 @@ class AutonomousController():
             self.logger.log("Position: {}, Heading: {}, Look Ahead: {}, Finish Margin: {}".format(self.position, self.heading, 100, 10))
 
     def run(self):
-        dpos = self.position_controller.update()
-        self.position[0] += dpos[0]
-        self.position[1] += dpos[1]
+        dx, dy = self.position_controller.update()
+        self.position[0] += dx
+        self.position[1] += dy
         target_point = self.path_controller.goal_search(self.position)
 
         dx, dy = target_point[0] - self.position[0], target_point[1] - self.position[1] # type: ignore
-        heading_to_target = math.degrees(math.atan2(dy, dx))
+        heading_to_target = math.degrees(math.atan2(dx, dy))
+        if dx < 0:
+            heading_to_target = 360 + heading_to_target
 
         self.heading = imu.rotation()
         heading_output = self.heading_pid.calculate(heading_to_target, self.heading)
 
-        constant_forwards_speed = 5
+        constant_forwards_speed = 2
         turn_max_speed = 5
 
-        heading_output = (heading_output / 50) * turn_max_speed
+        heading_output = (heading_output / 8) * turn_max_speed
 
         motors["left"]["A"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
         motors["left"]["B"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
@@ -431,6 +427,25 @@ class AutonomousController():
         scr.new_line()
         scr.print("Y: " + str(self.position[1]))
         scr.new_line()
+        scr.print("Target X: " + str(target_point[0]))
+        scr.new_line()
+        scr.print("Target Y: " + str(target_point[1]))
+        scr.new_line()
+        scr.print("Heading: " + str(self.heading))
+        scr.new_line()
+        scr.print("Target Heading: " + str(heading_to_target))
+        scr.new_line()
+        scr.print("hPID output: " + str(heading_output))
+        scr.new_line()
+        if heading_output < -0.1:
+            scr.print("Turn Left")
+            scr.new_line()
+        elif heading_output > 0.1:
+            scr.print("Turn Right")
+            scr.new_line()
+        else:
+            scr.print("Drive Straight")
+            scr.new_line
 
         scr.render()
 
@@ -461,6 +476,6 @@ class AutonomousController():
             if self.logging:
                 self.logger.log("END")
 
-auton = AutonomousController(path)
-# auton.run()
-auton.test()
+auton = AutonomousController(path, False)
+auton.run()
+# auton.test()
