@@ -1,6 +1,6 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-10-09 18:25:15.395383
+	# 2024-10-14 18:32:52.661187
 ####################
 #region Devices
 from vex import *

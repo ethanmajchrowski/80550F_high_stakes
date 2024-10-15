@@ -1,6 +1,6 @@
 # Filename: auton.py
 # Devices & variables last updated:
-	# 2024-10-09 18:25:15.381051
+	# 2024-10-14 18:32:52.641639
 ####################
 #region Devices
 from vex import *
@@ -66,60 +66,32 @@ mogo_pneu_status = False
 #DO NOT CHANGE THE FOLLOWING LINE:#
 #end_1301825#
 
-# slow right turn
-"""
-path = (
-    (-118.566,122.15),
-    (-118.612,97.15),
-    (-118.775,72.15),
-    (-119.826,47.197),
-    (-119.961,22.198),
-    (-119.472,-2.766),
-    (-116.029,-27.528),
-    (-107.835,-50.782),
-    (-94.482,-71.549),
-    (-75.985,-88.367),
-    (-53.475,-99.231),
-    (-29.858,-107.076),
-    (-5.541,-112.77),
-    (19.272,-115.817),
-    (44.172,-117.843),
-    (69.146,-118.971),
-    (94.141,-119.267),
-    (117.936,-119.369),
-)
-"""
-# loop
-"""
-path = (
-    (-120,121.433),
-    (-95.003,120.993),
-    (-70.015,120.327),
-    (-45.05,119.015),
-    (-20.197,116.477),
-    (4.497,112.761),
-    (28.58,106.05),
-    (51.012,95.261),
-    (70.281,79.821),
-    (84.641,59.804),
-    (93.84,36.655),
-    (96.542,11.802),
-    (96.322,-13.032),
-    (93.283,-37.846),
-    (83.895,-60.932),
-    (69.432,-80.885),
-    (50.058,-96.18),
-    (27.511,-106.696),
-    (3.364,-113.172),
-    (-21.395,-116.47),
-    (-46.283,-118.626),
-    (-71.263,-119.62),
-    (-96.259,-119.953),
-    (-121.258,-120.085),
-    (-121.433,-120.086),
-)
-"""
-path = ((1193.69, -1193.69, 270), (993.69, -1194.01), (793.69, -1194.33), (593.7, -1193.09), (393.72, -1190.23), (193.83, -1184.7), (-5.85, -1173.48), (-204.8, -1154.67), (-402.9, -1127.2), (-595.66, -1074.5), (-777.68, -994.58), (-936.09, -876.15), (-1055.72, -718.63), (-1134.5, -535.92), (-1179.09, -340.95), (-1196.48, -141.99), (-1202.14, 57.34), (-1177.15, 255.77), (-1122.2, 446.42), (-1035.91, 625.2), (-911.32, 781.65), (-750.56, 900.2), (-573.66, 991.29), (-386.65, 1060.62), (-192.84, 1109.99), (4.62, 1140.87), (203.08, 1164.79), (402.61, 1178.53), (602.39, 1186.92), (802.33, 1191.92), (1002.32, 1193.25), (1186.52, 1193.96))
+# Horseshoe
+# Start at (1200, -1200) facing 270*
+# path = ((1193.69, -1193.69, 270), (993.69, -1194.01), (793.69, -1194.33), (593.7, -1193.09), (393.72, -1190.23), (193.83, -1184.7), (-5.85, -1173.48), (-204.8, -1154.67), (-402.9, -1127.2), (-595.66, -1074.5), (-777.68, -994.58), (-936.09, -876.15), (-1055.72, -718.63), (-1134.5, -535.92), (-1179.09, -340.95), (-1196.48, -141.99), (-1202.14, 57.34), (-1177.15, 255.77), (-1122.2, 446.42), (-1035.91, 625.2), (-911.32, 781.65), (-750.56, 900.2), (-573.66, 991.29), (-386.65, 1060.62), (-192.84, 1109.99), (4.62, 1140.87), (203.08, 1164.79), (402.61, 1178.53), (602.39, 1186.92), (802.33, 1191.92), (1002.32, 1193.25), (1186.52, 1193.96))
+
+# Squiggle
+# Start at (0, -1500) facing 45*
+# path = ((0, -1500, 45), (118.3, -1377.91), (230.86, -1250.6), (333.28, -1115.14), (417.26, -967.72), (461.85, -804.82), (450.58, -636.41), (386.98, -479.63), (293.2, -338.12), (185.49, -206.73), (70.63, -81.43), (-46.54, 41.73), (-160.22, 168.01), (-264.05, 302.44), (-351.13, 448.06), (-410.98, 606.51), (-429.96, 774.55), (-396.12, 940.44), (-327.09, 1095.23), (-234.85, 1237.75), (-128.66, 1370.39), (4.01, 1517.04))
+
+# Square
+# Start at (1200, 0) facing 0*
+path = ((1200, 0, 0), (1196.73, 179.97), (1192.3, 359.91), (1185.61, 539.78), (1169.45, 719.05), (1130.75, 894.45), (1039.26, 1046.97), (890.4, 1144.09), (715.35, 1184.94), (536.48, 1204.7), (356.71, 1213.77), (176.8, 1218.94), (-3.16, 1222.92), (-183.14, 1225.12), (-363.13, 1225.76), (-543.1, 1222.74), (-722.5, 1208.37), (-898.78, 1173.13), (-1051.87, 1082.88), (-1147.67, 933.4), (-1188.23, 758.57), (-1201.33, 579.04), (-1204.03, 399.09), (-1203.36, 219.1), (-1200.81, 39.12), (-1197.44, -140.85), (-1193.71, -320.81), (-1186.71, -500.67), (-1172.69, -680.06), (-1142.86, -857.26), (-1075.97, -1023.1), (-937.5, -1134.21), (-766.54, -1187.01), (-587.87, -1207.33), (-408.1, -1215.2), (-228.15, -1218.86), (-48.15, -1220.45), (131.81, -1223.6), (311.76, -1227.76), (491.62, -1234.97), (671.55, -1239.86), (851.3, -1233.99), (1022.06, -1185.38), (1133.71, -1049.25), (1177.71, -875.45), (1192.67, -696.07), (1198.16, -516.2), (1200.69, -336.23), (1200.41, -156.23), (1200, 0))
+
+events = [
+    # ["description", (5, 5), function, ("arg1", "arg2")],
+    # WHEN MAKING DEVICES, IF YOU HAVE 1 ARGUMENT YOU NEED A COMMA AT THE END:
+    #                                                         VV
+    # ["intake stop", (0, 1130), motors["intake"].stop, (BRAKE, )]
+
+    # ["intake", (-1200, 0), motors["intake"].spin, (FORWARD, 100, PERCENT)],
+    # ["intake stop", (0, 1130), motors["intake"].stop, (BRAKE,)]
+]
+
+def dist(p1, p2):
+    x1, y1 = p1
+    x2, y2 = p2
+    return math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
 
 class Logger:
     def __init__(self) -> None:
@@ -173,12 +145,8 @@ class PurePursuit():
         self.look_dist = look_ahead_dist
         self.finish_margin = finish_margin
         self.last_found_point = 0
-    
-    def dist(self, p1, p2):
-        x1, y1 = p1
-        x2, y2 = p2
-        return math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
 
+        self.path_complete = False
 
     def goal_search(self, current_pos):
         """
@@ -187,13 +155,13 @@ class PurePursuit():
         and that is closest to the end of the path.
         """
         start_point = self.last_found_point
-        goal = ()
+        goal = path[self.last_found_point+1][:2]
         # Iterate over every un-crossed point in our path.
         for i in range(start_point, len(self.path)-1):
             # step 1: line and circle intersection
             h, k = current_pos
-            point1 = self.path[i]
-            point2 = self.path[i+1]
+            point1 = self.path[i][:2]
+            point2 = self.path[i+1][:2]
             ax, ay = point1[:2]
             bx, by = point2[:2]
             
@@ -223,8 +191,8 @@ class PurePursuit():
                     if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) and ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
                         # both solutions are within bounds, so we need to compare and decide which is better
                         # choose based on distance to pt2
-                        sol1_distance = self.dist(sol1, point2)
-                        sol2_distance = self.dist(sol2, point2)
+                        sol1_distance = dist(sol1, point2)
+                        sol2_distance = dist(sol2, point2)
 
                         if sol1_distance < sol2_distance:
                             goal = sol1
@@ -237,22 +205,22 @@ class PurePursuit():
                         else:
                             goal = sol2
                     
-                    # first, check if the robot is not close to the end point in the path
-                    if self.dist(current_pos, self.path[len(self.path)-1]) < self.look_dist:
-                        goal = self.path[len(self.path)-1]
-                        if self.dist(current_pos, self.path[len(self.path)-1]) < self.finish_margin:
-                            path_complete = True
+                # first, check if the robot is not close to the end point in the path
+                if dist(current_pos, self.path[len(self.path)-1]) < self.look_dist:
+                    goal = self.path[len(self.path)-1]
+                else:
+                    # update last_found_point
+                    # only keep the goal if the goal point is closer to the target than our robot
+                    if dist(goal[:2], self.path[self.last_found_point+1][:2]) < dist(current_pos, self.path[self.last_found_point+1][:2]):
+                        # found point is closer to the target than we are, so we keep it
+                        goal = goal
                     else:
-                        # update last_found_point
-                        # only keep the goal if the goal point is closer to the target than our robot
-                        if self.dist(goal, self.path[self.last_found_point+1]) < self.dist(current_pos, self.path[self.last_found_point+1]):
-                            # found point is closer to the target than we are, so we keep it
-                            goal = goal
-                        else:
-                            self.last_found_point = i        
-            elif goal == ():
-                # we didn't find any point on the line, so return the last found index
-                goal = self.path[self.last_found_point][:2]
+                        self.last_found_point = i 
+                
+            # if we are close to the finish point, regardless of what has happened, finish the path
+            if dist(current_pos, self.path[len(self.path)-1]) < self.finish_margin:
+                self.path_complete = True
+       
         return goal
 
 class DeltaPositioning():
@@ -357,29 +325,53 @@ class MultipurposePID:
         return output
 
 class AutonomousController():
-    def __init__(self, path, log = True) -> None:
+    def __init__(self, path, events, constant_fwd_volt = 3.5,
+                 look_ahead_dist = 200, finish_margin = 100,
+                 event_look_dist = 75,
+                 hPID_KP = 0.1, hPID_KD = 0, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
+                 clock_time = 10,
+                 log = True) -> None:
         # loop wait time in msec
-        self.clock_time = 10
+        self.clock_time = clock_time
 
         self.running = True
         self.position = [0, 0]
         self.position = list(path[0][:2])
+        self.constant_fwd_folt = constant_fwd_volt
         self.path = path
+
+        self.events = events
+        self.event_look_dist = event_look_dist
 
         if len(self.path[0]) == 3:
             # we know data[0] has a heading
             imu.set_rotation(self.path[0][2])
 
-        self.heading_pid = MultipurposePID(0.1, 0, 0, 0)
+        self.heading_pid = MultipurposePID(hPID_KP, hPID_KD, hPID_KI, hPID_KI_MAX, hPID_MIN_OUT)
         self.heading = imu.rotation()
 
         self.position_controller = DeltaPositioning(leftEnc, rightEnc, imu)
-        self.path_controller = PurePursuit(200, 10, self.path)
+        self.path_controller = PurePursuit(look_ahead_dist, finish_margin, self.path)
 
         self.logging = log
         if self.logging:
             self.logger = Logger()
-            self.logger.log("Position: {}, Heading: {}, Look Ahead: {}, Finish Margin: {}".format(self.position, self.heading, 100, 10))
+            self.logger.log("Starting Position: {}, Starting Heading: {}".format(self.position, self.heading, 100, 10))
+            sleep(5)
+            self.logger.log("Look ahead: {}, Finish margin: {}, Event trigger distance: {}".format(look_ahead_dist, finish_margin, event_look_dist))
+            sleep(5)
+            self.logger.log("Constant fwd volts: {}".format(constant_fwd_volt))
+            sleep(5)
+            self.logger.log("HPID | KP: {}, KD: {}, KI: {}, KI_MAX: {}, MIN_OUT: {}".format(hPID_KP, hPID_KD, hPID_KI, hPID_KI_MAX, hPID_MIN_OUT))
+            sleep(5)
+            self.logger.log("Path: {}".format(self.path))
+            sleep(5)
+            self.logger.log("Event positions: {}".format(self.events))
+            sleep(5)
+            self.logger.log("Clock time: {}".format(clock_time))
+            sleep(5)
+            # wait for file operations :)
+            sleep(100)
 
     def run(self):
         dx, dy = self.position_controller.update()
@@ -404,7 +396,7 @@ class AutonomousController():
         # heading_output = self.heading_pid.calculate(heading_to_target, self.heading)
         heading_output = self.heading_pid.calculate(0, heading_error)
 
-        constant_forwards_speed = 5
+        constant_forwards_speed = self.constant_fwd_folt
         turn_max_speed = 5
 
         heading_output = (heading_output / 2) * turn_max_speed
@@ -421,6 +413,15 @@ class AutonomousController():
         motors["right"]["C"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
         motors["right"]["D"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
 
+        for event in self.events:
+            if dist(self.position, event[1]) < self.event_look_dist:
+                # commands[0][2](*commands[0][3])
+                # Call the function (at index 2) with the unpacked (*) args (at index 3)
+                
+                # ["intake", (1200, 0), motors["intake"].spin, (FORWARD, 50)],
+
+                event[2](*event[3])
+
         #time, x, y, heading, heading_to_target, point_x, point_y, point, len_points
         if self.logging:
             time = str(brain.timer.time())
@@ -429,41 +430,24 @@ class AutonomousController():
             hpid = str(heading_output)
             self.logger.log(time + ", " + posx + ", " + posy + ", " + str(self.heading) + ", " + str(heading_to_target) + ", " + hpid + ", " + tx + ", " + ty)
 
-        scr = brain.screen
-        scr.clear_screen()
-        scr.set_font(FontType.MONO30)
-        scr.set_cursor(1, 1)
-
-        scr.print("X: " + str(self.position[0]))
-        scr.new_line()
-        scr.print("Y: " + str(self.position[1]))
-        scr.new_line()
-        scr.print("Target X: " + str(target_point[0]))
-        scr.new_line()
-        scr.print("Target Y: " + str(target_point[1]))
-        scr.new_line()
-        scr.print("Heading: " + str(self.heading))
-        scr.new_line()
-        scr.print("Target Heading: " + str(heading_to_target))
-        scr.new_line()
-        scr.print("hPID output: " + str(heading_output))
-        scr.new_line()
-        if heading_output < -0.1:
-            scr.print("Turn Left")
-            scr.new_line()
-        elif heading_output > 0.1:
-            scr.print("Turn Right")
-            scr.new_line()
-        else:
-            scr.print("Drive Straight")
-            scr.new_line
-
-        scr.render()
+        if self.path_controller.path_complete:
+            self.running = False
 
         # queue next run, or stop
         if self.running:
             brain.timer.event(self.run, self.clock_time)
         else:
+            # kill the motors
+            motors["left"]["A"].stop(BRAKE)
+            motors["left"]["B"].stop(BRAKE)
+            motors["left"]["C"].stop(BRAKE)
+            motors["left"]["D"].stop(BRAKE)
+
+            motors["right"]["A"].stop(BRAKE)
+            motors["right"]["B"].stop(BRAKE)
+            motors["right"]["C"].stop(BRAKE)
+            motors["right"]["D"].stop(BRAKE)
+
             if self.logging:
                 self.logger.log("END")
 
@@ -487,6 +471,7 @@ class AutonomousController():
             if self.logging:
                 self.logger.log("END")
 
-auton = AutonomousController(path, False)
+auton = AutonomousController(path, events, log=True)
+auton.logger.log("Start\n")
 auton.run()
 # auton.test()
