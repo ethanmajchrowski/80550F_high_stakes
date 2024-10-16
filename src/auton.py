@@ -74,9 +74,20 @@ mogo_pneu_status = False
 # Start at (0, -1500) facing 45*
 # path = ((0, -1500, 45), (118.3, -1377.91), (230.86, -1250.6), (333.28, -1115.14), (417.26, -967.72), (461.85, -804.82), (450.58, -636.41), (386.98, -479.63), (293.2, -338.12), (185.49, -206.73), (70.63, -81.43), (-46.54, 41.73), (-160.22, 168.01), (-264.05, 302.44), (-351.13, 448.06), (-410.98, 606.51), (-429.96, 774.55), (-396.12, 940.44), (-327.09, 1095.23), (-234.85, 1237.75), (-128.66, 1370.39), (4.01, 1517.04))
 
-# Square
-# Start at (1200, 0) facing 0*
-path = ((1200, 0, 0), (1196.73, 179.97), (1192.3, 359.91), (1185.61, 539.78), (1169.45, 719.05), (1130.75, 894.45), (1039.26, 1046.97), (890.4, 1144.09), (715.35, 1184.94), (536.48, 1204.7), (356.71, 1213.77), (176.8, 1218.94), (-3.16, 1222.92), (-183.14, 1225.12), (-363.13, 1225.76), (-543.1, 1222.74), (-722.5, 1208.37), (-898.78, 1173.13), (-1051.87, 1082.88), (-1147.67, 933.4), (-1188.23, 758.57), (-1201.33, 579.04), (-1204.03, 399.09), (-1203.36, 219.1), (-1200.81, 39.12), (-1197.44, -140.85), (-1193.71, -320.81), (-1186.71, -500.67), (-1172.69, -680.06), (-1142.86, -857.26), (-1075.97, -1023.1), (-937.5, -1134.21), (-766.54, -1187.01), (-587.87, -1207.33), (-408.1, -1215.2), (-228.15, -1218.86), (-48.15, -1220.45), (131.81, -1223.6), (311.76, -1227.76), (491.62, -1234.97), (671.55, -1239.86), (851.3, -1233.99), (1022.06, -1185.38), (1133.71, -1049.25), (1177.71, -875.45), (1192.67, -696.07), (1198.16, -516.2), (1200.69, -336.23), (1200.41, -156.23), (1200, 0))
+# # Square
+# # Start at (1200, 0) facing 0*
+# path = ((1200, 0, 0), (1196.73, 179.97), (1192.3, 359.91), (1185.61, 539.78), (1169.45, 719.05), (1130.75, 894.45), (1039.26, 1046.97), (890.4, 1144.09), (715.35, 1184.94), (536.48, 1204.7), (356.71, 1213.77), (176.8, 1218.94), (-3.16, 1222.92), (-183.14, 1225.12), (-363.13, 1225.76), (-543.1, 1222.74), (-722.5, 1208.37), (-898.78, 1173.13), (-1051.87, 1082.88), (-1147.67, 933.4), (-1188.23, 758.57), (-1201.33, 579.04), (-1204.03, 399.09), (-1203.36, 219.1), (-1200.81, 39.12), (-1197.44, -140.85), (-1193.71, -320.81), (-1186.71, -500.67), (-1172.69, -680.06), (-1142.86, -857.26), (-1075.97, -1023.1), (-937.5, -1134.21), (-766.54, -1187.01), (-587.87, -1207.33), (-408.1, -1215.2), (-228.15, -1218.86), (-48.15, -1220.45), (131.81, -1223.6), (311.76, -1227.76), (491.62, -1234.97), (671.55, -1239.86), (851.3, -1233.99), (1022.06, -1185.38), (1133.71, -1049.25), (1177.71, -875.45), (1192.67, -696.07), (1198.16, -516.2), (1200.69, -336.23), (1200.41, -156.23), (1200, 0))
+
+# Figure 8
+# Start at (1200, -1200) facing 315* (45* to the left of 0)
+# Checkpoint at (-1200, 0) facing 180
+path = ((1200, -1200, 315), (1094.98, -1092.9), (989.96, -985.8), (884.93, -878.7), (780.62, -770.92), (677.71, -661.79), (574.8, -552.66), (471.89, -443.53), (370.24, -333.22), (268.62, -222.89), (167.01, -112.55), (65.56, -2.06), (-35.88, 108.44), (-137.68, 218.61), (-240.56, 327.76), (-343.44, 436.92), (-449.98, 542.51), (-556.82, 647.79), (-671.75, 744.18), (-793.89, 830.26), (-930.82, 884.26), (-1064.69, 841.42), (-1133.5, 711.0), (-1164.68, 564.96), (-1185.06, 416.55), (-1192.55, 266.74), (-1199.44, 116.91), (-1199.15, -33.08), (-1195.32, -183.03), (-1191.48, -332.98), (-1175.38, -482.04), (-1153.78, -630.16), (-1107.69, -772.91), (-1003.28, -872.22), (-859.18, -855.5), (-729.66, -781.82), (-610.63, -690.65), (-501.02, -588.25), (-392.95, -484.28), (-288.59, -376.53), (-184.49, -268.54), (-82.45, -158.6), (19.6, -48.66), (121.4, 61.51), (222.99, 171.87), (324.58, 282.23), (426.67, 392.13), (529.05, 501.75), (631.43, 611.38), (734.44, 720.41), (838.51, 828.44), (942.57, 936.47), (1046.64, 1044.5), (1200, 1200))
+
+checkpoints = [
+    # position, heading, index
+    ((-1199.44, 116.91), 180, 26),
+    ((1200, 1200), 45, 53)
+]
 
 events = [
     # ["description", (5, 5), function, ("arg1", "arg2")],
@@ -156,7 +167,11 @@ class PurePursuit():
         """
         start_point = self.last_found_point
         goal = path[self.last_found_point+1][:2]
+
         # Iterate over every un-crossed point in our path.
+
+        # Iterate from our current point to the next checkpoint. 
+        # Once we reach that checkpoint, move the checkpoint to the next and keep going.
         for i in range(start_point, len(self.path)-1):
             # step 1: line and circle intersection
             h, k = current_pos
@@ -216,7 +231,9 @@ class PurePursuit():
                         goal = goal
                     else:
                         self.last_found_point = i 
-                
+
+            # only if we are 80% through the path 
+            # if self.last_found_point >= int(len(self.path) * 0.8):
             # if we are close to the finish point, regardless of what has happened, finish the path
             if dist(current_pos, self.path[len(self.path)-1]) < self.finish_margin:
                 self.path_complete = True
@@ -259,11 +276,11 @@ class DeltaPositioning():
 
         # x = cos
         # y = sin
-        dx = dNet * math.sin(math.radians(self.imu.rotation()))
-        dy = dNet * math.cos(math.radians(self.imu.rotation()))
+        dx = dNet * math.sin(math.radians(self.imu.heading()))
+        dy = dNet * math.cos(math.radians(self.imu.heading()))
 
         self.last_time = brain.timer.time()
-        self.last_heading = self.imu.rotation()
+        self.last_heading = self.imu.heading()
         self.last_right_encoder = self.rightEnc.position()
         self.last_left_encoder = self.leftEnc.position()
         return [dx, dy]
@@ -345,10 +362,10 @@ class AutonomousController():
 
         if len(self.path[0]) == 3:
             # we know data[0] has a heading
-            imu.set_rotation(self.path[0][2])
+            imu.set_heading(self.path[0][2])
 
         self.heading_pid = MultipurposePID(hPID_KP, hPID_KD, hPID_KI, hPID_KI_MAX, hPID_MIN_OUT)
-        self.heading = imu.rotation()
+        self.heading = imu.heading()
 
         self.position_controller = DeltaPositioning(leftEnc, rightEnc, imu)
         self.path_controller = PurePursuit(look_ahead_dist, finish_margin, self.path)
@@ -384,13 +401,17 @@ class AutonomousController():
         if dx < 0:
             heading_to_target = 360 + heading_to_target
 
-        self.heading = imu.rotation()
+        self.heading = imu.heading()
 
         # logic to handle the edge case of the target heading rolling over
         heading_error = self.heading - heading_to_target
         rollover = False
+
         if heading_error > 180:
             heading_error = 360 - heading_error
+            rollover = True
+        if heading_error < -180:
+            heading_error = -360 - heading_error
             rollover = True
 
         # heading_output = self.heading_pid.calculate(heading_to_target, self.heading)
@@ -432,6 +453,37 @@ class AutonomousController():
 
         if self.path_controller.path_complete:
             self.running = False
+
+        scr = brain.screen
+        scr.clear_screen()
+        scr.set_font(FontType.MONO30)
+        scr.set_cursor(1, 1)
+
+        scr.print("X: " + str(self.position[0]))
+        scr.new_line()
+        scr.print("Y: " + str(self.position[1]))
+        scr.new_line()
+        scr.print("Target X: " + str(target_point[0]))
+        scr.new_line()
+        scr.print("Target Y: " + str(target_point[1]))
+        scr.new_line()
+        scr.print("Heading: " + str(self.heading))
+        scr.new_line()
+        scr.print("Target Heading: " + str(heading_to_target))
+        scr.new_line()
+        scr.print("hPID output: " + str(heading_output))
+        scr.new_line()
+        if heading_output < -0.1:
+            scr.print("Turn Left")
+            scr.new_line()
+        elif heading_output > 0.1:
+            scr.print("Turn Right")
+            scr.new_line()
+        else:
+            scr.print("Drive Straight")
+            scr.new_line
+
+        scr.render()
 
         # queue next run, or stop
         if self.running:
