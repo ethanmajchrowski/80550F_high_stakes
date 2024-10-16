@@ -66,9 +66,11 @@ mogo_pneu_status = False
 #DO NOT CHANGE THE FOLLOWING LINE:#
 #end_1301825#
 
+checkpoints = []
+
 # Horseshoe
 # Start at (1200, -1200) facing 270*
-# path = ((1193.69, -1193.69, 270), (993.69, -1194.01), (793.69, -1194.33), (593.7, -1193.09), (393.72, -1190.23), (193.83, -1184.7), (-5.85, -1173.48), (-204.8, -1154.67), (-402.9, -1127.2), (-595.66, -1074.5), (-777.68, -994.58), (-936.09, -876.15), (-1055.72, -718.63), (-1134.5, -535.92), (-1179.09, -340.95), (-1196.48, -141.99), (-1202.14, 57.34), (-1177.15, 255.77), (-1122.2, 446.42), (-1035.91, 625.2), (-911.32, 781.65), (-750.56, 900.2), (-573.66, 991.29), (-386.65, 1060.62), (-192.84, 1109.99), (4.62, 1140.87), (203.08, 1164.79), (402.61, 1178.53), (602.39, 1186.92), (802.33, 1191.92), (1002.32, 1193.25), (1186.52, 1193.96))
+path = ((1193.69, -1193.69, 270), (993.69, -1194.01), (793.69, -1194.33), (593.7, -1193.09), (393.72, -1190.23), (193.83, -1184.7), (-5.85, -1173.48), (-204.8, -1154.67), (-402.9, -1127.2), (-595.66, -1074.5), (-777.68, -994.58), (-936.09, -876.15), (-1055.72, -718.63), (-1134.5, -535.92), (-1179.09, -340.95), (-1196.48, -141.99), (-1202.14, 57.34), (-1177.15, 255.77), (-1122.2, 446.42), (-1035.91, 625.2), (-911.32, 781.65), (-750.56, 900.2), (-573.66, 991.29), (-386.65, 1060.62), (-192.84, 1109.99), (4.62, 1140.87), (203.08, 1164.79), (402.61, 1178.53), (602.39, 1186.92), (802.33, 1191.92), (1002.32, 1193.25), (1186.52, 1193.96))
 
 # Squiggle
 # Start at (0, -1500) facing 45*
@@ -81,22 +83,38 @@ mogo_pneu_status = False
 # Figure 8
 # Start at (1200, -1200) facing 315* (45* to the left of 0)
 # Checkpoint at (-1200, 0) facing 180
-path = ((1200, -1200, 315), (1094.98, -1092.9), (989.96, -985.8), (884.93, -878.7), (780.62, -770.92), (677.71, -661.79), (574.8, -552.66), (471.89, -443.53), (370.24, -333.22), (268.62, -222.89), (167.01, -112.55), (65.56, -2.06), (-35.88, 108.44), (-137.68, 218.61), (-240.56, 327.76), (-343.44, 436.92), (-449.98, 542.51), (-556.82, 647.79), (-671.75, 744.18), (-793.89, 830.26), (-930.82, 884.26), (-1064.69, 841.42), (-1133.5, 711.0), (-1164.68, 564.96), (-1185.06, 416.55), (-1192.55, 266.74), (-1199.44, 116.91), (-1199.15, -33.08), (-1195.32, -183.03), (-1191.48, -332.98), (-1175.38, -482.04), (-1153.78, -630.16), (-1107.69, -772.91), (-1003.28, -872.22), (-859.18, -855.5), (-729.66, -781.82), (-610.63, -690.65), (-501.02, -588.25), (-392.95, -484.28), (-288.59, -376.53), (-184.49, -268.54), (-82.45, -158.6), (19.6, -48.66), (121.4, 61.51), (222.99, 171.87), (324.58, 282.23), (426.67, 392.13), (529.05, 501.75), (631.43, 611.38), (734.44, 720.41), (838.51, 828.44), (942.57, 936.47), (1046.64, 1044.5), (1200, 1200))
+# path = ((1200, -1200, 315), (1094.98, -1092.9), (989.96, -985.8), (884.93, -878.7), (780.62, -770.92), (677.71, -661.79), (574.8, -552.66), (471.89, -443.53), (370.24, -333.22), (268.62, -222.89), (167.01, -112.55), (65.56, -2.06), (-35.88, 108.44), (-137.68, 218.61), (-240.56, 327.76), (-343.44, 436.92), (-449.98, 542.51), (-556.82, 647.79), (-671.75, 744.18), (-793.89, 830.26), (-930.82, 884.26), (-1064.69, 841.42), (-1133.5, 711.0), (-1164.68, 564.96), (-1185.06, 416.55), (-1192.55, 266.74), (-1199.44, 116.91), (-1199.15, -33.08), (-1195.32, -183.03), (-1191.48, -332.98), (-1175.38, -482.04), (-1153.78, -630.16), (-1107.69, -772.91), (-1003.28, -872.22), (-859.18, -855.5), (-729.66, -781.82), (-610.63, -690.65), (-501.02, -588.25), (-392.95, -484.28), (-288.59, -376.53), (-184.49, -268.54), (-82.45, -158.6), (19.6, -48.66), (121.4, 61.51), (222.99, 171.87), (324.58, 282.23), (426.67, 392.13), (529.05, 501.75), (631.43, 611.38), (734.44, 720.41), (838.51, 828.44), (942.57, 936.47), (1046.64, 1044.5), (1200, 1200))
 
-checkpoints = [
-    # position, heading, index
-    ((-1199.44, 116.91), 180, 26),
-    ((1200, 1200), 45, 53)
-]
+# checkpoints = [
+#     26
+# ]
 
-events = [
+class EventWaitType():
+    pass
+
+# How to write events:
+    # FUNCTIONS
     # ["description", (5, 5), function, ("arg1", "arg2")],
     # WHEN MAKING DEVICES, IF YOU HAVE 1 ARGUMENT YOU NEED A COMMA AT THE END:
     #                                                         VV
     # ["intake stop", (0, 1130), motors["intake"].stop, (BRAKE, )]
+#
+    # VARIABLES
+    # ["description", (x, y), "variable_name", new_value]
+    # Make sure that "variable_name" is a key in AutonomousController's dynamic variables
+    # and that new_value is the same type as the original.
+
+    # WAIT COMMANDS
+    # ["description", (x, y), EventWaitType, duration]
+    # Duration is in milliseconds.
+
+events = [
 
     # ["intake", (-1200, 0), motors["intake"].spin, (FORWARD, 100, PERCENT)],
     # ["intake stop", (0, 1130), motors["intake"].stop, (BRAKE,)]
+    # ["speed up", (-1200, 0), "speed", 5], # type:ignore
+    # ["speed down", (0, 1130), "speed", 3.5] # type:ignore
+    # ["wait 2s", (-1200, 0), EventWaitType(), 2000]
 ]
 
 def dist(p1, p2):
@@ -145,7 +163,8 @@ class Logger:
             print("No SD card inserted")
 
 class PurePursuit():
-    def __init__(self, look_ahead_dist, finish_margin, path: list[tuple[float, float]]) -> None:
+    def __init__(self, look_ahead_dist, finish_margin, 
+                 path: list[tuple[float, float]], checkpoints) -> None:
         """
         Init variables. Robot position is able to be passed in from another source, like a GPS sensor or odometry algorithm.
         Arguments:
@@ -159,84 +178,103 @@ class PurePursuit():
 
         self.path_complete = False
 
+        self.checkpoints = checkpoints
+        if len(self.checkpoints) != 0:
+            self.current_checkpoint = checkpoints[0]
+            self.checkpoints_complete = False
+        else:
+            self.checkpoints_complete = True
+
     def goal_search(self, current_pos):
         """
         Run every time you want to update your goal position. 
         Returns the point along our path that is look_dist away from the robot
         and that is closest to the end of the path.
         """
-        start_point = self.last_found_point
         goal = path[self.last_found_point+1][:2]
 
         # Iterate over every un-crossed point in our path.
-
-        # Iterate from our current point to the next checkpoint. 
-        # Once we reach that checkpoint, move the checkpoint to the next and keep going.
-        for i in range(start_point, len(self.path)-1):
-            # step 1: line and circle intersection
-            h, k = current_pos
-            point1 = self.path[i][:2]
-            point2 = self.path[i+1][:2]
-            ax, ay = point1[:2]
-            bx, by = point2[:2]
+        #if we are close to the finish point, regardless of what has happened, finish the path
+        if dist(current_pos, self.path[len(self.path)-1]) < self.finish_margin:
+            self.path_complete = True      
+        else:
+            # Iterate from our current point to the next checkpoint, or the end of the path.
+            # Once we reach that checkpoint, move the checkpoint to the next and keep going.
+            if self.checkpoints_complete:
+                end = len(self.path)-1
+            else:
+                end = self.current_checkpoint
             
-            m = (by - ay) / (bx - ax) # slope of line between point a and b
-            b = m*(-ax) + ay # y-intercept of line
-            r = self.look_dist
-            # quadratic terms
-            A = (m*m) + 1
-            B = (2*m*(b-k)-(2*h))
-            C = ((h*h) + ((b-k)*(b-k)) - (r*r))
+            start = self.last_found_point
+            
+            for i in range(start, end):
+                # step 1: line and circle intersection
+                h, k = current_pos
+                point1 = self.path[i][:2]
+                point2 = self.path[i+1][:2]
+                ax, ay = point1[:2]
+                bx, by = point2[:2]
+                
+                m = (by - ay) / (bx - ax) # slope of line between point a and b
+                b = m*(-ax) + ay # y-intercept of line
+                r = self.look_dist
+                # quadratic terms
+                A = (m*m) + 1
+                B = (2*m*(b-k)-(2*h))
+                C = ((h*h) + ((b-k)*(b-k)) - (r*r))
 
-            discriminant = (B*B) - (4*A*C)
-            if discriminant >= 0:
-                sol1_x = (-B + math.sqrt(discriminant)) / (2*A)
-                sol1_y = m*sol1_x + b
+                discriminant = (B*B) - (4*A*C)
+                if discriminant >= 0:
+                    sol1_x = (-B + math.sqrt(discriminant)) / (2*A)
+                    sol1_y = m*sol1_x + b
 
-                sol2_x = (-B - math.sqrt(discriminant)) / (2*A)
-                sol2_y = m*sol2_x + b
+                    sol2_x = (-B - math.sqrt(discriminant)) / (2*A)
+                    sol2_y = m*sol2_x + b
 
-                sol1 = (sol1_x, sol1_y)
-                sol2 = (sol2_x, sol2_y)
+                    sol1 = (sol1_x, sol1_y)
+                    sol2 = (sol2_x, sol2_y)
 
-                minX, minY = min(ax, bx), min(ay, by)
-                maxX, maxY = max(ax, bx), max(ay, by)
-                # general check to see if either point is on the line 
-                if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) or ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
-                    if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) and ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
-                        # both solutions are within bounds, so we need to compare and decide which is better
-                        # choose based on distance to pt2
-                        sol1_distance = dist(sol1, point2)
-                        sol2_distance = dist(sol2, point2)
+                    minX, minY = min(ax, bx), min(ay, by)
+                    maxX, maxY = max(ax, bx), max(ay, by)
+                    # general check to see if either point is on the line 
+                    if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) or ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
+                        if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) and ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
+                            # both solutions are within bounds, so we need to compare and decide which is better
+                            # choose based on distance to pt2
+                            sol1_distance = dist(sol1, point2)
+                            sol2_distance = dist(sol2, point2)
 
-                        if sol1_distance < sol2_distance:
-                            goal = sol1
+                            if sol1_distance < sol2_distance:
+                                goal = sol1
+                            else:
+                                goal = sol2
                         else:
-                            goal = sol2
+                            if (minX < sol1_x < maxX) and (minY < sol1_y < maxY):
+                                # solution 1 is within bounds
+                                goal = sol1
+                            else:
+                                goal = sol2
+                        
+                    # first, check if the robot is not close to the end point in the path
+                    if dist(current_pos, self.path[len(self.path)-1]) < self.look_dist:
+                        goal = self.path[len(self.path)-1]
                     else:
-                        if (minX < sol1_x < maxX) and (minY < sol1_y < maxY):
-                            # solution 1 is within bounds
-                            goal = sol1
+                        # update last_found_point
+                        # only keep the goal if the goal point is closer to the target than our robot
+                        if dist(goal[:2], self.path[self.last_found_point+1][:2]) < dist(current_pos, self.path[self.last_found_point+1][:2]):
+                            # found point is closer to the target than we are, so we keep it
+                            goal = goal
                         else:
-                            goal = sol2
-                    
-                # first, check if the robot is not close to the end point in the path
-                if dist(current_pos, self.path[len(self.path)-1]) < self.look_dist:
-                    goal = self.path[len(self.path)-1]
-                else:
-                    # update last_found_point
-                    # only keep the goal if the goal point is closer to the target than our robot
-                    if dist(goal[:2], self.path[self.last_found_point+1][:2]) < dist(current_pos, self.path[self.last_found_point+1][:2]):
-                        # found point is closer to the target than we are, so we keep it
-                        goal = goal
-                    else:
-                        self.last_found_point = i 
+                            self.last_found_point = i 
 
-            # only if we are 80% through the path 
-            # if self.last_found_point >= int(len(self.path) * 0.8):
-            # if we are close to the finish point, regardless of what has happened, finish the path
-            if dist(current_pos, self.path[len(self.path)-1]) < self.finish_margin:
-                self.path_complete = True
+                if not self.checkpoints_complete:
+                    if (self.last_found_point + 2 >= self.current_checkpoint):
+                        # If we are done with our checkpoints,
+                        if (self.checkpoints.index(self.current_checkpoint)+1) >= len(self.checkpoints):
+                            self.checkpoints_complete = True
+                        else:
+                            # Set the current checkpoint to the next checkpoint in the checkpoints list
+                            self.current_checkpoint = self.checkpoints[self.checkpoints.index(self.current_checkpoint) + 1]
        
         return goal
 
@@ -354,11 +392,18 @@ class AutonomousController():
         self.running = True
         self.position = [0, 0]
         self.position = list(path[0][:2])
-        self.constant_fwd_folt = constant_fwd_volt
         self.path = path
 
         self.events = events
         self.event_look_dist = event_look_dist
+
+        self.dynamic_vars = {
+            "speed": constant_fwd_volt
+        }
+
+        self.waiting = False
+        self.wait_start = 0
+        self.wait_stop = 0
 
         if len(self.path[0]) == 3:
             # we know data[0] has a heading
@@ -368,7 +413,7 @@ class AutonomousController():
         self.heading = imu.heading()
 
         self.position_controller = DeltaPositioning(leftEnc, rightEnc, imu)
-        self.path_controller = PurePursuit(look_ahead_dist, finish_margin, self.path)
+        self.path_controller = PurePursuit(look_ahead_dist, finish_margin, self.path, checkpoints)
 
         self.logging = log
         if self.logging:
@@ -389,6 +434,17 @@ class AutonomousController():
             sleep(5)
             # wait for file operations :)
             sleep(100)
+
+    def kill_motors(self):
+        motors["left"]["A"].stop(BRAKE)
+        motors["left"]["B"].stop(BRAKE)
+        motors["left"]["C"].stop(BRAKE)
+        motors["left"]["D"].stop(BRAKE)
+
+        motors["right"]["A"].stop(BRAKE)
+        motors["right"]["B"].stop(BRAKE)
+        motors["right"]["C"].stop(BRAKE)
+        motors["right"]["D"].stop(BRAKE)
 
     def run(self):
         dx, dy = self.position_controller.update()
@@ -417,31 +473,47 @@ class AutonomousController():
         # heading_output = self.heading_pid.calculate(heading_to_target, self.heading)
         heading_output = self.heading_pid.calculate(0, heading_error)
 
-        constant_forwards_speed = self.constant_fwd_folt
+        constant_forwards_speed = self.dynamic_vars["speed"]
         turn_max_speed = 5
 
         heading_output = (heading_output / 2) * turn_max_speed
         if rollover:
             heading_output *= -1
 
-        motors["left"]["A"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
-        motors["left"]["B"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
-        motors["left"]["C"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
-        motors["left"]["D"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
-        # leftMotorC.spin(FORWARD, forwardVolts + turnVolts, VOLT)
-        motors["right"]["A"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
-        motors["right"]["B"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
-        motors["right"]["C"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
-        motors["right"]["D"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
+        if not self.waiting:
+            motors["left"]["A"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
+            motors["left"]["B"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
+            motors["left"]["C"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
+            motors["left"]["D"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
+            # leftMotorC.spin(FORWARD, forwardVolts + turnVolts, VOLT)
+            motors["right"]["A"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
+            motors["right"]["B"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
+            motors["right"]["C"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
+            motors["right"]["D"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
 
         for event in self.events:
             if dist(self.position, event[1]) < self.event_look_dist:
-                # commands[0][2](*commands[0][3])
-                # Call the function (at index 2) with the unpacked (*) args (at index 3)
-                
-                # ["intake", (1200, 0), motors["intake"].spin, (FORWARD, 50)],
-
-                event[2](*event[3])
+                if type(event[2]) == str:
+                    # this is a variable change
+                    # format: ["speed down", (0, 1130), "speed", 3.5]
+                    self.dynamic_vars[event[2]] = event[3]
+                elif type(event[2]) == function: #type:ignore
+                    # Call the function (at index 2) with the unpacked (*) args (at index 3)
+                    # ["intake", (1200, 0), motors["intake"].spin, (FORWARD, 50)],
+                    event[2](*event[3])
+                elif type(event[2]) == EventWaitType:
+                    # This tells us to wait
+                    # format: ["description", (x, y), EventWaitType(), duration]
+                    self.kill_motors()
+                    self.waiting = True
+                    self.wait_start = brain.timer.system()
+                    self.wait_stop = self.wait_start + event[3]
+        
+        if self.waiting:
+            if brain.timer.system() < self.wait_stop:
+                self.waiting = True
+            else:
+                self.waiting = False
 
         #time, x, y, heading, heading_to_target, point_x, point_y, point, len_points
         if self.logging:
@@ -451,8 +523,7 @@ class AutonomousController():
             hpid = str(heading_output)
             self.logger.log(time + ", " + posx + ", " + posy + ", " + str(self.heading) + ", " + str(heading_to_target) + ", " + hpid + ", " + tx + ", " + ty)
 
-        if self.path_controller.path_complete:
-            self.running = False
+        self.running = not self.path_controller.path_complete
 
         scr = brain.screen
         scr.clear_screen()
@@ -486,22 +557,16 @@ class AutonomousController():
         scr.render()
 
         # queue next run, or stop
-        if self.running:
+        if not self.path_controller.path_complete:
             brain.timer.event(self.run, self.clock_time)
         else:
-            # kill the motors
-            motors["left"]["A"].stop(BRAKE)
-            motors["left"]["B"].stop(BRAKE)
-            motors["left"]["C"].stop(BRAKE)
-            motors["left"]["D"].stop(BRAKE)
-
-            motors["right"]["A"].stop(BRAKE)
-            motors["right"]["B"].stop(BRAKE)
-            motors["right"]["C"].stop(BRAKE)
-            motors["right"]["D"].stop(BRAKE)
+            self.kill_motors()
 
             if self.logging:
                 self.logger.log("END")
+            
+            scr.clear_screen()
+            scr.render()
 
     def test(self):
         dpos = self.position_controller.update()
