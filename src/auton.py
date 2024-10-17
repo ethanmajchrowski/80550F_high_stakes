@@ -89,9 +89,6 @@ path = ((1193.69, -1193.69, 270), (993.69, -1194.01), (793.69, -1194.33), (593.7
 #     26
 # ]
 
-class EventWaitType():
-    pass
-
 # How to write events:
     # FUNCTIONS
     # ["description", (5, 5), function, ("arg1", "arg2")],
@@ -105,16 +102,15 @@ class EventWaitType():
     # and that new_value is the same type as the original.
 
     # WAIT COMMANDS
-    # ["description", (x, y), EventWaitType, duration]
+    # ["description", (x, y), "wait_function", duration, completed=False]
     # Duration is in milliseconds.
 
 events = [
-
     # ["intake", (-1200, 0), motors["intake"].spin, (FORWARD, 100, PERCENT)],
     # ["intake stop", (0, 1130), motors["intake"].stop, (BRAKE,)]
     # ["speed up", (-1200, 0), "speed", 5], # type:ignore
-    # ["speed down", (0, 1130), "speed", 3.5] # type:ignore
-    # ["wait 2s", (-1200, 0), EventWaitType(), 2000]
+    # ["speed down", (0, 1130), "speed", 3.5],
+    ["wait 2s", (-1200, 0), "wait_function", 2000, False]
 ]
 
 def dist(p1, p2):
@@ -447,17 +443,17 @@ class AutonomousController():
         motors["right"]["D"].stop(BRAKE)
 
     def run(self):
+        self.heading = imu.heading()
         dx, dy = self.position_controller.update()
         self.position[0] += dx
         self.position[1] += dy
-        target_point = self.path_controller.goal_search(self.position)
 
+        target_point = self.path_controller.goal_search(self.position)
         dx, dy = target_point[0] - self.position[0], target_point[1] - self.position[1] # type: ignore
         heading_to_target = math.degrees(math.atan2(dx, dy))
+
         if dx < 0:
             heading_to_target = 360 + heading_to_target
-
-        self.heading = imu.heading()
 
         # logic to handle the edge case of the target heading rolling over
         heading_error = self.heading - heading_to_target
@@ -470,50 +466,54 @@ class AutonomousController():
             heading_error = -360 - heading_error
             rollover = True
 
-        # heading_output = self.heading_pid.calculate(heading_to_target, self.heading)
+        # PID to drive heading_error to 0
         heading_output = self.heading_pid.calculate(0, heading_error)
 
+        # Grab constant speed from dynamic variables
         constant_forwards_speed = self.dynamic_vars["speed"]
         turn_max_speed = 5
 
+        # Do some stuff that lowers the authority of turning, no idea if this is reasonable
         heading_output = (heading_output / 2) * turn_max_speed
+        # if we rollover, fix it
         if rollover:
             heading_output *= -1
-
         if not self.waiting:
             motors["left"]["A"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
             motors["left"]["B"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
             motors["left"]["C"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
             motors["left"]["D"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
-            # leftMotorC.spin(FORWARD, forwardVolts + turnVolts, VOLT)
+
             motors["right"]["A"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
             motors["right"]["B"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
             motors["right"]["C"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
             motors["right"]["D"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
+        else:
+            if brain.timer.system() >= self.wait_stop:
+                self.waiting = False
 
         for event in self.events:
             if dist(self.position, event[1]) < self.event_look_dist:
                 if type(event[2]) == str:
-                    # this is a variable change
-                    # format: ["speed down", (0, 1130), "speed", 3.5]
-                    self.dynamic_vars[event[2]] = event[3]
+                    if event[2] == "wait_function":
+                        if not event[4]:
+                            # This tells us to wait
+                            # format: ["description", (x, y), EventWaitType(), duration, completed]
+                            self.waiting = True
+                            self.wait_stop = brain.timer.system() + event[3]
+
+                            # make sure we dont get stuck in a waiting loop
+                            event[4] = True
+
+                            self.kill_motors()
+                    else:
+                        # this is a variable change
+                        # format: ["speed down", (0, 1130), "speed", 3.5]
+                        self.dynamic_vars[event[2]] = event[3]
                 elif type(event[2]) == function: #type:ignore
                     # Call the function (at index 2) with the unpacked (*) args (at index 3)
                     # ["intake", (1200, 0), motors["intake"].spin, (FORWARD, 50)],
                     event[2](*event[3])
-                elif type(event[2]) == EventWaitType:
-                    # This tells us to wait
-                    # format: ["description", (x, y), EventWaitType(), duration]
-                    self.kill_motors()
-                    self.waiting = True
-                    self.wait_start = brain.timer.system()
-                    self.wait_stop = self.wait_start + event[3]
-        
-        if self.waiting:
-            if brain.timer.system() < self.wait_stop:
-                self.waiting = True
-            else:
-                self.waiting = False
 
         #time, x, y, heading, heading_to_target, point_x, point_y, point, len_points
         if self.logging:
