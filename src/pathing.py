@@ -1,4 +1,4 @@
-# Filename: auton.py
+# Filename: pathing.py
 # Devices & variables last updated:
 	# 2024-10-17 12:46:44.610349
 ####################
@@ -207,7 +207,7 @@ class PurePursuit():
         Returns the point along our path that is look_dist away from the robot
         and that is closest to the end of the path.
         """
-        goal = path[self.last_found_point+1][:2]
+        goal = self.path[self.last_found_point+1][:2]
 
         # Iterate over every un-crossed point in our path.
         #if we are close to the finish point, regardless of what has happened, finish the path
