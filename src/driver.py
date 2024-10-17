@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-10-14 18:32:52.676857
+	# 2024-10-17 12:46:44.611817
 ####################
 #region Devices
 from vex import *
@@ -37,6 +37,7 @@ motors = {
     "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)
 }
 
+
 # PNEUMATICS
 mogo_pneu = DigitalOut(brain.three_wire_port.c)
 mogo_pneu.set(1)
@@ -62,6 +63,25 @@ while imu.is_calibrating():
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False
+
+lmg = MotorGroup(*motors["left"].values())
+rmg = MotorGroup(*motors["right"].values())
+"""
+wheelTravel - The circumference of the driven wheels. The default is 300 mm.
+trackWidth - The track width of the drivetrain. The default is 320 mm. 
+    (distance between left and right parts of the drivetrain)
+wheelBase - The wheel base of the Drivetrain. The default is 320 mm.
+    (distance from center of front and rear wheels)
+units - A valid DistanceUnit for the units that wheelTravel, trackWidth and wheelBase are specified in. The default is MM.
+externalGearRatio - The gear ratio used to compensate drive distances if gearing is used.
+"""
+drivetrain = SmartDrive(lmg, rmg, imu)
+"""
+Over Under Settings:
+    drivetrain.set_timeout(2, SECONDS)
+    drivetrain.set_turn_constant(0.28)
+    drivetrain.set_turn_threshold(0.25)
+"""
 #endregion Devices####################
 #DO NOT CHANGE THE FOLLOWING LINE:#
 #end_1301825#
