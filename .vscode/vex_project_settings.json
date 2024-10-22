@@ -4,15 +4,15 @@
 		"json": 2
 	},
 	"project": {
-		"name": "80550F_high_stakes",
+		"name": "auton",
 		"description": "",
 		"creationDate": "4/28/2024, 1:23:04 PM",
 		"platform": "V5",
 		"language": "python",
-		"slot": 4,
+		"slot": 3,
 		"sdkVersion": "V5_1_0_1_19",
 		"python": {
-			"main": "src/pathing.py"
+			"main": "src/auton.py"
 		}
 	}
 }
