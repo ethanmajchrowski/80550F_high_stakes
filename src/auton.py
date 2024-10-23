@@ -358,7 +358,7 @@ class AutonomousHandler:
     def __init__(self, selected_filename) -> None:
         ### Load paths
         # DO NOT turn the brain off when this is running! This may corrupt the files :)
-        self.autonomous = self.read_auto("autons/{}.auto".format(selected_filename))
+        self.autonomous = self.read_auto("autons/{}.txt".format(selected_filename))
 
         ### Pathing
         # Reference the object so we can create new handlers for new paths
@@ -639,7 +639,7 @@ class AutonomousHandler:
                             # this is a variable change
                             # format: ["speed down", (0, 1130), "speed", 3.5]
                             self.dynamic_vars[event[2]] = event[3]
-                    elif type(event[2]) == function: #type:ignore
+                    elif callable(event[2]):
                         # Call the function (at index 2) with the unpacked (*) args (at index 3)
                         # ["intake", (1200, 0), motors["intake"].spin, (FORWARD, 50)],
                         event[2](*event[3])
@@ -651,7 +651,7 @@ class AutonomousHandler:
             else:
                 self.kill_motors()
 
-auton = AutonomousHandler("horseshoe")
+auton = AutonomousHandler("test")
 auton.run()
 
 # comp = Competition(driver, auton.run)
