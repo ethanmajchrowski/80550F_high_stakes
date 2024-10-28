@@ -12,7 +12,7 @@
 		"slot": 3,
 		"sdkVersion": "V5_1_0_1_19",
 		"python": {
-			"main": "src/auton.py"
+			"main": "80550F_high_stakes/src/unused/auton.py"
 		}
 	}
 }

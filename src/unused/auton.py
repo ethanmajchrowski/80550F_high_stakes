@@ -93,14 +93,18 @@ Over Under Settings:
 #DO NOT CHANGE THE FOLLOWING LINE:#
 #end_1301825#
 
-#region Helper Functions
+#region Helpers
+# ██   ██ ███████ ██      ██████  ███████ ██████  ███████ 
+# ██   ██ ██      ██      ██   ██ ██      ██   ██ ██      
+# ███████ █████   ██      ██████  █████   ██████  ███████ 
+# ██   ██ ██      ██      ██      ██      ██   ██      ██ 
+# ██   ██ ███████ ███████ ██      ███████ ██   ██ ███████ 
+
 def dist(p1, p2):
     x1, y1 = p1
     x2, y2 = p2
     return math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
-#endregion Helper Functions
-
-#region Helper Classes
+#endregion Helpers
 
 class Logger:
     def __init__(self) -> None:
