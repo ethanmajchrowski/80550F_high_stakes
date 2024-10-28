@@ -1,6 +1,6 @@
 # Filename: pathing.py
 # Devices & variables last updated:
-	# 2024-10-17 12:46:44.610349
+	# 2024-10-28 10:34:42.443104
 ####################
 #region Devices
 from vex import *

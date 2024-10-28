@@ -1,6 +1,6 @@
 # Filename: auton.py
 # Devices & variables last updated:
-	# 2024-10-17 12:46:44.610349
+	# 2024-10-28 10:34:42.427405
 ####################
 #region Devices
 from vex import *
