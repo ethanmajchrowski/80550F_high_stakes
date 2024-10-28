@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-10-28 16:26:09.630465
+	# 2024-10-28 16:31:02.947932
 ####################
 #region Devices
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
@@ -89,10 +89,6 @@ Over Under Settings:
     drivetrain.set_turn_constant(0.28)
     drivetrain.set_turn_threshold(0.25)
 """
-#endregion Devices####################
-#DO NOT CHANGE THE FOLLOWING LINE:#
-#end_1301825#
-####################
 
 class Logger:
     def __init__(self, interval: int, data: list[tuple[Callable, str]]) -> None:
@@ -149,6 +145,10 @@ class Logger:
 
     def start(self):
         Thread(self.log)
+#endregion Devices####################
+#DO NOT CHANGE THE FOLLOWING LINE:#
+#end_1301825#
+####################
 
 def switch_mogo_engaged():
     global mogo_pneu_engaged
