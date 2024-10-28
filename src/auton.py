@@ -1,8 +1,14 @@
 # Filename: auton.py
 # Devices & variables last updated:
-	# 2024-10-28 11:15:55.954525
+	# 2024-10-28 16:26:09.614366
 ####################
 #region Devices
+# ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
+# ██   ██ ██      ██    ██ ██ ██      ██      ██      
+# ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
+# ██   ██ ██       ██  ██  ██ ██      ██           ██ 
+# ██████  ███████   ████   ██  ██████ ███████ ███████ 
+
 from vex import *
 from json import load, dump
 
@@ -652,7 +658,10 @@ class AutonomousHandler:
             else:
                 self.kill_motors()
 
-auton = AutonomousHandler("test")
+with open("cfg/config.json", 'r') as f:
+    data = load(f)
+
+auton = AutonomousHandler(data["selected_auton"])
 auton.run()
 
 # comp = Competition(driver, auton.run)

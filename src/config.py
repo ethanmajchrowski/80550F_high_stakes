@@ -1,8 +1,14 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-10-28 11:15:55.975610
+	# 2024-10-28 16:26:09.630465
 ####################
 #region Devices
+# ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
+# ██   ██ ██      ██    ██ ██ ██      ██      ██      
+# ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
+# ██   ██ ██       ██  ██  ██ ██      ██           ██ 
+# ██████  ███████   ████   ██  ██████ ███████ ███████ 
+
 from vex import *
 from json import load, dump
 
@@ -121,26 +127,45 @@ class Config_GUI:
         f = open('cfg/config.json', 'r')
         data = load(f)
         f.close()
-        # with open('config.json') as f:
-        #     data = load(f)
         
+        self.selected_auton = data["selected_auton"]
+        
+        #######################################
         # All button logic
         x, y = scr.x_position(), scr.y_position()
-        if self.state == "main":
+        if self.nested_menu and (0 < x < 120) and (200 < y < 240):
+            if self.page > 0:
+                self.page -= 1
+        if self.nested_menu and (360 < x < 480) and (200 < y < 240):
+            if self.page < self.max_page:
+                self.page += 1
+
+        if self.nested_menu and (0 < y and y < 40 and 0 < x and x < 120):
+            self.state = "main"
+            self.title = "Robot Configuration"
+            self.nested_menu = False
+            self.display_list = ["Autonomous", "Controls", "Options", "Thermals"]
+        elif self.state == "main":
             if 40 < y and y < 80:
                 # row 1
                 self.state = "auton"
                 self.nested_menu = True
-        if self.nested_menu:
-            if 0 < y and y < 40 and 0 < x and x < 120:
-                self.state = "main"
-                self.nested_menu = False
-                self.display_list = ["Autonomous", "Controls", "Options", "Thermals"]
-        # if self.state == "auton":
-        #     self.title = data
-        print(x, y)
+                self.display_list = data["saved_autons"]
+                self.title = self.selected_auton
+
+                self.max_page = len(self.display_list) // 4
+                self.page = 0
+        elif self.state == "auton":
+            # button press
+            if 40 < y and y < 200:
+                # y press is within list
+                pressed_auto = ((y // 40) - 1) + (self.page * 4)
+                if pressed_auto < len(self.display_list):
+                    selected = data["saved_autons"][pressed_auto]
+                    self.selected_auton, self.title, data["selected_auton"] = selected, selected, selected                  
 
         scr.clear_screen()
+        #######################################
         # Draw all buttons
         if self.nested_menu:
             # draw back button
@@ -148,17 +173,25 @@ class Config_GUI:
             button(self.title, 120, 0, 480-120, 40)
         else:
             button(self.title, 0, 0, 480, 40)
-        for i in range(4):
+        for i in range(min(len(self.display_list), 4)):
             # list section
-            l = self.display_list[self.page*4:(self.page*4)+4]
+            if len(self.display_list) < 4:
+                l = self.display_list
+            else:
+                l = self.display_list[self.page*4:(self.page*4)+4]
             # Index
             button(i+1+(self.page*4), 0, (i+1)*40, 40, 40)
             # Title
-            button(l[i], 40, (i+1)*40, 440, 40, align="left")
+            if i < len(l):
+                button(l[i], 40, (i+1)*40, 440, 40, align="left")
         
         button("<", 0, 200, 120, 40)
         button("Page {} of {}".format(self.page+1, self.max_page+1), 120, 200, 240, 40)
         button(">", 480-120, 200, 120, 40)
+
+        # save data
+        with open("cfg/config.json", "w") as f:
+            dump(data, f)
 
         scr.render()
 
