@@ -1,9 +1,10 @@
 # Filename: pathing.py
 # Devices & variables last updated:
-	# 2024-10-28 10:34:42.443104
+	# 2024-10-28 11:15:55.978642
 ####################
 #region Devices
 from vex import *
+from json import load, dump
 
 brain = Brain()
 con = Controller()

@@ -1,9 +1,10 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-10-28 10:34:42.436638
+	# 2024-10-28 11:15:55.975610
 ####################
 #region Devices
 from vex import *
+from json import load, dump
 
 brain = Brain()
 con = Controller()
@@ -87,11 +88,83 @@ Over Under Settings:
 #end_1301825#
 ####################
 
-def main():
-    pass
+def button(text, x, y, width, height, align = "center"):
+    string_width = brain.screen.get_string_width(text)
+    string_height = brain.screen.get_string_height(text)
+        
+    brain.screen.draw_rectangle(x, y, width, height)
+    if align == "center":
+        brain.screen.print_at(text, x = (x + (width / 2)) - (string_width / 2), y = (y + (height * 0.5)) + string_height // 4)
+    if align == "left":
+        brain.screen.print_at(text, x = x+5, y = (y + (height * 0.5)) + string_height // 4)
+
+class Config_GUI:
+    def __init__(self) -> None:
+        self.state = "main" # main, auton, thermals, options
+        self.page = 0
+        self.max_page = 0
+        self.height = 40
+        self.title = "Robot Configuration"
+        self.nested_menu = False
+        self.display_list = ["Autonomous", "Controls", "Options", "Thermals"]
+
+        # initial run to draw first frame
+        self.run()
+
+    def run(self):
+        # File structure is:
+        #   /autons/testing.txt
+        #   /config.json
+        scr = brain.screen
+
+        # OS error 5?????
+        f = open('cfg/config.json', 'r')
+        data = load(f)
+        f.close()
+        # with open('config.json') as f:
+        #     data = load(f)
+        
+        # All button logic
+        x, y = scr.x_position(), scr.y_position()
+        if self.state == "main":
+            if 40 < y and y < 80:
+                # row 1
+                self.state = "auton"
+                self.nested_menu = True
+        if self.nested_menu:
+            if 0 < y and y < 40 and 0 < x and x < 120:
+                self.state = "main"
+                self.nested_menu = False
+                self.display_list = ["Autonomous", "Controls", "Options", "Thermals"]
+        # if self.state == "auton":
+        #     self.title = data
+        print(x, y)
+
+        scr.clear_screen()
+        # Draw all buttons
+        if self.nested_menu:
+            # draw back button
+            button("Back", 0, 0, 120, 40)
+            button(self.title, 120, 0, 480-120, 40)
+        else:
+            button(self.title, 0, 0, 480, 40)
+        for i in range(4):
+            # list section
+            l = self.display_list[self.page*4:(self.page*4)+4]
+            # Index
+            button(i+1+(self.page*4), 0, (i+1)*40, 40, 40)
+            # Title
+            button(l[i], 40, (i+1)*40, 440, 40, align="left")
+        
+        button("<", 0, 200, 120, 40)
+        button("Page {} of {}".format(self.page+1, self.max_page+1), 120, 200, 240, 40)
+        button(">", 480-120, 200, 120, 40)
+
+        scr.render()
 
 if brain.sdcard.is_inserted():
-    main()
+    cgui = Config_GUI()
+    brain.screen.pressed(cgui.run)
 else:
     # warn the user that there is no SD card inserted
     brain.screen.set_fill_color(Color(255, 0, 0))

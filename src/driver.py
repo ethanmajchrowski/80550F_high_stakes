@@ -1,9 +1,10 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-10-28 10:34:42.436638
+	# 2024-10-28 11:15:55.976642
 ####################
 #region Devices
 from vex import *
+from json import load, dump
 
 brain = Brain()
 con = Controller()
@@ -165,6 +166,8 @@ controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
+
+lg = Logger(1, [(brain.timer.time, "g")])
 
 while True:
     brain.screen.clear_screen()

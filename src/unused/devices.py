@@ -1,4 +1,5 @@
 from vex import *
+from json import load, dump
 
 brain = Brain()
 con = Controller()

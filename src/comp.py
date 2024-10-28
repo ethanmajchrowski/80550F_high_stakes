@@ -1,9 +1,10 @@
 # Filename: comp.py
 # Devices & variables last updated:
-	# 2024-10-28 10:34:42.436638
+	# 2024-10-28 11:15:55.954525
 ####################
 #region Devices
 from vex import *
+from json import load, dump
 
 brain = Brain()
 con = Controller()
