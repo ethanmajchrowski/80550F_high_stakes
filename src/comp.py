@@ -1,8 +1,9 @@
 # Filename: comp.py
 # Devices & variables last updated:
-	# 2024-10-28 16:31:02.943944
+	# 2024-10-28 16:58:22.052065
 ####################
 #region Devices
+calibrate_imu = True
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -64,9 +65,10 @@ rightDistance = Distance(Ports.PORT17)
 
 imu = Inertial(Ports.PORT9)
 
-imu.calibrate()
-while imu.is_calibrating(): 
-    wait(5)
+if calibrate_imu:
+    imu.calibrate()
+    while imu.is_calibrating(): 
+        wait(5)
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False
@@ -401,15 +403,23 @@ class AutonomousHandler:
         ## Position controller
         self.position_controller = DeltaPositioning(leftEnc, rightEnc, imu)
         ## Position data
-        self.position = list(self.autonomous["setup"][0])
         imu.set_heading(self.autonomous["setup"][1])
+        self.heading = imu.heading()
 
         ### Logging
         # deal with this later :)
 
         ### Variables
         self.dynamic_vars = {
-            "fwd_speed": int(12*0.8)
+            "fwd_speed": 9.6,
+            # common speeds:
+            # 25%: 3
+            # 50%: 6
+            # 60%: 7.2
+            # 75%: 9
+            # 80%: 9.6
+            # 90%: 10.8
+            "position": list(self.autonomous["setup"][0])
         }
     
     # decent settings: 
@@ -421,13 +431,18 @@ class AutonomousHandler:
     hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,"""
     def position_thread(self):
         while True:
+            scr = brain.screen
+            scr.clear_screen()
+            scr.set_font(FontType.MONO40)
+            scr.print_at(str(self.dynamic_vars["position"]), x=40, y=80)
+            scr.render()
+
             self.heading = imu.heading()
             dx, dy = self.position_controller.update()
-            self.position[0] += dx
-            self.position[1] += dy
+            self.dynamic_vars["position"][0] += dx
+            self.dynamic_vars["position"][1] += dy
 
             wait(20, MSEC)
-
     def run(self) -> None:
         """
         Call once at start of auton. This is where all the sequential commands are located.
@@ -442,6 +457,10 @@ class AutonomousHandler:
                 # rfs.append((self.path, (points, ev, chck, args), "path"))
                 if len(command) == 3:
                     # path, events, checkpoints, unpack custom settings
+                        #  (self, path, events, checkpoints=[], backwards = False,
+                        #  look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75,
+                        #  heading_authority=1, max_turn_volts = 8,
+                        #  hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
                     self.path(command[1][0], command[1][1], command[1][2], *command[1][3])
                 else:
                     command[0](*command[1])
@@ -589,20 +608,23 @@ class AutonomousHandler:
         motors["right"]["D"].stop(brake_type)
 
     def path(self, path, events, checkpoints=[], backwards = False,
-             look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75,
+             look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
              heading_authority=1, max_turn_volts = 8,
              hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,) -> None:
-        
+
+        if timeout is not None:
+            time_end = brain.timer.system() + timeout
+
         path_handler = self.path_controller(look_ahead_dist, finish_margin, path, checkpoints)
         heading_pid = MultipurposePID(hPID_KP, hPID_KD, hPID_KI, hPID_KI_MAX, hPID_MIN_OUT)
 
         done = path_handler.path_complete
         waiting = False
-        wait_stope = 0
+        wait_stop = 0
 
         while not done:
-            target_point = path_handler.goal_search(self.position)
-            dx, dy = target_point[0] - self.position[0], target_point[1] - self.position[1] # type: ignore
+            target_point = path_handler.goal_search(self.dynamic_vars["position"])
+            dx, dy = target_point[0] - self.dynamic_vars["position"][0], target_point[1] - self.dynamic_vars["position"][1] # type: ignore
             heading_to_target = math.degrees(math.atan2(dx, dy))
 
             if dx < 0:
@@ -612,6 +634,12 @@ class AutonomousHandler:
             heading_error = self.heading - heading_to_target
             rollover = False
 
+            if backwards:
+                if heading_error > 180:
+                    heading_error -= 180
+                else:
+                    heading_error += 180
+
             if heading_error > 180:
                 heading_error = 360 - heading_error
                 rollover = True
@@ -619,12 +647,6 @@ class AutonomousHandler:
                 heading_error = -360 - heading_error
                 rollover = True
 
-            # PID to drive heading_error to 0
-            if backwards:
-                if heading_error > 180:
-                    heading_error -= 180
-                else:
-                    heading_error += 180
             heading_output = heading_pid.calculate(0, heading_error)
 
             # Grab constant speed from dynamic variables
@@ -655,7 +677,7 @@ class AutonomousHandler:
                     waiting = False
 
             for event in events:
-                if dist(self.position, event[1]) < event_look_ahead_dist:
+                if dist(self.dynamic_vars["position"], event[1]) < event_look_ahead_dist:
                     if type(event[2]) == str:
                         if event[2] == "wait_function":
                             if not event[4]:
@@ -676,14 +698,18 @@ class AutonomousHandler:
                         # Call the function (at index 2) with the unpacked (*) args (at index 3)
                         # ["intake", (1200, 0), motors["intake"].spin, (FORWARD, 50)],
                         event[2](*event[3])
+
             done = path_handler.path_complete
 
-            if not path_handler.path_complete:
+            if timeout is not None:
+                if brain.timer.system() > time_end:
+                    done = True
+
+            if not done:
                 # brain.timer.event(self.run, self.clock_time)
                 sleep(20, MSEC)
             else:
                 self.kill_motors()
-
 # Select proper autonomous
 with open("cfg/config.json", 'r') as f:
     data = load(f)
@@ -710,7 +736,8 @@ def driver():
 #  ██████  ██████  ██      ██ ██      
 
 if brain.sdcard.is_inserted():
-    comp = Competition(driver, auton.run)
+    auton.run()
+    # comp = Competition(driver, auton.run)
 else:
     while True:
         brain.screen.set_cursor(0, 0)

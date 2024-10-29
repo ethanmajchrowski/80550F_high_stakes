@@ -1,8 +1,9 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-10-28 16:31:02.947932
+	# 2024-10-28 16:58:22.057575
 ####################
 #region Devices
+calibrate_imu = False
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -64,9 +65,10 @@ rightDistance = Distance(Ports.PORT17)
 
 imu = Inertial(Ports.PORT9)
 
-imu.calibrate()
-while imu.is_calibrating(): 
-    wait(5)
+if calibrate_imu:
+    imu.calibrate()
+    while imu.is_calibrating(): 
+        wait(5)
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False

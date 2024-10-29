@@ -1,3 +1,4 @@
+calibrate_imu = True
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -59,9 +60,10 @@ rightDistance = Distance(Ports.PORT17)
 
 imu = Inertial(Ports.PORT9)
 
-imu.calibrate()
-while imu.is_calibrating(): 
-    wait(5)
+if calibrate_imu:
+    imu.calibrate()
+    while imu.is_calibrating(): 
+        wait(5)
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False
