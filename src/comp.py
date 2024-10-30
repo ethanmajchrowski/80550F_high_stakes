@@ -419,9 +419,18 @@ class AutonomousHandler:
             # 75%: 9
             # 80%: 9.6
             # 90%: 10.8
-            "position": list(self.autonomous["setup"][0])
+            "position": list(self.autonomous["setup"][0]),
+            "mogo_listen": True
         }
+        self.end_time = 0
     
+    def mogo_listener(self):
+        #thread
+        while True:
+            if self.dynamic_vars["mogo_listening"]:
+                if leftDistance.object_distance() < 50 and rightDistance.object_distance() < 50:
+                    mogo_pneu.set(True)
+
     # decent settings: 
     """
     speed: 65%
@@ -433,8 +442,14 @@ class AutonomousHandler:
         while True:
             scr = brain.screen
             scr.clear_screen()
+            scr.set_cursor(1,1)
             scr.set_font(FontType.MONO40)
-            scr.print_at(str(self.dynamic_vars["position"]), x=40, y=80)
+            scr.print(str(self.dynamic_vars["position"]))
+            scr.new_line()
+            scr.print(str(brain.timer.system() / 1000))
+            scr.new_line()
+            scr.print(str(self.end_time / 1000))
+            scr.new_line()
             scr.render()
 
             self.heading = imu.heading()
@@ -471,6 +486,7 @@ class AutonomousHandler:
                 else:
                     # This is a variable of some other class.
                     setattr(command[0], command[1], command[2])
+        self.end_time = brain.timer.system()
 
     def read_auto(self, fp):
         # Setup everything we need
