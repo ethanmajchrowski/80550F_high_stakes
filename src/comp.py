@@ -393,7 +393,17 @@ class AutonomousHandler:
     def __init__(self, selected_filename) -> None:
         ### Load paths
         # DO NOT turn the brain off when this is running! This may corrupt the files :)
-        self.autonomous = self.read_auto("autons/{}.txt".format(selected_filename))
+        # self.autonomous = self.read_auto("autons/{}.txt".format(selected_filename))
+        # Import auton module
+        try:
+            auton_module = __import__("module.{}".format(selected_filename), None, None, ["run"])
+
+            self.sequence = getattr(auton_module, "run")
+            
+            gen_data = getattr(auton_module, "gen_data")
+            self.autonomous_data = gen_data()
+        except:
+            print("Auton not recognized!")
 
         ### Pathing
         # Reference the object so we can create new handlers for new paths
@@ -403,7 +413,7 @@ class AutonomousHandler:
         ## Position controller
         self.position_controller = DeltaPositioning(leftEnc, rightEnc, imu)
         ## Position data
-        imu.set_heading(self.autonomous["setup"][1])
+        imu.set_heading(self.autonomous_data["start_heading"])
         self.heading = imu.heading()
 
         ### Logging
@@ -419,11 +429,11 @@ class AutonomousHandler:
             # 75%: 9
             # 80%: 9.6
             # 90%: 10.8
-            "position": list(self.autonomous["setup"][0]),
-            "mogo_listen": True
+            "position": list(self.autonomous_data["start_pos"]),
+            "mogo_listen": False
         }
         self.end_time = 0
-    
+
     def mogo_listener(self):
         #thread
         while True:
@@ -458,159 +468,17 @@ class AutonomousHandler:
             self.dynamic_vars["position"][1] += dy
 
             wait(20, MSEC)
-    def run(self) -> None:
+
+    def run(self):
         """
         Call once at start of auton. This is where all the sequential commands are located.
         """
         # Start our positioning thread
         Thread(self.position_thread)
 
-        for command in self.autonomous["sequence"]:
-            if callable(command[0]):
-                # function, args
-                # "path" is only there if it is a path!
-                # rfs.append((self.path, (points, ev, chck, args), "path"))
-                if len(command) == 3:
-                    # path, events, checkpoints, unpack custom settings
-                        #  (self, path, events, checkpoints=[], backwards = False,
-                        #  look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75,
-                        #  heading_authority=1, max_turn_volts = 8,
-                        #  hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
-                    self.path(command[1][0], command[1][1], command[1][2], *command[1][3])
-                else:
-                    command[0](*command[1])
-            else:
-                if command[0] is None:
-                    # This is a variable under self.dynamic vars
-                    self.dynamic_vars[command[1]] = command[2]
-                else:
-                    # This is a variable of some other class.
-                    setattr(command[0], command[1], command[2])
+        self.sequence(globals())
+        
         self.end_time = brain.timer.system()
-
-    def read_auto(self, fp):
-        # Setup everything we need
-        output = dict()
-
-        with open(fp) as f:
-            data = f.readlines()
-        
-        nd = []
-        for line in data:
-            nl = line.strip()
-            nd.append(nl)
-        data = nd
-        
-        section = 0
-
-        setup = []
-        sequence = []
-        paths_n = []
-
-        t = []
-        # Split data into sections
-        for line in data:
-            t.append(line)
-            if line == "":
-                # t[1:-1] only gives us the content: title blocks and line separators are ignored
-                if section == 1: setup = t[1:-1]
-                if section == 2: sequence = t[1:-1]
-                if section == 3: paths_n = t[1:-1]
-                
-                section += 1
-                t = []
-
-        # Setup data
-        for line in setup:
-            split = line.split(" ")
-            if split[0] == "at":
-                pos = (float(split[1]), float(split[2]))
-            if split[0] == "towards":
-                heading = float(split[1])
-        output["setup"] = (pos, heading)
-        
-        # Path data
-        # Due to the format of the path (name, points, events, checkpoints) being each on a new line, we have to grab 
-        # it all at once to get it in one item per path
-        nps = []
-        for line in paths_n:
-            i = paths_n.index(line)
-            if type(eval(line)) == str:
-                # grabs from name to custom arguments
-                nps.append(paths_n[i:i+5])
-        paths = nps
-
-        # Now we have to convert the data within each path into something valid.
-        # Since it should be valid python code, we can just use eval()
-        nps = []
-        for path in paths:
-            np = []
-            for line in path:
-                np.append(eval(line))
-            nps.append(np)
-        paths = nps
-
-        # At this point, we have our paths in one item each, and the data in the path is valid.
-
-        # path[0] is the name of the path
-        # path[1] is the path point data
-        # path[2] is the events list
-        # path[3] is the checkpoints for the path
-        # Convert to dictionary for simpler grabbing
-        pd = dict()
-        for path in paths:
-            # Remove the name so that when we set the dictionary value it doesn't have a duplicate of the name
-            name = path.pop(0)
-            # print(path[2])
-            pd[name] = {
-                "points": path[0],
-                "events": path[1],
-                "checkpoints": path[2],
-                "custom_settings": path[3]
-            }
-        output["paths"] = pd
-        # print(output["paths"]["horseshoe"]["points"])
-
-        # Sequence data
-        rfs = []
-        for line in sequence:
-            split = line.split(" ")
-
-            if split[0] == "call":
-                args = eval(split[3])  
-                func = eval(split[1])
-                rfs.append((func, args))          
-
-            if split[0] == "set":
-                # set class name value
-                if split[1] == "var":
-                    # this is a "generic" variable within vars_dict
-                    name = split[2]
-                    value = eval(split[3])
-                    rfs.append((None, name, value))
-                else:
-                    # this is under some sort of class
-                    var_class = eval(split[1])
-                    name = split[2]
-                    # print(getattr(var_class, name))
-                    value = eval(split[3])
-                    rfs.append((var_class, name, value))
-            
-            if split[0] == "path":
-                p = output["paths"][split[1]]
-                points = p["points"]
-                ev = p["events"]
-                chck = p["checkpoints"]
-                args = p["custom_settings"]
-
-                command = (self.path, (points, ev, chck, args), "path")
-                rfs.append(command)
-                # Need to unpack args LATER
-                # rfs.append(tuple((self.path, tuple((points, ev, chck, *args)))))
-
-        output["sequence"] = tuple(rfs)
-        
-        return output
 
     def kill_motors(self, brake_type=BrakeType.BRAKE):
         motors["left"]["A"].stop(brake_type)
@@ -726,11 +594,13 @@ class AutonomousHandler:
                 sleep(20, MSEC)
             else:
                 self.kill_motors()
+
 # Select proper autonomous
 with open("cfg/config.json", 'r') as f:
     data = load(f)
 
 auton = AutonomousHandler(data["selected_auton"])
+print(auton.run)
 #endregion auton
 
 #region driver
