@@ -430,16 +430,19 @@ class AutonomousHandler:
             # 80%: 9.6
             # 90%: 10.8
             "position": list(self.autonomous_data["start_pos"]),
-            "mogo_listen": False
+            "mogo_listen": False,
+            "mogo_grab_tolerance": 60
         }
         self.end_time = 0
 
-    def mogo_listener(self):
+    def misc_listeners(self):
         #thread
         while True:
-            if self.dynamic_vars["mogo_listening"]:
-                if leftDistance.object_distance() < 50 and rightDistance.object_distance() < 50:
+            if self.dynamic_vars["mogo_listen"]:
+                if leftDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"] and rightDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
                     mogo_pneu.set(True)
+            
+            sleep(10, MSEC)
 
     # decent settings: 
     """
@@ -473,8 +476,8 @@ class AutonomousHandler:
         """
         Call once at start of auton. This is where all the sequential commands are located.
         """
-        # Start our positioning thread
         Thread(self.position_thread)
+        Thread(self.misc_listeners)
 
         self.sequence(globals())
         
