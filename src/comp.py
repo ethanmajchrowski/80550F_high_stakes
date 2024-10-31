@@ -432,7 +432,7 @@ class AutonomousHandler:
             # 90%: 10.8
             "position": list(self.autonomous_data["start_pos"]),
             "mogo_listen": False,
-            "intake_auto_halt"
+            "intake_auto_halt": False,
             "mogo_grab_tolerance": 60,
         }
         self.end_time = 0
@@ -443,9 +443,10 @@ class AutonomousHandler:
             if self.dynamic_vars["mogo_listen"]:
                 if leftDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"] and rightDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
                     mogo_pneu.set(True)
-            # if self.dynamic_vars["intake_auto_halt"]:
-            #     if motors["intake"].is_spinning() and :
-            #         motors["intake"].stop(COAST)
+            if self.dynamic_vars["intake_auto_halt"]:
+                if motors["intake"].is_spinning() and intakeDistance.object_distance() < 50:
+                    motors["intake"].stop(COAST)
+                    self.dynamic_vars["intake_auto_halt"] = False
             
             sleep(10, MSEC)
 
