@@ -1,9 +1,9 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-10-28 16:58:22.057575
+	# 2024-10-30 18:19:48.445589
 ####################
 #region Devices
-calibrate_imu = False
+calibrate_imu = True
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -62,6 +62,7 @@ leftEnc = motors["left"]["A"]
 rightEnc = motors["right"]["A"]
 leftDistance = Distance(Ports.PORT14)
 rightDistance = Distance(Ports.PORT17)
+intakeDistance = Distance(Ports.PORT6)
 
 imu = Inertial(Ports.PORT9)
 

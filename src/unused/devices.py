@@ -57,6 +57,7 @@ leftEnc = motors["left"]["A"]
 rightEnc = motors["right"]["A"]
 leftDistance = Distance(Ports.PORT14)
 rightDistance = Distance(Ports.PORT17)
+intakeDistance = Distance(Ports.PORT6)
 
 imu = Inertial(Ports.PORT9)
 
