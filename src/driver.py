@@ -176,8 +176,6 @@ controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
 
-lg = Logger(1, [(brain.timer.time, "g")])
-
 while True:
     brain.screen.clear_screen()
 

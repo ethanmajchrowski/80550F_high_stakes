@@ -47,14 +47,11 @@ motors = {
 
 # PNEUMATICS
 mogo_pneu = DigitalOut(brain.three_wire_port.c)
-mogo_pneu.set(1)
+mogo_pneu.set(0)
 intake_pneu = DigitalOut(brain.three_wire_port.b)
 side_scoring_a = DigitalOut(brain.three_wire_port.a)
 side_scoring_b = DigitalOut(brain.three_wire_port.d)
 elevation_pneu = DigitalOut(brain.three_wire_port.e)
-
-# wire_expander = Triport(Ports.PORT5)
-# DigitalOut(wire_expander.a)
 
 # SENSORS
 leftEnc = motors["left"]["A"]
@@ -68,7 +65,14 @@ imu = Inertial(Ports.PORT9)
 if calibrate_imu:
     imu.calibrate()
     while imu.is_calibrating(): 
+        brain.screen.clear_screen()
+        brain.screen.set_cursor(1,1)
+        brain.screen.print("Calibrating IMU...")
+        brain.screen.render()
         wait(5)
+
+brain.screen.clear_screen()
+brain.screen.render()
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False
@@ -435,8 +439,10 @@ class AutonomousHandler:
             "mogo_listen": False,
             "mogo_grab_tolerance": 60,
             # Intake
+            "intake_halt_tolerance": 60,
             "intake_auto_halt": False,
             "drop_after_auto_halt": False,
+            "raise_after_auto_halt": False,
         }
         self.end_time = 0
 
@@ -445,14 +451,16 @@ class AutonomousHandler:
         while True:
             if self.dynamic_vars["mogo_listen"]:
                 if leftDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"] and rightDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
-                    mogo_pneu.set(True)
+                    mogo_pneu.set(False)
 
             if self.dynamic_vars["intake_auto_halt"]:
-                if intakeDistance.object_distance() < 50:
+                if intakeDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
                     motors["intake"].stop(BRAKE)
 
                     if self.dynamic_vars["drop_after_auto_halt"]:
                         intake_pneu.set(False)
+                    if self.dynamic_vars["raise_after_auto_halt"]:
+                        intake_pneu.set(True)
             
             sleep(10, MSEC)
 
@@ -625,8 +633,61 @@ print(auton.run)
 # ██   ██ ██   ██ ██  ██  ██  ██      ██   ██ 
 # ██████  ██   ██ ██   ████   ███████ ██   ██ 
 
+def switch_mogo_engaged():
+    global mogo_pneu_engaged
+    mogo_pneu_engaged = not mogo_pneu_engaged
+
+def switch_mogo():
+    global mogo_pneu_engaged
+    if mogo_pneu.value() == 1 and mogo_pneu_engaged:
+        mogo_pneu_engaged = False
+
+    mogo_pneu.set(not mogo_pneu.value())
+
+def switch_intake_height():
+    intake_pneu.set(not intake_pneu.value())
+
+def toggle_side_scoring():
+    side_scoring_a.set(not side_scoring_a.value())
+    side_scoring_b.set(not side_scoring_b.value())
+
+controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
+controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
+controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
+controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
+
 def driver():
-    pass
+    while True:
+        # Movement controls
+        turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
+        forwardVolts = controls["DRIVE_FORWARD_AXIS"].position() * 0.12
+
+        # Spin motors and combine controller axes
+        motors["left"]["A"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
+        motors["left"]["B"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
+        motors["left"]["C"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
+        motors["left"]["D"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
+        # leftMotorC.spin(FORWARD, forwardVolts + turnVolts, VOLT)
+        motors["right"]["A"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
+        motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
+        motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
+        motors["right"]["D"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
+
+        # Intake Controls
+        if controls["INTAKE_IN_HOLD"].pressing():
+            motors["intake"].spin(FORWARD, 100, PERCENT)
+        elif controls["INTAKE_OUT_HOLD"].pressing():
+            motors["intake"].spin(REVERSE, 100, PERCENT)
+        else:
+            motors["intake"].stop()
+        
+        # Pneumatic Hold Controls
+
+        # Grabber sensors
+        if mogo_pneu_engaged == True:
+            if leftDistance.object_distance() < 50 and rightDistance.object_distance() < 50:
+                mogo_pneu.set(True)
+
 #endregion driver
 
 #region comp
@@ -638,12 +699,6 @@ def driver():
 
 if brain.sdcard.is_inserted():
     comp = Competition(driver, auton.run)
-    if not (comp.is_competition_switch or comp.is_field_control):
-        if brain.battery.capacity() < 15:
-            brain.screen.set_fill_color(Color(255, 255, 0))
-            brain.screen.draw_rectangle(0, 0, 480, 240)
-        else:
-            auton.run()
 else:
     while True:
         brain.screen.set_cursor(0, 0)
