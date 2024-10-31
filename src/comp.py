@@ -637,7 +637,11 @@ def driver():
 #  ██████  ██████  ██      ██ ██      
 
 if brain.sdcard.is_inserted():
-    auton.run()
+    if brain.battery.capacity() < 15:
+        brain.screen.set_fill_color(Color(255, 255, 0))
+        brain.screen.draw_rectangle(0, 0, 480, 240)
+    else:
+        auton.run()
     # comp = Competition(driver, auton.run)
 else:
     while True:
@@ -649,7 +653,7 @@ else:
             brain.screen.set_font(FontType.PROP60)
             brain.screen.print("     NO SD CARD")
             brain.screen.new_line()
-        
+
         wait(400)
 
         brain.screen.clear_screen()
