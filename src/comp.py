@@ -637,12 +637,13 @@ def driver():
 #  ██████  ██████  ██      ██ ██      
 
 if brain.sdcard.is_inserted():
-    if brain.battery.capacity() < 15:
-        brain.screen.set_fill_color(Color(255, 255, 0))
-        brain.screen.draw_rectangle(0, 0, 480, 240)
-    else:
-        auton.run()
-    # comp = Competition(driver, auton.run)
+    comp = Competition(driver, auton.run)
+    if not (comp.is_competition_switch or comp.is_field_control):
+        if brain.battery.capacity() < 15:
+            brain.screen.set_fill_color(Color(255, 255, 0))
+            brain.screen.draw_rectangle(0, 0, 480, 240)
+        else:
+            auton.run()
 else:
     while True:
         brain.screen.set_cursor(0, 0)
