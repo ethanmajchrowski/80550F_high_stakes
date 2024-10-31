@@ -45,7 +45,6 @@ motors = {
     "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)
 }
 
-
 # PNEUMATICS
 mogo_pneu = DigitalOut(brain.three_wire_port.c)
 mogo_pneu.set(1)
@@ -431,9 +430,13 @@ class AutonomousHandler:
             # 80%: 9.6
             # 90%: 10.8
             "position": list(self.autonomous_data["start_pos"]),
+            #### Thread flags
+            # Mogo
             "mogo_listen": False,
-            "intake_auto_halt": False,
             "mogo_grab_tolerance": 60,
+            # Intake
+            "intake_auto_halt": False,
+            "drop_after_auto_halt": False,
         }
         self.end_time = 0
 
@@ -443,10 +446,13 @@ class AutonomousHandler:
             if self.dynamic_vars["mogo_listen"]:
                 if leftDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"] and rightDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
                     mogo_pneu.set(True)
+
             if self.dynamic_vars["intake_auto_halt"]:
-                if motors["intake"].is_spinning() and intakeDistance.object_distance() < 50:
-                    motors["intake"].stop(COAST)
-                    self.dynamic_vars["intake_auto_halt"] = False
+                if intakeDistance.object_distance() < 50:
+                    motors["intake"].stop(BRAKE)
+
+                    if self.dynamic_vars["drop_after_auto_halt"]:
+                        intake_pneu.set(False)
             
             sleep(10, MSEC)
 
