@@ -697,11 +697,15 @@ def driver():
 # ██      ██    ██ ██  ██  ██ ██      
 #  ██████  ██████  ██      ██ ██      
 
+def no_auton():
+    pass
+
 if brain.sdcard.is_inserted():
-    # comp = Competition(driver, auton.run)
-    auton.run()
+    comp = Competition(driver, auton.run)
 else:
-    while True:
+    comp = Competition(driver, no_auton)
+
+    for i in range(5):
         brain.screen.set_cursor(0, 0)
         # warn the user that there is no SD card inserted
         brain.screen.set_fill_color(Color(255, 0, 0))
@@ -716,4 +720,5 @@ else:
         brain.screen.clear_screen()
 
         wait(400)
+    brain.screen.clear_screen()
 #endregion comp
