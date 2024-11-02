@@ -1,6 +1,11 @@
 # Filename: comp.py
 # Devices & variables last updated:
-	# 2024-10-30 18:19:48.436423
+	# 2024-11-02 09:37:38.053520
+####################
+#region Devices
+# Filename: driver.py
+# Devices & variables last updated:
+    # 2024-10-30 18:19:48.449465
 ####################
 #region Devices
 calibrate_imu = True
@@ -18,7 +23,7 @@ con = Controller()
 
 controls = {
     "DRIVE_FORWARD_AXIS":  con.axis3,
-    "DRIVE_TURN_AXIS":     con.axis4,
+    "DRIVE_TURN_AXIS":     con.axis1,
     "INTAKE_IN_HOLD":      con.buttonR1,
     "INTAKE_OUT_HOLD":     con.buttonR2,
     "INTAKE_HEIGHT_TOGGLE":con.buttonL1,
@@ -27,6 +32,7 @@ controls = {
     "AUTO_MOGO_ENGAGE_TOGGLE": con.buttonY,
     "ELEVATION_RELEASE_1": con.buttonDown,
     "ELEVATION_RELEASE_2": con.buttonLeft,
+    "AUTO_SIDE_LOADER":    con.buttonL2,
 }
 motors = {
     "left": {
@@ -45,13 +51,17 @@ motors = {
     "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)
 }
 
+
 # PNEUMATICS
 mogo_pneu = DigitalOut(brain.three_wire_port.c)
-mogo_pneu.set(0)
+
 intake_pneu = DigitalOut(brain.three_wire_port.b)
 side_scoring_a = DigitalOut(brain.three_wire_port.a)
 side_scoring_b = DigitalOut(brain.three_wire_port.d)
 elevation_pneu = DigitalOut(brain.three_wire_port.e)
+
+# wire_expander = Triport(Ports.PORT5)
+# DigitalOut(wire_expander.a)
 
 # SENSORS
 leftEnc = motors["left"]["A"]
@@ -65,17 +75,11 @@ imu = Inertial(Ports.PORT9)
 if calibrate_imu:
     imu.calibrate()
     while imu.is_calibrating(): 
-        brain.screen.clear_screen()
-        brain.screen.set_cursor(1,1)
-        brain.screen.print("Calibrating IMU...")
-        brain.screen.render()
         wait(5)
-
-brain.screen.clear_screen()
-brain.screen.render()
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False
+elevation_status = False
 
 lmg = MotorGroup(*motors["left"].values())
 rmg = MotorGroup(*motors["right"].values())
