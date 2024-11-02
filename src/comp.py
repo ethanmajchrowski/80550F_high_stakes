@@ -631,11 +631,6 @@ print(auton.run)
 #endregion auton
 
 #region driver
-# ██████  ██████  ██ ██    ██ ███████ ██████  
-# ██   ██ ██   ██ ██ ██    ██ ██      ██   ██ 
-# ██   ██ ██████  ██ ██    ██ █████   ██████  
-# ██   ██ ██   ██ ██  ██  ██  ██      ██   ██ 
-# ██████  ██   ██ ██   ████   ███████ ██   ██ 
 
 def switch_mogo_engaged():
     global mogo_pneu_engaged
@@ -643,7 +638,7 @@ def switch_mogo_engaged():
 
 def switch_mogo():
     global mogo_pneu_engaged
-    if mogo_pneu.value() == 1 and mogo_pneu_engaged:
+    if mogo_pneu.value() == 0 and mogo_pneu_engaged:
         mogo_pneu_engaged = False
 
     mogo_pneu.set(not mogo_pneu.value())
@@ -655,16 +650,23 @@ def toggle_side_scoring():
     side_scoring_a.set(not side_scoring_a.value())
     side_scoring_b.set(not side_scoring_b.value())
 
+
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
-
 def driver():
     while True:
+        brain.screen.clear_screen()
+        print(elevation_status)
+
         # Movement controls
         turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
         forwardVolts = controls["DRIVE_FORWARD_AXIS"].position() * 0.12
+        if elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() > 25:
+            forwardVolts = 6
+        elif elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() < -25:
+            forwardVolts = -6
 
         # Spin motors and combine controller axes
         motors["left"]["A"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
@@ -685,12 +687,31 @@ def driver():
         else:
             motors["intake"].stop()
         
-        # Pneumatic Hold Controls
+
+        # Elevation controls
+        if controls["ELEVATION_RELEASE_1"].pressing() and controls["ELEVATION_RELEASE_2"].pressing():
+            elevation_pneu.set(True)
+            elevation_status = True
+
+        # Side Loading
+        if controls["AUTO_SIDE_LOADER"].pressing():
+            motors["intake"].spin(FORWARD, 30, PERCENT)
+            if intakeDistance.object_distance() < 50 and brain.timer.time() > 1000:
+                brain.timer.clear()
+            if brain.timer.time() > 150 and brain.timer.time() < 1000:
+                motors["intake"].spin(REVERSE, 50, PERCENT)
 
         # Grabber sensors
         if mogo_pneu_engaged == True:
-            if leftDistance.object_distance() < 50 and rightDistance.object_distance() < 50:
-                mogo_pneu.set(True)
+            if leftDistance.object_distance() < 80 and rightDistance.object_distance() < 80:
+                mogo_pneu.set(False)
+
+        # Screen debugging
+        scr = con.screen
+        scr.clear_screen()
+        scr.set_cursor(1,1)
+
+        if mogo_pneu_engaged: scr.print("MOGO ENGAGED")
 
 #endregion driver
 
