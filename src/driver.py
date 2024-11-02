@@ -1,6 +1,43 @@
+#region VEXcode Generated Robot Configuration
+from vex import *
+import urandom
+
+# Brain should be defined by default
+brain=Brain()
+
+# Robot configuration code
+
+
+# wait for rotation sensor to fully initialize
+wait(30, MSEC)
+
+
+# Make random actually random
+def initializeRandomSeed():
+    wait(100, MSEC)
+    random = brain.battery.voltage(MV) + brain.battery.current(CurrentUnits.AMP) * 100 + brain.timer.system_high_res()
+    urandom.seed(int(random))
+      
+# Set random seed 
+initializeRandomSeed()
+
+
+def play_vexcode_sound(sound_name):
+    # Helper to make playing sounds from the V5 in VEXcode easier and
+    # keeps the code cleaner by making it clear what is happening.
+    print("VEXPlaySound:" + sound_name)
+    wait(5, MSEC)
+
+# add a small delay to make sure we don't print in the middle of the REPL header
+wait(200, MSEC)
+# clear the console to make sure we don't have the REPL in the console
+print("\033[2J")
+
+#endregion VEXcode Generated Robot Configuration
+
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-10-30 18:19:48.449465
+    # 2024-10-30 18:19:48.449465
 ####################
 #region Devices
 calibrate_imu = True
@@ -18,7 +55,7 @@ con = Controller()
 
 controls = {
     "DRIVE_FORWARD_AXIS":  con.axis3,
-    "DRIVE_TURN_AXIS":     con.axis4,
+    "DRIVE_TURN_AXIS":     con.axis1,
     "INTAKE_IN_HOLD":      con.buttonR1,
     "INTAKE_OUT_HOLD":     con.buttonR2,
     "INTAKE_HEIGHT_TOGGLE":con.buttonL1,
@@ -27,6 +64,7 @@ controls = {
     "AUTO_MOGO_ENGAGE_TOGGLE": con.buttonY,
     "ELEVATION_RELEASE_1": con.buttonDown,
     "ELEVATION_RELEASE_2": con.buttonLeft,
+    "AUTO_SIDE_LOADER":    con.buttonL2,
 }
 motors = {
     "left": {
@@ -48,7 +86,7 @@ motors = {
 
 # PNEUMATICS
 mogo_pneu = DigitalOut(brain.three_wire_port.c)
-mogo_pneu.set(1)
+
 intake_pneu = DigitalOut(brain.three_wire_port.b)
 side_scoring_a = DigitalOut(brain.three_wire_port.a)
 side_scoring_b = DigitalOut(brain.three_wire_port.d)
@@ -73,6 +111,7 @@ if calibrate_imu:
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False
+elevation_status = False
 
 lmg = MotorGroup(*motors["left"].values())
 rmg = MotorGroup(*motors["right"].values())
@@ -159,7 +198,7 @@ def switch_mogo_engaged():
 
 def switch_mogo():
     global mogo_pneu_engaged
-    if mogo_pneu.value() == 1 and mogo_pneu_engaged:
+    if mogo_pneu.value() == 0 and mogo_pneu_engaged:
         mogo_pneu_engaged = False
 
     mogo_pneu.set(not mogo_pneu.value())
@@ -171,6 +210,7 @@ def toggle_side_scoring():
     side_scoring_a.set(not side_scoring_a.value())
     side_scoring_b.set(not side_scoring_b.value())
 
+
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
@@ -178,10 +218,15 @@ controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
 
 while True:
     brain.screen.clear_screen()
+    print(elevation_status)
 
     # Movement controls
     turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
     forwardVolts = controls["DRIVE_FORWARD_AXIS"].position() * 0.12
+    if elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() > 25:
+        forwardVolts = 6
+    elif elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() < -25:
+        forwardVolts = -6
 
     # Spin motors and combine controller axes
     motors["left"]["A"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
@@ -202,12 +247,24 @@ while True:
     else:
         motors["intake"].stop()
     
-    # Pneumatic Hold Controls
+
+    # Elevation controls
+    if controls["ELEVATION_RELEASE_1"].pressing() and controls["ELEVATION_RELEASE_2"].pressing():
+        elevation_pneu.set(True)
+        elevation_status = True
+
+    # Side Loading
+    if controls["AUTO_SIDE_LOADER"].pressing():
+        motors["intake"].spin(FORWARD, 30, PERCENT)
+        if intakeDistance.object_distance() < 50 and brain.timer.time() > 1000:
+            brain.timer.clear()
+        if brain.timer.time() > 150 and brain.timer.time() < 1000:
+            motors["intake"].spin(REVERSE, 50, PERCENT)
 
     # Grabber sensors
     if mogo_pneu_engaged == True:
-        if leftDistance.object_distance() < 50 and rightDistance.object_distance() < 50:
-            mogo_pneu.set(True)
+        if leftDistance.object_distance() < 80 and rightDistance.object_distance() < 80:
+            mogo_pneu.set(False)
 
     # Screen debugging
     scr = brain.screen
@@ -217,6 +274,8 @@ while True:
     scr.print("Left distance: {}".format(leftDistance.object_distance()))
     scr.next_row()
     scr.print("Right distance: {}".format(rightDistance.object_distance()))
+    scr.next_row()
+    scr.print("Timer: {}".format(brain.timer.time()))
     scr.next_row()
 
     scr = con.screen
