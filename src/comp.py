@@ -698,8 +698,8 @@ def driver():
 #  ██████  ██████  ██      ██ ██      
 
 if brain.sdcard.is_inserted():
-    comp = Competition(driver, auton.run)
-    # auton.run()
+    # comp = Competition(driver, auton.run)
+    auton.run()
 else:
     while True:
         brain.screen.set_cursor(0, 0)
