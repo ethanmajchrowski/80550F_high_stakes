@@ -8,7 +8,7 @@
     # 2024-10-30 18:19:48.449465
 ####################
 #region Devices
-calibrate_imu = True
+calibrate_imu = False
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -192,9 +192,9 @@ while True:
     turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
     forwardVolts = controls["DRIVE_FORWARD_AXIS"].position() * 0.12
     if elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() > 25:
-        forwardVolts = 6
+        forwardVolts = 7.5
     elif elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() < -25:
-        forwardVolts = -6
+        forwardVolts = -7.5
 
     # Spin motors and combine controller axes
     motors["left"]["A"].spin(FORWARD, forwardVolts + turnVolts, VOLT)

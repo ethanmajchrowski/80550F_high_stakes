@@ -106,7 +106,7 @@ def run(main):
     motors["intake"].stop(BrakeType.COAST)
 
     path_run(controller, paths["touch_ladder"])
-    main["mogo_pneu"].set(True)
+    # main["mogo_pneu"].set(True)
     motors["intake"].spin(DirectionType.REVERSE,25,VelocityUnits.PERCENT,)
     main["sleep"](1500)
     motors["intake"].stop(BrakeType.HOLD)

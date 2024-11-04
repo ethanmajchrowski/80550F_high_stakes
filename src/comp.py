@@ -75,7 +75,14 @@ imu = Inertial(Ports.PORT9)
 if calibrate_imu:
     imu.calibrate()
     while imu.is_calibrating(): 
+        brain.screen.clear_screen()
+        brain.screen.set_cursor(1,1)
+        brain.screen.print("Calibrating IMU...")
+        brain.screen.render()
         wait(5)
+
+brain.screen.clear_screen()
+brain.screen.render()
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False
@@ -100,61 +107,6 @@ Over Under Settings:
     drivetrain.set_turn_threshold(0.25)
 """
 
-class Logger:
-    def __init__(self, interval: int, data: list[tuple[Callable, str]]) -> None:
-        """
-        Initializes the logger. The "data" list contains functions that return the data,
-        and a string to label the data. You do not need to pass time into data.
-        Interval is the mS interval between logging operations.
-        """
-        self.data = data
-        self.interval = interval
-
-        self.functions = [brain.timer.system]
-        self.labels = ["time"]
-        
-        for d in self.data:
-            self.functions.append(d[0])
-            self.labels.append(d[1])
-    
-    def setup(self):
-        # get number of existing files from info.txt
-        info_file = open("data/info.txt", "r")
-        num_files = int(info_file.read())
-        info_file.close()
-
-        # open info and increment number of files
-        f = open("data/info.txt", "w")
-        f.write(str(num_files + 1))
-        f.close()
-
-        # get latest.txt and the new file for archiving
-        recent_file = open("data/latest.txt", "r")
-        new_file = open("data/" + str(num_files) + ".txt", "w")
-
-        # open new_file to write to it
-        new_file.write(recent_file.read())
-        recent_file.close()
-        new_file.close()
-
-        # clear latest.txt
-        f = open("data/latest.txt", "w")
-        f.write(", ".join(self.labels))
-        f.close()
-
-    def log(self):
-        file = open("data/latest.txt", "a")
-        # file.write("\n" + data)
-        data = []
-        for i in self.functions:
-            data.append(i())
-        file.write("\n" + ", ".join(data))
-        file.close()
-
-        brain.timer.event(self.log, self.interval)
-
-    def start(self):
-        Thread(self.log)
 #endregion Devices####################
 #DO NOT CHANGE THE FOLLOWING LINE:#
 #end_1301825#
@@ -477,17 +429,17 @@ class AutonomousHandler:
     hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,"""
     def position_thread(self):
         while True:
-            scr = brain.screen
-            scr.clear_screen()
-            scr.set_cursor(1,1)
-            scr.set_font(FontType.MONO40)
-            scr.print(str(self.dynamic_vars["position"]))
-            scr.new_line()
-            scr.print(str(brain.timer.system() / 1000))
-            scr.new_line()
-            scr.print(str(self.end_time / 1000))
-            scr.new_line()
-            scr.render()
+            # scr = brain.screen
+            # scr.clear_screen()
+            # scr.set_cursor(1,1)
+            # scr.set_font(FontType.MONO40)
+            # scr.print(str(self.dynamic_vars["position"]))
+            # scr.new_line()
+            # scr.print(str(brain.timer.system() / 1000))
+            # scr.new_line()
+            # scr.print(str(self.end_time / 1000))
+            # scr.new_line()
+            # scr.render()
 
             self.heading = imu.heading()
             dx, dy = self.position_controller.update()
@@ -497,15 +449,21 @@ class AutonomousHandler:
             wait(20, MSEC)
 
     def run(self):
+        global driver_thread
         """
         Call once at start of auton. This is where all the sequential commands are located.
         """
-        Thread(self.position_thread)
-        Thread(self.misc_listeners)
+        t1 = Thread(self.position_thread)
+        t2 = Thread(self.misc_listeners)
 
         self.sequence(globals())
         
         self.end_time = brain.timer.system()
+
+        t1.stop()
+        t1 = None
+        t2.stop()
+        t2 = None
 
     def kill_motors(self, brake_type=BrakeType.BRAKE):
         motors["left"]["A"].stop(brake_type)
@@ -655,10 +613,10 @@ controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
+
 def driver():
     while True:
         brain.screen.clear_screen()
-        print(elevation_status)
 
         # Movement controls
         turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
@@ -722,13 +680,23 @@ def driver():
 # ██      ██    ██ ██  ██  ██ ██      
 #  ██████  ██████  ██      ██ ██      
 
+# driver_thread = None
+
 def no_auton():
     pass
 
+# def override_comp(comp):
+#     while True:
+#         if comp.is_driver_control():
+#             driver()
+#             driver_thread.stop() #type: ignore
 if brain.sdcard.is_inserted():
     comp = Competition(driver, auton.run)
+
+    # driver_thread = Thread(override_comp, (comp,))
 else:
     comp = Competition(driver, no_auton)
+    # driver_thread = Thread(override_comp, (comp,))
 
     for i in range(5):
         brain.screen.set_cursor(0, 0)
