@@ -1,36 +1,34 @@
-# set path to the path to be converted
-# converts path (tuple) from cm to mm
+import os
 import pyperclip
 
-path = (
-    (120.086,119.283),
-    (102.315,116.418),
-    (85.269,111.445),
-    (69.495,102.775),
-    (56.377,90.571),
-    (44.528,77.11),
-    (34.337,62.273),
-    (25.169,46.801),
-    (16.401,31.081),
-    (7.966,15.18),
-    (-0.632,-0.631),
-    (-9.746,-16.153),
-    (-19.655,-31.147),
-    (-30.433,-45.563),
-    (-43.097,-58.272),
-    (-56.552,-70.172),
-    (-72.506,-78.507),
-    (-89.042,-85.168),
-    (-106.723,-88.546),
-    (-121.433,-90.702),
-    (-121.433,-90.702)
-)
+def get_latest_file(download_path):
+    """Gets the most recently downloaded file in the specified directory."""
 
-path2 = []
-for x, y in path[:-1]:
-    path2.append((round(x*10, 2), round(y*10, 2)))
-path = tuple(path2)
+    files = [f for f in os.listdir(download_path) if os.path.isfile(os.path.join(download_path, f))]
+    if not files:
+        raise FileNotFoundError
+
+    latest_file = max(files, key=lambda f: os.path.getmtime(os.path.join(download_path, f)))
+    return os.path.join(download_path, latest_file)
+
+with open(get_latest_file(r"C:\Users\ethan\Downloads"), "r") as f:
+    data = f.readlines()
+
+# Cuts off the first and last lines
+data = data[1:-2] 
+nd = []
+for line in data:
+    line = line.strip().split(",")[:2]
+
+    nl = []
+    for i, num in enumerate(line):
+        num = round(float(num)*10, 2)
+        nl.append(num)
+
+    nd.append(tuple(nl))
+
+path = tuple(nd)
+
 print(path)
-
 pyperclip.copy(str(path))
 print("Copied to clipboard!")
