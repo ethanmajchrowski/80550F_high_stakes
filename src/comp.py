@@ -226,7 +226,8 @@ class PurePursuit():
                                 goal = sol2
                         
                     # first, check if the robot is not close to the end point in the path
-                    if dist(current_pos, self.path[len(self.path)-1]) < self.look_dist:
+                    distance_to_end = dist(current_pos, self.path[len(self.path)-1])
+                    if (distance_to_end < self.look_dist) and self.checkpoints_complete:
                         goal = self.path[len(self.path)-1]
                     else:
                         # update last_found_point
@@ -399,11 +400,13 @@ class AutonomousHandler:
             "intake_auto_halt": False,
             "drop_after_auto_halt": False,
             "raise_after_auto_halt": False,
+            "jam_listen": True,
         }
         self.end_time = 0
 
     def misc_listeners(self):
         #thread
+        last_intake_pos = motors['intake'].position()
         while True:
             if self.dynamic_vars["mogo_listen"]:
                 if leftDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"] and rightDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
@@ -418,6 +421,15 @@ class AutonomousHandler:
                     if self.dynamic_vars["raise_after_auto_halt"]:
                         intake_pneu.set(True)
             
+            if self.dynamic_vars["jam_listen"]:
+                if motors["intake"].is_spinning():
+                    if motors['intake'].direction() == FORWARD:
+                        pass
+                    else:
+                        pass
+                    # if motors['intake'].position()
+
+            last_intake_pos = motors['intake'].position()
             sleep(10, MSEC)
 
     # decent settings: 
@@ -429,17 +441,17 @@ class AutonomousHandler:
     hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,"""
     def position_thread(self):
         while True:
-            # scr = brain.screen
-            # scr.clear_screen()
-            # scr.set_cursor(1,1)
-            # scr.set_font(FontType.MONO40)
-            # scr.print(str(self.dynamic_vars["position"]))
-            # scr.new_line()
-            # scr.print(str(brain.timer.system() / 1000))
-            # scr.new_line()
-            # scr.print(str(self.end_time / 1000))
-            # scr.new_line()
-            # scr.render()
+            scr = brain.screen
+            scr.clear_screen()
+            scr.set_cursor(1,1)
+            scr.set_font(FontType.MONO40)
+            scr.print(str(self.dynamic_vars["position"]))
+            scr.new_line()
+            scr.print(str(brain.timer.system() / 1000))
+            scr.new_line()
+            scr.print(str(self.end_time / 1000))
+            scr.new_line()
+            scr.render()
 
             self.heading = imu.heading()
             dx, dy = self.position_controller.update()
