@@ -400,13 +400,16 @@ class AutonomousHandler:
             "intake_auto_halt": False,
             "drop_after_auto_halt": False,
             "raise_after_auto_halt": False,
-            "jam_listen": True,
+            "jam_listen": False,
         }
         self.end_time = 0
 
     def misc_listeners(self):
         #thread
-        last_intake_pos = motors['intake'].position()
+        last_intake_pos = 0
+        change_pos = 0
+        constant_ticks = 0
+
         while True:
             if self.dynamic_vars["mogo_listen"]:
                 if leftDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"] and rightDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
@@ -422,12 +425,30 @@ class AutonomousHandler:
                         intake_pneu.set(True)
             
             if self.dynamic_vars["jam_listen"]:
-                if motors["intake"].is_spinning():
-                    if motors['intake'].direction() == FORWARD:
-                        pass
+                scr = brain.screen
+                scr.clear_screen()
+                scr.set_cursor(1,1)
+                scr.set_font(FontType.MONO20)
+                scr.print(constant_ticks)
+                scr.new_line()
+                scr.print(motors["intake"].command(VelocityUnits.PERCENT))
+                scr.new_line()
+                scr.render()
+
+                if motors["intake"].command() != 0:
+                    intake_pos = motors['intake'].position()
+                    change_pos = abs(intake_pos - last_intake_pos)
+
+                    if change_pos < 0.8:
+                        constant_ticks += 1
                     else:
-                        pass
-                    # if motors['intake'].position()
+                        constant_ticks = 0
+
+                    if constant_ticks > 5:
+                        last_motor_velocity = motors["intake"].command(VelocityUnits.PERCENT)
+                        brain.timer.event(motors['intake'].spin, 200, (FORWARD, last_motor_velocity, PERCENT))
+                        motors['intake'].stop(COAST)
+                        constant_ticks = 0
 
             last_intake_pos = motors['intake'].position()
             sleep(10, MSEC)
@@ -441,17 +462,20 @@ class AutonomousHandler:
     hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,"""
     def position_thread(self):
         while True:
-            scr = brain.screen
-            scr.clear_screen()
-            scr.set_cursor(1,1)
-            scr.set_font(FontType.MONO40)
-            scr.print(str(self.dynamic_vars["position"]))
-            scr.new_line()
-            scr.print(str(brain.timer.system() / 1000))
-            scr.new_line()
-            scr.print(str(self.end_time / 1000))
-            scr.new_line()
-            scr.render()
+            # scr = brain.screen
+            # scr.clear_screen()
+            # scr.set_cursor(1,1)
+            # scr.set_font(FontType.MONO20)
+            # scr.print(str(self.dynamic_vars["position"]))
+            # scr.new_line()
+            # scr.print(str(brain.timer.system() / 1000))
+            # scr.new_line()
+            # scr.print(str(self.end_time / 1000))
+            # scr.new_line()
+            
+            # # scr.print("Change Pos: {}".format(str(self.change_pos)))
+            # # scr.new_line()
+            # scr.render()
 
             self.heading = imu.heading()
             dx, dy = self.position_controller.update()
