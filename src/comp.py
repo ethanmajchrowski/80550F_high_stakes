@@ -652,6 +652,7 @@ controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
 
 def driver():
     while True:
+        global elevation_status
         brain.screen.clear_screen()
 
         # Movement controls
@@ -704,6 +705,8 @@ def driver():
         scr = con.screen
         scr.clear_screen()
         scr.set_cursor(1,1)
+        scr.print("DRIVER")
+        # scr.render()
 
         if mogo_pneu_engaged: scr.print("MOGO ENGAGED")
 
@@ -720,6 +723,20 @@ def driver():
 
 def no_auton():
     pass
+
+def comp_test_thread():
+    while True:
+        scr = brain.screen
+        scr.clear_screen()
+        scr.set_cursor(1,1)
+        scr.print("Auton: {}".format(comp.is_autonomous()))
+        scr.new_line()
+        scr.print("Driver: {}".format(comp.is_driver_control()))
+        scr.new_line()
+        scr.print("Enabled: {}".format(comp.is_enabled()))
+        scr.new_line()
+        scr.render()
+Thread(comp_test_thread)
 
 # def override_comp(comp):
 #     while True:
