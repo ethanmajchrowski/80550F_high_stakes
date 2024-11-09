@@ -724,28 +724,14 @@ def driver():
 def no_auton():
     pass
 
-def comp_test_thread():
-    while True:
-        scr = brain.screen
-        scr.clear_screen()
-        scr.set_cursor(1,1)
-        scr.print("Auton: {}".format(comp.is_autonomous()))
-        scr.new_line()
-        scr.print("Driver: {}".format(comp.is_driver_control()))
-        scr.new_line()
-        scr.print("Enabled: {}".format(comp.is_enabled()))
-        scr.new_line()
-        scr.render()
-Thread(comp_test_thread)
-
 # def override_comp(comp):
 #     while True:
 #         if comp.is_driver_control():
 #             driver()
 #             driver_thread.stop() #type: ignore
 if brain.sdcard.is_inserted():
-    # comp = Competition(driver, auton.run)
-    auton.run()
+    comp = Competition(driver, auton.run)
+    # auton.run()
 
     # driver_thread = Thread(override_comp, (comp,))
 else:
