@@ -221,6 +221,18 @@ class Config_GUI:
 
                 self.max_page = len(self.display_list) // 4
                 self.page = 0
+            if 80 < y and y < 120:
+                # row 2
+                self.state = "controls"
+                self.nested_menu = True
+                self.title = "Controls"
+
+            # if 120 < y and y < 160:
+            #     self.state = "options"
+            #     self.nested_menu = True
+            #     self.title = "Options"
+            #     self.display_list = data['config']
+
         elif self.state == "auton":
             # button press
             if 40 < y and y < 200:
@@ -229,6 +241,8 @@ class Config_GUI:
                 if pressed_auto < len(self.display_list):
                     selected = data["saved_autons"][pressed_auto]
                     self.selected_auton, self.title, data["selected_auton"] = selected, selected, selected                  
+        # elif self.state == "options":
+        #     # Options menu
 
         scr.clear_screen()
         #######################################
