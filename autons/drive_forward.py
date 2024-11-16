@@ -15,6 +15,8 @@ def path_run(controller, path):
     controller.path(path["points"], path["events"], path["checkpoints"], *path["custom_args"])
 
 def run(main):
+    paths = gen_paths(main)
+
     # Refereneces for easier access
     # Global Types
     BrakeType = main["BrakeType"]

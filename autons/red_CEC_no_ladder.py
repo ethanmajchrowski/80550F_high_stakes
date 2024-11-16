@@ -38,7 +38,7 @@ def gen_paths(main):
                 "custom_args": (False,)
             },
             "touch_ladder": {
-                "points": ((-614.0, 1174.0), (-623.4, 1034.34), (-634.51, 894.82), (-626.37, 755.35), (-584.32, 622.2), (-516.84, 499.71), (-433.34, 387.44), (-300, 240)),
+                "points": ((-614.0, 1174.0), (-623.4, 1034.34), (-634.51, 894.82), (-626.37, 755.35), (-584.32, 622.2), (-516.84, 499.71), (-433.34, 387.44)),
                 "events": [],
                 "checkpoints": [],
                 "custom_args": (True,)
@@ -103,13 +103,13 @@ def run(main):
     # motors["intake"].spin(DirectionType.FORWARD,100,VelocityUnits.PERCENT)
     path_run(controller, paths["fill_mogo"])
     main["sleep"](1000)
-    motors["intake"].stop(BrakeType.COAST)
+    motors["intake"].spin(DirectionType.REVERSE, 100, VelocityUnits.PERCENT)
 
-    path_run(controller, paths["touch_ladder"])
-    main["mogo_pneu"].set(True)
-    motors["intake"].spin(DirectionType.REVERSE,25,VelocityUnits.PERCENT,)
-    main["sleep"](1500)
-    motors["intake"].stop(BrakeType.HOLD)
+    # path_run(controller, paths["touch_ladder"])
+    # main["mogo_pneu"].set(True)
+    # motors["intake"].spin(DirectionType.REVERSE,25,VelocityUnits.PERCENT,)
+    # main["sleep"](1500)
+    # motors["intake"].stop(BrakeType.HOLD)
 
     # # drivetrain.turn_for(TurnType.RIGHT, 15, RotationUnits.DEG, 60, VelocityUnits.PERCENT)
     # # main["sleep"](100)
