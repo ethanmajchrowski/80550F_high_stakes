@@ -215,8 +215,3 @@ def run(main):
     main["elevation_pneu"].set(True)
     controller.dynamic_vars["fwd_speed"] = 7.5
     path_run(controller, paths["elevate"])
-
-
-    
-    
-    
