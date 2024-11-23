@@ -61,6 +61,7 @@ def run(main):
     controller = main["auton"]
     drivetrain = main["drivetrain"]
 
+    # Velocity for mogo rush
     controller.dynamic_vars["fwd_speed"] = 4
     main["mogo_pneu"].set(True)
     path_run(controller, paths["mogo_rush"])

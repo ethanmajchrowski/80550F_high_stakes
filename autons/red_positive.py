@@ -74,11 +74,11 @@ def run(main):
     controller.dynamic_vars["intake_auto_halt"] = True 
     motors["intake"].spin(DirectionType.FORWARD, 50, VelocityUnits.PERCENT)
     path_run(controller, paths["ring_2"])
-    main["intake_pneu"].set(False)
     main["sleep"](200)
     main["mogo_pneu"].set(True)
     controller.dynamic_vars["fwd_speed"] = 4.5
     path_run(controller, paths["mogo_2"])
+    main["intake_pneu"].set(False)
     controller.dynamic_vars["intake_auto_halt"] = False 
     main["mogo_pneu"].set(False)
     motors["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
