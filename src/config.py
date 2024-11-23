@@ -180,6 +180,22 @@ class Config_GUI:
         self.nested_menu = False
         self.display_list = ["Autonomous", "Controls", "Options", "Thermals"]
 
+        self.data = data = {
+            "autons": {
+                "selected": "none",
+                "options": ["none", "right", "left", "2", "3"]
+            },
+            "config": {
+                "boolean option1": True,
+                "boolean option2": True,
+                "boolean option3": True,
+                "boolean option4": True,
+                "multi options": {
+                    "selected": "1",
+                    "options": ["1", "2", "3"]
+                }
+            }
+        }
         # initial run to draw first frame
         self.run()
 
@@ -190,11 +206,11 @@ class Config_GUI:
         scr = brain.screen
 
         # OS error 5?????
-        f = open('cfg/config.json', 'r')
-        data = load(f)
-        f.close()
+        # f = open('cfg/config.json', 'r')
+        # data = load(f)
+        # f.close()
         
-        self.selected_auton = data["selected_auton"]
+        self.selected_auton = self.data["autons"]["selected"]
         
         #######################################
         # All button logic
@@ -211,12 +227,14 @@ class Config_GUI:
             self.title = "Robot Configuration"
             self.nested_menu = False
             self.display_list = ["Autonomous", "Controls", "Options", "Thermals"]
+            self.max_page = 0
+            self.page = 0
         elif self.state == "main":
             if 40 < y and y < 80:
                 # row 1
                 self.state = "auton"
                 self.nested_menu = True
-                self.display_list = data["saved_autons"]
+                self.display_list = self.data["autons"]["options"]
                 self.title = self.selected_auton
 
                 self.max_page = len(self.display_list) // 4
@@ -227,11 +245,29 @@ class Config_GUI:
                 self.nested_menu = True
                 self.title = "Controls"
 
-            # if 120 < y and y < 160:
-            #     self.state = "options"
-            #     self.nested_menu = True
-            #     self.title = "Options"
-            #     self.display_list = data['config']
+            if 120 < y and y < 160:
+                self.state = "options"
+                self.nested_menu = True
+                self.title = "Options"
+                self.display_list = list(self.data["config"].keys())
+
+                self.page = 0
+                self.max_page = len(self.display_list) // 4
+            
+            if 160 < y and y < 200:
+                self.state = "thermals"
+                self.nested_menu = True
+                self.title = "Thermals"
+                # combine motors dict into one list
+                self.display_list = []
+                for key in motors.keys():
+                    if type(motors[key]) == dict:
+                        # print(motors[key].values())
+                        for motor in list(motors[key].values()):
+                            self.display_list.append(motor)
+                    else:
+                        self.display_list.append(motors[key])
+                # print(self.display_list)
 
         elif self.state == "auton":
             # button press
@@ -239,10 +275,28 @@ class Config_GUI:
                 # y press is within list
                 pressed_auto = ((y // 40) - 1) + (self.page * 4)
                 if pressed_auto < len(self.display_list):
-                    selected = data["saved_autons"][pressed_auto]
-                    self.selected_auton, self.title, data["selected_auton"] = selected, selected, selected                  
-        # elif self.state == "options":
-        #     # Options menu
+                    selected = self.data["autons"]["options"][pressed_auto]
+                    self.selected_auton, self.title, self.data["autons"]["selected"] = selected, selected, selected                  
+        elif self.state == "options":
+            # Options menu
+            if 40 < y and y < 200:
+                pressed_index = ((y // 40)-1)+(self.page*4)
+
+                if pressed_index < len(self.display_list):
+                    key = self.display_list[pressed_index]
+                    key_type = type(self.data['config'][key])
+                    if key_type == bool:
+                        self.data['config'][key] = not self.data['config'][key]
+                    if key_type == dict:
+                        options_list = self.data['config'][key]['options']
+                        selected_index = options_list.index(self.data['config'][key]['selected'])
+                        
+                        if selected_index == len(options_list) - 1:
+                            new_index = 0
+                        else:
+                            new_index = selected_index + 1
+                        
+                        self.data['config'][key]['selected'] = options_list[new_index]
 
         scr.clear_screen()
         #######################################
@@ -253,25 +307,42 @@ class Config_GUI:
             button(self.title, 120, 0, 480-120, 40)
         else:
             button(self.title, 0, 0, 480, 40)
+        
+        # list section
+        if len(self.display_list) < 4:
+            l = self.display_list
+        else:
+            l = self.display_list[self.page*4:(self.page*4)+4]
+        
         for i in range(min(len(self.display_list), 4)):
-            # list section
-            if len(self.display_list) < 4:
-                l = self.display_list
-            else:
-                l = self.display_list[self.page*4:(self.page*4)+4]
-            # Index
+            # Index (number next to button)
             button(i+1+(self.page*4), 0, (i+1)*40, 40, 40)
             # Title
             if i < len(l):
                 button(l[i], 40, (i+1)*40, 440, 40, align="left")
+            # If options, we want to show the current option
+            if self.state == 'options':
+                try:
+                    key = l[i]
+                    key_type = type(self.data['config'][key])
+                    if key_type == dict:
+                        data_title = self.data['config'][key]['selected']
+                    if key_type == bool:
+                        data_title = self.data['config'][key]
+                    
+                    strw = brain.screen.get_string_width(data_title)
+                    strw = max(strw, 40) # if strw is less than 40 set it to 40
+                    button(data_title, 480-(strw+10), (i+1)*40, strw+10, 40)
+                except:
+                    pass
         
         button("<", 0, 200, 120, 40)
         button("Page {} of {}".format(self.page+1, self.max_page+1), 120, 200, 240, 40)
         button(">", 480-120, 200, 120, 40)
 
         # save data
-        with open("cfg/config.json", "w") as f:
-            dump(data, f)
+        # with open("cfg/config.json", "w") as f:
+        #     dump(data, f)
 
         scr.render()
 
