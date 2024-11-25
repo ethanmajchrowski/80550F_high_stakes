@@ -1,16 +1,16 @@
 {
 	"extension": {
-		"version": "0.5.0",
+		"version": "0.6.0",
 		"json": 2
 	},
 	"project": {
 		"name": "config",
 		"description": "",
-		"creationDate": "4/28/2024, 1:23:04 PM",
+		"creationDate": "Mon, 25 Nov 2024 15:41:03 GMT",
 		"platform": "V5",
 		"language": "python",
 		"slot": 3,
-		"sdkVersion": "V5_1_0_1_19",
+		"sdkVersion": "V5_1_0_1_25",
 		"python": {
 			"main": "src/config.py"
 		}
