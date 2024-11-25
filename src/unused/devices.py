@@ -43,7 +43,9 @@ motors = {
         "C": Motor(Ports.PORT9, GearSetting.RATIO_6_1), # front
         "D": Motor(Ports.PORT20, GearSetting.RATIO_18_1, True)
     },
-    "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)
+    "misc": {
+        "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)   
+    }
 }
 
 

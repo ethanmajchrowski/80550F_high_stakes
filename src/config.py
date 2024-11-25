@@ -1,6 +1,6 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-11-02 09:37:38.053520
+	# 2024-11-25 08:35:19.156669
 ####################
 #region Devices
 # Filename: driver.py
@@ -48,7 +48,9 @@ motors = {
         "C": Motor(Ports.PORT9, GearSetting.RATIO_6_1), # front
         "D": Motor(Ports.PORT20, GearSetting.RATIO_18_1, True)
     },
-    "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)
+    "misc": {
+        "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)   
+    }
 }
 
 

@@ -124,17 +124,17 @@ def run(main):
     controller = main["auton"]
     drivetrain = main["drivetrain"]
 
-    motors["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     main["sleep"](500)
-    motors["intake"].stop(BrakeType.COAST)
+    motors["misc"]["intake"].stop(BrakeType.COAST)
     main["sleep"](100)
 
     controller.dynamic_vars["intake_auto_halt"] = True
     controller.dynamic_vars["fwd_speed"] = 5.5
-    motors["intake"].spin(DirectionType.FORWARD, 40, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.FORWARD, 40, VelocityUnits.PERCENT)
     path_run(controller, paths["ring_1"])
     main["mogo_pneu"].set(True)
-    motors["intake"].stop()
+    motors["misc"]["intake"].stop()
     main["sleep"](100)
 
     controller.dynamic_vars["mogo_listen"] = True
@@ -143,21 +143,21 @@ def run(main):
     main["mogo_pneu"].set(False)
 
     controller.dynamic_vars["intake_auto_halt"] = False
-    motors["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     controller.dynamic_vars["fwd_speed"] = 3.5
     main["sleep"](100)
     path_run(controller, paths["bottom_red_rings"])
     controller.dynamic_vars["mogo_listen"] = False
     main["sleep"](100)
     path_run(controller, paths["score_first_mogo"])
-    motors["intake"].spin(DirectionType.REVERSE, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.REVERSE, 100, VelocityUnits.PERCENT)
     controller.dynamic_vars["fwd_speed"] = 5.5
     main["sleep"](100)
     main["mogo_pneu"].set(True)
     main["sleep"](300)
-    motors["intake"].stop()
+    motors["misc"]["intake"].stop()
     
-    motors["intake"].spin(DirectionType.FORWARD, 40, VelocityUnits.PERCENT)    
+    motors["misc"]["intake"].spin(DirectionType.FORWARD, 40, VelocityUnits.PERCENT)    
     controller.dynamic_vars["intake_auto_halt"] = True    
     path_run(controller, paths["drive_second_mogo"])
     controller.dynamic_vars["mogo_listen"] = True 
@@ -167,23 +167,23 @@ def run(main):
     main["mogo_pneu"].set(False)
     controller.dynamic_vars["intake_auto_halt"] = False  
     
-    motors["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     path_run(controller, paths["top_red_rings"])    
     controller.dynamic_vars["mogo_listen"] = False 
     path_run(controller, paths["top_mogo"])
-    motors["intake"].spin(DirectionType.REVERSE, 20, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.REVERSE, 20, VelocityUnits.PERCENT)
     main["mogo_pneu"].set(True)
     main["sleep"](300)
-    motors["intake"].stop()
+    motors["misc"]["intake"].stop()
     #controller.dynamic_vars["position"] = [-1370, 1480]
 
     controller.dynamic_vars["intake_auto_halt"] = True      
-    motors["intake"].spin(DirectionType.FORWARD, 60, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.FORWARD, 60, VelocityUnits.PERCENT)
     path_run(controller, paths["ring_3"])
     controller.dynamic_vars["intake_auto_halt"] = False      
-    #motors["intake"].spin(DirectionType.FORWARD, 20, VelocityUnits.PERCENT)
+    #motors["misc"]["intake"].spin(DirectionType.FORWARD, 20, VelocityUnits.PERCENT)
     #main["sleep"](500)
-    #motors["intake"].spin(DirectionType.REVERSE, 20, VelocityUnits.PERCENT)
+    #motors["misc"]["intake"].spin(DirectionType.REVERSE, 20, VelocityUnits.PERCENT)
     #main["sleep"](1000)
     #path_run(controller, paths["side_stake"])
     #main["side_scoring_a"].set(True)
@@ -193,7 +193,7 @@ def run(main):
     #main["side_scoring_b"].set(False)
 
     controller.dynamic_vars["fwd_speed"] = 5.5
-    motors["intake"].spin(DirectionType.FORWARD, 60, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.FORWARD, 60, VelocityUnits.PERCENT)
     controller.dynamic_vars["intake_auto_halt"] = True      
     path_run(controller, paths["ring_4"])
     drivetrain.drive(DirectionType.REVERSE, 50, VelocityUnits.PERCENT)
@@ -206,12 +206,12 @@ def run(main):
     main["sleep"](100)
     controller.dynamic_vars["intake_auto_halt"] = False      
     
-    motors["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     main["sleep"](100)
     path_run(controller, paths["fill_mogo_3"])
     path_run(controller, paths["score_mogo_3"])
     main["mogo_pneu"].set(True)
-    motors["intake"].spin(DirectionType.REVERSE, 20, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.REVERSE, 20, VelocityUnits.PERCENT)
     main["elevation_pneu"].set(True)
     controller.dynamic_vars["fwd_speed"] = 7.5
     path_run(controller, paths["elevate"])

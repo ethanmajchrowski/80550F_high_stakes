@@ -69,14 +69,14 @@ def run(main):
 
     path_run(controller, paths["side_stake_align"])
     
-    motors["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     main["sleep"](800)
-    motors["intake"].stop(BrakeType.COAST)
+    motors["misc"]["intake"].stop(BrakeType.COAST)
 
     # # Prep for reverse from alliance stake
     controller.dynamic_vars["position"] = [1570, 50]
     main["intake_pneu"].set(True,)
-    motors["intake"].spin(DirectionType.FORWARD,75,VelocityUnits.PERCENT,)
+    motors["misc"]["intake"].spin(DirectionType.FORWARD,75,VelocityUnits.PERCENT,)
     controller.dynamic_vars["fwd_speed"] = 5
     controller.dynamic_vars["intake_auto_halt"] = True
     controller.dynamic_vars["drop_after_auto_halt"] = False
@@ -86,7 +86,7 @@ def run(main):
     path_run(controller, paths["mogo_align"])
     controller.dynamic_vars["position"] = [1200, 1000]
     # # Stop the intake in the case it didnt automatically
-    motors["intake"].stop(BrakeType.COAST)
+    motors["misc"]["intake"].stop(BrakeType.COAST)
 
     # # Prep to grab the pneumatic
     main["mogo_pneu"].set(True)
@@ -100,16 +100,16 @@ def run(main):
     # # Start intaking to load the blue disc
     controller.dynamic_vars["intake_auto_halt"] = False
     main["intake_pneu"].set(False)
-    # motors["intake"].spin(DirectionType.FORWARD,100,VelocityUnits.PERCENT)
+    # motors["misc"]["intake"].spin(DirectionType.FORWARD,100,VelocityUnits.PERCENT)
     path_run(controller, paths["fill_mogo"])
     main["sleep"](1000)
-    motors["intake"].spin(DirectionType.REVERSE, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.REVERSE, 100, VelocityUnits.PERCENT)
 
     # path_run(controller, paths["touch_ladder"])
     # # main["mogo_pneu"].set(True)
-    # motors["intake"].spin(DirectionType.REVERSE,25,VelocityUnits.PERCENT,)
+    # motors["misc"]["intake"].spin(DirectionType.REVERSE,25,VelocityUnits.PERCENT,)
     # main["sleep"](1500)
-    # motors["intake"].stop(BrakeType.HOLD)
+    # motors["misc"]["intake"].stop(BrakeType.HOLD)
 
 
     # # drivetrain.turn_for(TurnType.RIGHT, 15, RotationUnits.DEG, 60, VelocityUnits.PERCENT)

@@ -29,5 +29,5 @@ def run(main):
     controller = main["auton"]
     drivetrain = main["drivetrain"]
 
-    motors['intake'].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     main["sleep"](1000000)

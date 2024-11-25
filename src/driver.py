@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-11-02 09:37:38.085010
+	# 2024-11-25 08:35:19.172205
 ####################
 #region Devices
 # Filename: driver.py
@@ -8,7 +8,7 @@
     # 2024-10-30 18:19:48.449465
 ####################
 #region Devices
-calibrate_imu = False
+calibrate_imu = True
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -48,7 +48,9 @@ motors = {
         "C": Motor(Ports.PORT9, GearSetting.RATIO_6_1), # front
         "D": Motor(Ports.PORT20, GearSetting.RATIO_18_1, True)
     },
-    "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)
+    "misc": {
+        "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)   
+    }
 }
 
 

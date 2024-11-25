@@ -41,7 +41,7 @@ def run(main):
     path_run(controller, paths["mogo_rush"])
     main["mogo_pneu"].set(True)
     main["sleep"](100)
-    motors["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
 
     
     
