@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-11-25 08:35:19.172205
+	# 2024-11-25 09:05:04.100356
 ####################
 #region Devices
 # Filename: driver.py
@@ -39,14 +39,12 @@ motors = {
         "A": Motor(Ports.PORT12, GearSetting.RATIO_6_1), # stacked top
         "B": Motor(Ports.PORT11, GearSetting.RATIO_6_1, True), # stacked bottom
         "C": Motor(Ports.PORT15, GearSetting.RATIO_6_1, True), # front
-        "D": Motor(Ports.PORT13, GearSetting.RATIO_18_1) # 5.5w
     },
     "right": {
         # D motor is 5.5w
         "A": Motor(Ports.PORT16, GearSetting.RATIO_6_1, True), # stacked top
         "B": Motor(Ports.PORT18, GearSetting.RATIO_6_1), # stacked bottom
         "C": Motor(Ports.PORT9, GearSetting.RATIO_6_1), # front
-        "D": Motor(Ports.PORT20, GearSetting.RATIO_18_1, True)
     },
     "misc": {
         "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)   
@@ -202,12 +200,10 @@ while True:
     motors["left"]["A"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
     motors["left"]["B"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
     motors["left"]["C"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
-    motors["left"]["D"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
     # leftMotorC.spin(FORWARD, forwardVolts + turnVolts, VOLT)
     motors["right"]["A"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
     motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
     motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
-    motors["right"]["D"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
 
     # Intake Controls
     if controls["INTAKE_IN_HOLD"].pressing():

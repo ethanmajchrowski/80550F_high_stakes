@@ -1,6 +1,6 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-11-25 08:35:19.156669
+	# 2024-11-25 09:05:04.099182
 ####################
 #region Devices
 # Filename: driver.py
@@ -39,14 +39,12 @@ motors = {
         "A": Motor(Ports.PORT12, GearSetting.RATIO_6_1), # stacked top
         "B": Motor(Ports.PORT11, GearSetting.RATIO_6_1, True), # stacked bottom
         "C": Motor(Ports.PORT15, GearSetting.RATIO_6_1, True), # front
-        "D": Motor(Ports.PORT13, GearSetting.RATIO_18_1) # 5.5w
     },
     "right": {
         # D motor is 5.5w
         "A": Motor(Ports.PORT16, GearSetting.RATIO_6_1, True), # stacked top
         "B": Motor(Ports.PORT18, GearSetting.RATIO_6_1), # stacked bottom
         "C": Motor(Ports.PORT9, GearSetting.RATIO_6_1), # front
-        "D": Motor(Ports.PORT20, GearSetting.RATIO_18_1, True)
     },
     "misc": {
         "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)   
@@ -109,13 +107,13 @@ class Logger:
         and a string to label the data. You do not need to pass time into data.
         Interval is the mS interval between logging operations.
         """
-        data = data
+        self.data = data
         self.interval = interval
 
         self.functions = [brain.timer.system]
         self.labels = ["time"]
         
-        for d in data:
+        for d in self.data:
             self.functions.append(d[0])
             self.labels.append(d[1])
     
