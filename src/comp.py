@@ -467,7 +467,7 @@ class AutonomousHandler:
 
             if self.dynamic_vars["intake_auto_halt"]:
                 if intakeDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
-                    motors["intake"].stop(BRAKE)
+                    motors["misc"]["intake"].stop(BRAKE)
 
                     if self.dynamic_vars["drop_after_auto_halt"]:
                         intake_pneu.set(False)
@@ -481,12 +481,12 @@ class AutonomousHandler:
                 scr.set_font(FontType.MONO20)
                 scr.print(constant_ticks)
                 scr.new_line()
-                scr.print(motors["intake"].command(VelocityUnits.PERCENT))
+                scr.print(motors["misc"]["intake"].command(VelocityUnits.PERCENT))
                 scr.new_line()
                 scr.render()
 
-                if motors["intake"].command() != 0:
-                    intake_pos = motors['intake'].position()
+                if motors["misc"]["intake"].command() != 0:
+                    intake_pos = motors["misc"]["intake"].position()
                     change_pos = abs(intake_pos - last_intake_pos)
 
                     if change_pos < 0.8:
@@ -495,12 +495,12 @@ class AutonomousHandler:
                         constant_ticks = 0
 
                     if constant_ticks > 5:
-                        last_motor_velocity = motors["intake"].command(VelocityUnits.PERCENT)
-                        brain.timer.event(motors['intake'].spin, 200, (FORWARD, last_motor_velocity, PERCENT))
-                        motors['intake'].stop(COAST)
+                        last_motor_velocity = motors["misc"]["intake"].command(VelocityUnits.PERCENT)
+                        brain.timer.event(motors["misc"]["intake"].spin, 200, (FORWARD, last_motor_velocity, PERCENT))
+                        motors["misc"]["intake"].stop(COAST)
                         constant_ticks = 0
 
-            last_intake_pos = motors['intake'].position()
+            last_intake_pos = motors["misc"]["intake"].position()
             sleep(10, MSEC)
 
     # decent settings: 
@@ -651,7 +651,7 @@ class AutonomousHandler:
                             self.dynamic_vars[event[2]] = event[3]
                     elif callable(event[2]):
                         # Call the function (at index 2) with the unpacked (*) args (at index 3)
-                        # ["intake", (1200, 0), motors["intake"].spin, (FORWARD, 50)],
+                        # ["intake", (1200, 0), motors["misc"]["intake"].spin, (FORWARD, 50)],
                         event[2](*event[3])
 
             done = path_handler.path_complete
@@ -726,11 +726,11 @@ def driver():
 
         # Intake Controls
         if controls["INTAKE_IN_HOLD"].pressing():
-            motors["intake"].spin(FORWARD, 100, PERCENT)
+            motors["misc"]["intake"].spin(FORWARD, 100, PERCENT)
         elif controls["INTAKE_OUT_HOLD"].pressing():
-            motors["intake"].spin(REVERSE, 100, PERCENT)
+            motors["misc"]["intake"].spin(REVERSE, 100, PERCENT)
         else:
-            motors["intake"].stop()
+            motors["misc"]["intake"].stop()
         
 
         # Elevation controls
@@ -740,11 +740,11 @@ def driver():
 
         # Side Loading
         if controls["AUTO_SIDE_LOADER"].pressing():
-            motors["intake"].spin(FORWARD, 30, PERCENT)
+            motors["misc"]["intake"].spin(FORWARD, 30, PERCENT)
             if intakeDistance.object_distance() < 50 and brain.timer.time() > 1000:
                 brain.timer.clear()
             if brain.timer.time() > 150 and brain.timer.time() < 1000:
-                motors["intake"].spin(REVERSE, 50, PERCENT)
+                motors["misc"]["intake"].spin(REVERSE, 50, PERCENT)
 
         # Grabber sensors
         if mogo_pneu_engaged == True:

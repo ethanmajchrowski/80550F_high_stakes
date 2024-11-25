@@ -211,11 +211,11 @@ while True:
 
     # Intake Controls
     if controls["INTAKE_IN_HOLD"].pressing():
-        motors["intake"].spin(FORWARD, 100, PERCENT)
+        motors["misc"]["intake"].spin(FORWARD, 100, PERCENT)
     elif controls["INTAKE_OUT_HOLD"].pressing():
-        motors["intake"].spin(REVERSE, 100, PERCENT)
+        motors["misc"]["intake"].spin(REVERSE, 100, PERCENT)
     else:
-        motors["intake"].stop()
+        motors["misc"]["intake"].stop()
     
 
     # Elevation controls
@@ -225,11 +225,11 @@ while True:
 
     # Side Loading
     if controls["AUTO_SIDE_LOADER"].pressing():
-        motors["intake"].spin(FORWARD, 30, PERCENT)
+        motors["misc"]["intake"].spin(FORWARD, 30, PERCENT)
         if intakeDistance.object_distance() < 50 and brain.timer.time() > 1000:
             brain.timer.clear()
         if brain.timer.time() > 150 and brain.timer.time() < 1000:
-            motors["intake"].spin(REVERSE, 50, PERCENT)
+            motors["misc"]["intake"].spin(REVERSE, 50, PERCENT)
 
     # Grabber sensors
     if mogo_pneu_engaged == True:
