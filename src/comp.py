@@ -717,11 +717,14 @@ def driver():
 
         # Intake Controls
         if controls["INTAKE_IN_HOLD"].pressing():
-            motors["misc"]["intake"].spin(FORWARD, 100, PERCENT)
+            motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
+            motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
         elif controls["INTAKE_OUT_HOLD"].pressing():
-            motors["misc"]["intake"].spin(REVERSE, 100, PERCENT)
+            motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
+            motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
         else:
-            motors["misc"]["intake"].stop()
+            motors["misc"]["intake_chain"].stop()
+            motors["misc"]["intake_flex"].stop()
         
 
         # # Elevation controls

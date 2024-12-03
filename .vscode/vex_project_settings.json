@@ -4,15 +4,15 @@
 		"json": 2
 	},
 	"project": {
-		"name": "config",
+		"name": "driver",
 		"description": "",
 		"creationDate": "Mon, 25 Nov 2024 15:41:03 GMT",
 		"platform": "V5",
 		"language": "python",
-		"slot": 3,
+		"slot": 2,
 		"sdkVersion": "V5_1_0_1_25",
 		"python": {
-			"main": "src/config.py"
+			"main": "src/driver.py"
 		}
 	}
 }
