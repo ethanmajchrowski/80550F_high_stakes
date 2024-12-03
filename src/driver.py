@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-11-25 09:05:04.100356
+	# 2024-12-02 17:20:45.734486
 ####################
 #region Devices
 # Filename: driver.py
@@ -36,41 +36,39 @@ controls = {
 }
 motors = {
     "left": {
-        "A": Motor(Ports.PORT12, GearSetting.RATIO_6_1), # stacked top
-        "B": Motor(Ports.PORT11, GearSetting.RATIO_6_1, True), # stacked bottom
-        "C": Motor(Ports.PORT15, GearSetting.RATIO_6_1, True), # front
+        "A": Motor( Ports.PORT3, GearSetting.RATIO_6_1, True), # stacked top
+        "B": Motor(Ports.PORT12, GearSetting.RATIO_6_1, True), # rear
+        "C": Motor( Ports.PORT4, GearSetting.RATIO_6_1, True), # front
     },
     "right": {
-        # D motor is 5.5w
-        "A": Motor(Ports.PORT16, GearSetting.RATIO_6_1, True), # stacked top
-        "B": Motor(Ports.PORT18, GearSetting.RATIO_6_1), # stacked bottom
-        "C": Motor(Ports.PORT9, GearSetting.RATIO_6_1), # front
+        "A": Motor(Ports.PORT18, GearSetting.RATIO_6_1, False), # stacked top
+        "B": Motor(Ports.PORT16, GearSetting.RATIO_6_1, False), # rear
+        "C": Motor(Ports.PORT15, GearSetting.RATIO_6_1, False), # front
     },
     "misc": {
-        "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)   
+        "intake_chain": Motor(Ports.PORT14, GearSetting.RATIO_6_1, True),  
+        "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, False) # 5.5 W flexwheel hinge
     }
 }
 
-
 # PNEUMATICS
-mogo_pneu = DigitalOut(brain.three_wire_port.c)
+mogo_pneu = DigitalOut(brain.three_wire_port.a)
 
-intake_pneu = DigitalOut(brain.three_wire_port.b)
-side_scoring_a = DigitalOut(brain.three_wire_port.a)
-side_scoring_b = DigitalOut(brain.three_wire_port.d)
-elevation_pneu = DigitalOut(brain.three_wire_port.e)
-
-# wire_expander = Triport(Ports.PORT5)
-# DigitalOut(wire_expander.a)
+intake_pneu = DigitalOut(brain.three_wire_port.h)
+# side_scoring_a = DigitalOut(brain.three_wire_port.a)
+# side_scoring_b = DigitalOut(brain.three_wire_port.d)
 
 # SENSORS
-leftEnc = motors["left"]["A"]
-rightEnc = motors["right"]["A"]
-leftDistance = Distance(Ports.PORT14)
-rightDistance = Distance(Ports.PORT17)
-intakeDistance = Distance(Ports.PORT6)
+# leftEnc = motors["left"]["A"]
+# rightEnc = motors["right"]["A"]
+leftEnc = Rotation(Ports.PORT2)
+rightEnc = Rotation(Ports.PORT17)
 
-imu = Inertial(Ports.PORT9)
+leftDistance = Distance(Ports.PORT13)
+rightDistance = Distance(Ports.PORT19)
+# intakeDistance = Distance(Ports.PORT6)
+
+imu = Inertial(Ports.PORT6)
 
 if calibrate_imu:
     imu.calibrate()
@@ -174,15 +172,14 @@ def switch_mogo():
 def switch_intake_height():
     intake_pneu.set(not intake_pneu.value())
 
-def toggle_side_scoring():
-    side_scoring_a.set(not side_scoring_a.value())
-    side_scoring_b.set(not side_scoring_b.value())
-
+# def toggle_side_scoring():
+#     side_scoring_a.set(not side_scoring_a.value())
+#     side_scoring_b.set(not side_scoring_b.value())
 
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
-controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
+# controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
 
 while True:
     brain.screen.clear_screen()
@@ -214,18 +211,18 @@ while True:
         motors["misc"]["intake"].stop()
     
 
-    # Elevation controls
-    if controls["ELEVATION_RELEASE_1"].pressing() and controls["ELEVATION_RELEASE_2"].pressing():
-        elevation_pneu.set(True)
-        elevation_status = True
+    # # Elevation controls
+    # if controls["ELEVATION_RELEASE_1"].pressing() and controls["ELEVATION_RELEASE_2"].pressing():
+    #     elevation_pneu.set(True)
+    #     elevation_status = True
 
-    # Side Loading
-    if controls["AUTO_SIDE_LOADER"].pressing():
-        motors["misc"]["intake"].spin(FORWARD, 30, PERCENT)
-        if intakeDistance.object_distance() < 50 and brain.timer.time() > 1000:
-            brain.timer.clear()
-        if brain.timer.time() > 150 and brain.timer.time() < 1000:
-            motors["misc"]["intake"].spin(REVERSE, 50, PERCENT)
+    # # Side Loading
+    # if controls["AUTO_SIDE_LOADER"].pressing():
+    #     motors["misc"]["intake"].spin(FORWARD, 30, PERCENT)
+    #     if intakeDistance.object_distance() < 50 and brain.timer.time() > 1000:
+    #         brain.timer.clear()
+    #     if brain.timer.time() > 150 and brain.timer.time() < 1000:
+    #         motors["misc"]["intake"].spin(REVERSE, 50, PERCENT)
 
     # Grabber sensors
     if mogo_pneu_engaged == True:

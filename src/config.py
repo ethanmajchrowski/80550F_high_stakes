@@ -1,6 +1,6 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-11-25 09:05:04.099182
+	# 2024-12-02 17:20:45.732491
 ####################
 #region Devices
 # Filename: driver.py
@@ -36,41 +36,39 @@ controls = {
 }
 motors = {
     "left": {
-        "A": Motor(Ports.PORT12, GearSetting.RATIO_6_1), # stacked top
-        "B": Motor(Ports.PORT11, GearSetting.RATIO_6_1, True), # stacked bottom
-        "C": Motor(Ports.PORT15, GearSetting.RATIO_6_1, True), # front
+        "A": Motor( Ports.PORT3, GearSetting.RATIO_6_1, True), # stacked top
+        "B": Motor(Ports.PORT12, GearSetting.RATIO_6_1, True), # rear
+        "C": Motor( Ports.PORT4, GearSetting.RATIO_6_1, True), # front
     },
     "right": {
-        # D motor is 5.5w
-        "A": Motor(Ports.PORT16, GearSetting.RATIO_6_1, True), # stacked top
-        "B": Motor(Ports.PORT18, GearSetting.RATIO_6_1), # stacked bottom
-        "C": Motor(Ports.PORT9, GearSetting.RATIO_6_1), # front
+        "A": Motor(Ports.PORT18, GearSetting.RATIO_6_1, False), # stacked top
+        "B": Motor(Ports.PORT16, GearSetting.RATIO_6_1, False), # rear
+        "C": Motor(Ports.PORT15, GearSetting.RATIO_6_1, False), # front
     },
     "misc": {
-        "intake": Motor(Ports.PORT19, GearSetting.RATIO_6_1, True)   
+        "intake_chain": Motor(Ports.PORT14, GearSetting.RATIO_6_1, True),  
+        "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, False) # 5.5 W flexwheel hinge
     }
 }
 
-
 # PNEUMATICS
-mogo_pneu = DigitalOut(brain.three_wire_port.c)
+mogo_pneu = DigitalOut(brain.three_wire_port.a)
 
-intake_pneu = DigitalOut(brain.three_wire_port.b)
-side_scoring_a = DigitalOut(brain.three_wire_port.a)
-side_scoring_b = DigitalOut(brain.three_wire_port.d)
-elevation_pneu = DigitalOut(brain.three_wire_port.e)
-
-# wire_expander = Triport(Ports.PORT5)
-# DigitalOut(wire_expander.a)
+intake_pneu = DigitalOut(brain.three_wire_port.h)
+# side_scoring_a = DigitalOut(brain.three_wire_port.a)
+# side_scoring_b = DigitalOut(brain.three_wire_port.d)
 
 # SENSORS
-leftEnc = motors["left"]["A"]
-rightEnc = motors["right"]["A"]
-leftDistance = Distance(Ports.PORT14)
-rightDistance = Distance(Ports.PORT17)
-intakeDistance = Distance(Ports.PORT6)
+# leftEnc = motors["left"]["A"]
+# rightEnc = motors["right"]["A"]
+leftEnc = Rotation(Ports.PORT2)
+rightEnc = Rotation(Ports.PORT17)
 
-imu = Inertial(Ports.PORT9)
+leftDistance = Distance(Ports.PORT13)
+rightDistance = Distance(Ports.PORT19)
+# intakeDistance = Distance(Ports.PORT6)
+
+imu = Inertial(Ports.PORT6)
 
 if calibrate_imu:
     imu.calibrate()
