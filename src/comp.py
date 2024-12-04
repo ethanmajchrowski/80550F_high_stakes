@@ -310,7 +310,8 @@ class DeltaPositioning():
         # wheel diamter * pi
         # convert to mm
         # multiply by motor to wheel ratio
-        self.circumference = 219.46 * (3/4)
+        # self.circumference = 219.46 * (3/4)
+        self.circumference = (2 * 3.14159) * 25.4
 
     def update(self):
         # Call constantly to update position.
