@@ -63,7 +63,7 @@ leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)
 # intakeDistance = Distance(Ports.PORT6)
 
-imu = Inertial(Ports.PORT6)
+imu = Inertial(Ports.PORT11)
 
 if calibrate_imu:
     imu.calibrate()

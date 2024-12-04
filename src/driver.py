@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-12-02 17:20:45.734486
+	# 2024-12-03 21:38:12.904156
 ####################
 #region Devices
 # Filename: driver.py
@@ -68,7 +68,7 @@ leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)
 # intakeDistance = Distance(Ports.PORT6)
 
-imu = Inertial(Ports.PORT6)
+imu = Inertial(Ports.PORT11)
 
 if calibrate_imu:
     imu.calibrate()
