@@ -664,7 +664,7 @@ class AutonomousHandler:
 with open("cfg/config.json", 'r') as f:
     data = load(f)
 
-auton = AutonomousHandler(data["selected_auton"])
+auton = AutonomousHandler(data["autons"]["selected"])
 print(auton.run)
 #endregion auton
 
