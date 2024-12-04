@@ -775,7 +775,10 @@ def no_auton():
 #             driver()
 #             driver_thread.stop() #type: ignore
 if brain.sdcard.is_inserted():
-    comp = Competition(driver, auton.run)
+    if data["config"]["auton_test"]:
+        auton.run()
+    else:
+        comp = Competition(driver, auton.run)
     # auton.run()
 
     # driver_thread = Thread(override_comp, (comp,))
