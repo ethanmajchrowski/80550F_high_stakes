@@ -4,15 +4,15 @@
 		"json": 2
 	},
 	"project": {
-		"name": "driver",
+		"name": "comp",
 		"description": "",
 		"creationDate": "Mon, 25 Nov 2024 15:41:03 GMT",
 		"platform": "V5",
 		"language": "python",
-		"slot": 2,
+		"slot": 1,
 		"sdkVersion": "V5_1_0_1_25",
 		"python": {
-			"main": "src/driver.py"
+			"main": "src/comp.py"
 		}
 	}
 }
