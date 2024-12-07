@@ -1,5 +1,5 @@
 import os
-import pyperclip #type:ignore
+# import pyperclip #type:ignore
 
 def get_latest_file(download_path):
     """Gets the most recently downloaded file in the specified directory."""
@@ -30,5 +30,5 @@ for line in data:
 path = tuple(nd)
 
 print(path)
-pyperclip.copy(str(path))
-print("Copied to clipboard!")
+# pyperclip.copy(str(path))
+# print("Copied to clipboard!")

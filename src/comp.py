@@ -403,15 +403,20 @@ class AutonomousHandler:
         # DO NOT turn the brain off when this is running! This may corrupt the files :)
         # self.autonomous = self.read_auto("autons/{}.txt".format(selected_filename))
         # Import auton module
+        print("Loading module {}".format(selected_filename))
         try:
+            print("Importing module...")
             auton_module = __import__("module.{}".format(selected_filename), None, None, ["run"])
 
+            print("Importing sequence...")
             self.sequence = getattr(auton_module, "run")
             
+            print("Importing data...")
             gen_data = getattr(auton_module, "gen_data")
             self.autonomous_data = gen_data()
         except:
             print("Auton not recognized!")
+            raise ImportError("Can't find auton file")
 
         ### Pathing
         # Reference the object so we can create new handlers for new paths
@@ -472,33 +477,33 @@ class AutonomousHandler:
                 #         intake_pneu.set(True)
                 print("INTAKE DISTANCE SENSOR NOT CONNECTED!")
             
-            if self.dynamic_vars["jam_listen"]:
-                scr = brain.screen
-                scr.clear_screen()
-                scr.set_cursor(1,1)
-                scr.set_font(FontType.MONO20)
-                scr.print(constant_ticks)
-                scr.new_line()
-                scr.print(motors["misc"]["intake"].command(VelocityUnits.PERCENT))
-                scr.new_line()
-                scr.render()
+            # if self.dynamic_vars["jam_listen"]:
+            #     scr = brain.screen
+            #     scr.clear_screen()
+            #     scr.set_cursor(1,1)
+            #     scr.set_font(FontType.MONO20)
+            #     scr.print(constant_ticks)
+            #     scr.new_line()
+            #     scr.print(motors["misc"]["intake"].command(VelocityUnits.PERCENT))
+            #     scr.new_line()
+            #     scr.render()
 
-                if motors["misc"]["intake"].command() != 0:
-                    intake_pos = motors["misc"]["intake"].position()
-                    change_pos = abs(intake_pos - last_intake_pos)
+            #     if motors["misc"]["intake"].command() != 0:
+            #         intake_pos = motors["misc"]["intake"].position()
+            #         change_pos = abs(intake_pos - last_intake_pos)
 
-                    if change_pos < 0.8:
-                        constant_ticks += 1
-                    else:
-                        constant_ticks = 0
+            #         if change_pos < 0.8:
+            #             constant_ticks += 1
+            #         else:
+            #             constant_ticks = 0
 
-                    if constant_ticks > 5:
-                        last_motor_velocity = motors["misc"]["intake"].command(VelocityUnits.PERCENT)
-                        brain.timer.event(motors["misc"]["intake"].spin, 200, (FORWARD, last_motor_velocity, PERCENT))
-                        motors["misc"]["intake"].stop(COAST)
-                        constant_ticks = 0
+            #         if constant_ticks > 5:
+            #             last_motor_velocity = motors["misc"]["intake"].command(VelocityUnits.PERCENT)
+            #             brain.timer.event(motors["misc"]["intake"].spin, 200, (FORWARD, last_motor_velocity, PERCENT))
+            #             motors["misc"]["intake"].stop(COAST)
+            #             constant_ticks = 0
 
-            last_intake_pos = motors["misc"]["intake"].position()
+            # last_intake_pos = motors["misc"]["intake"].position()
             sleep(10, MSEC)
 
     # decent settings: 
