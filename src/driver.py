@@ -1,6 +1,7 @@
+
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-12-03 21:38:12.904156
+	# 2024-12-02 17:20:45.734486
 ####################
 #region Devices
 # Filename: driver.py
@@ -33,6 +34,8 @@ controls = {
     "ELEVATION_RELEASE_1": con.buttonDown,
     "ELEVATION_RELEASE_2": con.buttonLeft,
     "AUTO_SIDE_LOADER":    con.buttonL2,
+    "INTAKE_FLEX_ONLY":    con.buttonL2,
+    "DOINKER":             con.buttonRight,
 }
 motors = {
     "left": {
@@ -57,6 +60,7 @@ mogo_pneu = DigitalOut(brain.three_wire_port.a)
 intake_pneu = DigitalOut(brain.three_wire_port.h)
 # side_scoring_a = DigitalOut(brain.three_wire_port.a)
 # side_scoring_b = DigitalOut(brain.three_wire_port.d)
+doinker_pneu = DigitalOut(brain.three_wire_port.b)
 
 # SENSORS
 # leftEnc = motors["left"]["A"]
@@ -68,7 +72,7 @@ leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)
 # intakeDistance = Distance(Ports.PORT6)
 
-imu = Inertial(Ports.PORT11)
+imu = Inertial(Ports.PORT6)
 
 if calibrate_imu:
     imu.calibrate()
@@ -172,10 +176,15 @@ def switch_mogo():
 def switch_intake_height():
     intake_pneu.set(not intake_pneu.value())
 
+def switch_doinker():
+    doinker_pneu.set(not doinker_pneu.value())
+
+
 # def toggle_side_scoring():
 #     side_scoring_a.set(not side_scoring_a.value())
 #     side_scoring_b.set(not side_scoring_b.value())
 
+controls["DOINKER"].pressed(switch_doinker)
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
@@ -204,14 +213,18 @@ while True:
 
     # Intake Controls
     if controls["INTAKE_IN_HOLD"].pressing():
-        motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
+        motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
         motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
     elif controls["INTAKE_OUT_HOLD"].pressing():
-        motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
+        motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
         motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
+    elif controls["INTAKE_FLEX_ONLY"].pressing():
+        motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
     else:
         motors["misc"]["intake_chain"].stop()
         motors["misc"]["intake_flex"].stop()
+    
+
 
     # # Elevation controls
     # if controls["ELEVATION_RELEASE_1"].pressing() and controls["ELEVATION_RELEASE_2"].pressing():
