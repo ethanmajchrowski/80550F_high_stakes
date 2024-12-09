@@ -1,6 +1,6 @@
 def gen_data():
     data = {
-        "start_pos": [1350, -1530],
+        "start_pos": [1300, -1530],
         "start_heading": 90,
     }
     return data
@@ -21,7 +21,7 @@ def gen_paths(main):
                 "custom_args": (False,)            
             },
             "ring_2": {
-                "points": ((1513.45, -1180.99), (1491.93, -1052.8), (1466.71, -925.27), (1439.0, -798.26), (1410.99, -671.31), (1385.26, -543.89), (1364.1, -415.64), (1349.21, -286.52), (1342.46, -156.71), (1343.77, -0.3)),
+                "points": ((1499.31, -1244.62), (1491.84, -1114.93), (1471.07, -986.67), (1441.41, -860.12), (1406.0, -735.05), (1367.29, -610.95), (1327.13, -487.31), (1287.22, -363.59), (1249.54, -239.18), (1216.83, -113.38), (1195.3, -0.3)),
                 "events": [],
                 "checkpoints": [],
                 "custom_args": (False,)            
@@ -33,8 +33,9 @@ def gen_paths(main):
                 "custom_args": (True,)            
             },
             "ring_3": {
-                "points": ((615.56, -551.76), (687.31, -660.11), (767.71, -762.23), (841.13, -868.86), (828.92, -993.25), (755.23, -1099.99), (669.12, -1197.21), (556.42, -1257.35), (455.7, -1197.49), (420.62, -1073.46), (412.52, -943.85), (416.43, -813.98), (428.41, -684.58), (446.64, -555.89), (470.35, -428.07), (500.3, -301.56), (536.09, -176.61), (579.03, -53.96), (631.96, 64.69), (707.47, 176.46)),
-                "events": [[["reverse intake"], (300, -1100), main["motors"]["intake"].spin, (main["DirectionType"].REVERSE, 50, main["PercentUnits"].PERCENT)],],
+                "points": ((615.56, -551.76), (687.31, -660.11), (767.71, -762.23), (841.13, -868.86), (828.92, -993.25), (755.23, -1099.99), (669.12, -1197.21), (556.42, -1257.35), (455.7, -1197.49), (420.62, -1073.46), (412.52, -943.85), (416.43, -813.98), (428.41, -684.58), (446.64, -555.89), (470.35, -428.07), (500.3, -301.56), (536.09, -176.61), (579.03, -53.96), (600.96, 0.69), (607.47, 100.46)),
+                "events": [#["reverse intake"], (300, -1100), main["misc"]["intake_chain"].spin, (main["DirectionType"].REVERSE, 50, main["PercentUnits"].PERCENT)],],
+                ],
                 "checkpoints": [7,],
                 "custom_args": (False,)            
             },
@@ -63,27 +64,31 @@ def run(main):
 
     # Velocity for mogo rush
     controller.dynamic_vars["fwd_speed"] = 4
-    main["mogo_pneu"].set(True)
-    path_run(controller, paths["mogo_rush"])
     main["mogo_pneu"].set(False)
+    path_run(controller, paths["mogo_rush"])
+    main["mogo_pneu"].set(True)
     main["sleep"](500)
-    motors["misc"]["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 60, VelocityUnits.PERCENT)
     controller.dynamic_vars["fwd_speed"] = 5.5
     path_run(controller, paths["corner"])
-    main["mogo_pneu"].set(True)
+    main["mogo_pneu"].set(False)
     controller.dynamic_vars["fwd_speed"] = 6.5
     main["intake_pneu"].set(True)
     controller.dynamic_vars["intake_auto_halt"] = True 
-    motors["misc"]["intake"].spin(DirectionType.FORWARD, 50, VelocityUnits.PERCENT)
+    motors["misc"]["intake_chain"].stop()
+    # motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 50, VelocityUnits.PERCENT)
+    motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 50, VelocityUnits.PERCENT)
     path_run(controller, paths["ring_2"])
     main["intake_pneu"].set(False)
     main["sleep"](200)
-    main["mogo_pneu"].set(True)
+    main["mogo_pneu"].set(False)
     controller.dynamic_vars["fwd_speed"] = 4.5
     path_run(controller, paths["mogo_2"])
     controller.dynamic_vars["intake_auto_halt"] = False 
-    main["mogo_pneu"].set(False)
-    motors["misc"]["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    main["mogo_pneu"].set(True)
+    motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 60, VelocityUnits.PERCENT)
+    motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     path_run(controller, paths["ring_3"])
 
     

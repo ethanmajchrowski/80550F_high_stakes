@@ -1,6 +1,6 @@
 def gen_data():
     data = {
-        "start_pos": [-1350, -1530],
+        "start_pos": [-1300, -1530],
         "start_heading": 270,
     }
     return data
@@ -33,7 +33,8 @@ def gen_paths(main):
             },
             "ring_3": {
                 "points": ((-615.56, -551.76), (-687.31, -660.11), (-767.71, -762.23), (-841.13, -868.86), (-828.92, -993.25), (-755.23, -1099.99), (-669.12, -1197.21), (-556.42, -1257.35), (-455.7, -1197.49), (-420.62, -1073.46), (-412.52, -943.85), (-416.43, -813.98), (-428.41, -684.58), (-446.64, -555.89), (-470.35, -428.07), (-500.3, -301.56), (-536.09, -176.61), (-579.03, -53.96), (-631.96, 64.69), (-707.47, 176.46)),
-                "events": [[["reverse intake"], (-300, -1100), main["motors"]["intake"].spin, (main["DirectionType"].REVERSE, 50, main["PercentUnits"].PERCENT)],],
+                "events": [#["reverse intake"], (-300, -1100), main["motors"]["intake"].spin, (main["DirectionType"].REVERSE, 50, main["PercentUnits"].PERCENT)],],
+                ],
                 "checkpoints": [7,],
                 "custom_args": (False,)            
             },
@@ -61,29 +62,32 @@ def run(main):
     drivetrain = main["drivetrain"]
 
     controller.dynamic_vars["fwd_speed"] = 4
-    main["mogo_pneu"].set(True)
-    path_run(controller, paths["mogo_rush"])
     main["mogo_pneu"].set(False)
+    path_run(controller, paths["mogo_rush"])
+    main["mogo_pneu"].set(True)
     main["sleep"](500)
-    motors["misc"]["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 60, VelocityUnits.PERCENT)
     controller.dynamic_vars["fwd_speed"] = 5.5
     path_run(controller, paths["corner"])
-    main["mogo_pneu"].set(True)
+    main["mogo_pneu"].set(False)
     controller.dynamic_vars["fwd_speed"] = 6.5
     main["intake_pneu"].set(True)
     controller.dynamic_vars["intake_auto_halt"] = True 
-    motors["misc"]["intake"].spin(DirectionType.FORWARD, 50, VelocityUnits.PERCENT)
+    motors["misc"]["intake_chain"].stop()
+    # motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 50, VelocityUnits.PERCENT)
+    motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 50, VelocityUnits.PERCENT)
     path_run(controller, paths["ring_2"])
+    main["intake_pneu"].set(False)
     main["sleep"](200)
-    main["mogo_pneu"].set(True)
+    main["mogo_pneu"].set(False)
     controller.dynamic_vars["fwd_speed"] = 4.5
     path_run(controller, paths["mogo_2"])
-    main["intake_pneu"].set(False)
     controller.dynamic_vars["intake_auto_halt"] = False 
-    main["mogo_pneu"].set(False)
-    motors["misc"]["intake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    main["mogo_pneu"].set(True)
+    motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 60, VelocityUnits.PERCENT)
+    motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     path_run(controller, paths["ring_3"])
-    motors["misc"]["intake"].stop()
 
     
     

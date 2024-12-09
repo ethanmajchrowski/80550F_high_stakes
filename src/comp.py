@@ -69,7 +69,7 @@ rightEnc = Rotation(Ports.PORT17)
 
 leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)
-# intakeDistance = Distance(Ports.PORT6)
+intakeDistance = Distance(Ports.PORT9)
 
 imu = Inertial(Ports.PORT11)
 
@@ -470,16 +470,18 @@ class AutonomousHandler:
                 if leftDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"] and rightDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
                     mogo_pneu.set(False)
 
+            # Intake Distance auto halt
             if self.dynamic_vars["intake_auto_halt"]:
-                # if intakeDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
-                #     motors["misc"]["intake"].stop(BRAKE)
+                if intakeDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
+                    motors["misc"]["intake"].stop(BRAKE)
 
-                #     if self.dynamic_vars["drop_after_auto_halt"]:
-                #         intake_pneu.set(False)
-                #     if self.dynamic_vars["raise_after_auto_halt"]:
-                #         intake_pneu.set(True)
-                print("INTAKE DISTANCE SENSOR NOT CONNECTED!")
+                    if self.dynamic_vars["drop_after_auto_halt"]:
+                        intake_pneu.set(False)
+                    if self.dynamic_vars["raise_after_auto_halt"]:
+                        intake_pneu.set(True)
+                # print("INTAKE DISTANCE SENSOR NOT CONNECTED!")
             
+            # Jam listener
             # if self.dynamic_vars["jam_listen"]:
             #     scr = brain.screen
             #     scr.clear_screen()
