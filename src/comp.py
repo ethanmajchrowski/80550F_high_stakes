@@ -33,6 +33,8 @@ controls = {
     "ELEVATION_RELEASE_1": con.buttonDown,
     "ELEVATION_RELEASE_2": con.buttonLeft,
     "AUTO_SIDE_LOADER":    con.buttonL2,
+    "INTAKE_FLEX_ONLY":    con.buttonL2,
+    "DOINKER":             con.buttonRight,
 }
 motors = {
     "left": {
@@ -55,6 +57,7 @@ motors = {
 mogo_pneu = DigitalOut(brain.three_wire_port.a)
 
 intake_pneu = DigitalOut(brain.three_wire_port.h)
+doinker_pneu = DigitalOut(brain.three_wire_port.b)
 # side_scoring_a = DigitalOut(brain.three_wire_port.a)
 # side_scoring_b = DigitalOut(brain.three_wire_port.d)
 
@@ -693,7 +696,10 @@ def switch_intake_height():
 #     side_scoring_a.set(not side_scoring_a.value())
 #     side_scoring_b.set(not side_scoring_b.value())
 
+def switch_doinker():
+    doinker_pneu.set(not doinker_pneu.value())
 
+controls["DOINKER"].pressed(switch_doinker)
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
@@ -721,13 +727,15 @@ def driver():
         motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
         motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
 
-        # Intake Controls
+            # Intake Controls
         if controls["INTAKE_IN_HOLD"].pressing():
-            motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
+            motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
         elif controls["INTAKE_OUT_HOLD"].pressing():
-            motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
+            motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
+        elif controls["INTAKE_FLEX_ONLY"].pressing():
+            motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
         else:
             motors["misc"]["intake_chain"].stop()
             motors["misc"]["intake_flex"].stop()
