@@ -70,7 +70,8 @@ rightEnc = Rotation(Ports.PORT17)
 
 leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)
-# intakeDistance = Distance(Ports.PORT6)
+intakeDistance = Distance(Ports.PORT9)
+intakecolor = Optical(Ports.PORT10)
 
 imu = Inertial(Ports.PORT6)
 
@@ -82,6 +83,8 @@ if calibrate_imu:
 mogo_pneu_engaged = False
 mogo_pneu_status = False
 elevation_status = False
+eject_status = False
+color_setting = "blue"
 
 lmg = MotorGroup(*motors["left"].values())
 rmg = MotorGroup(*motors["right"].values())
@@ -191,6 +194,7 @@ controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 # controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
 
 while True:
+    intakecolor.set_light_power(100, PERCENT)
     brain.screen.clear_screen()
     print(elevation_status)
 
@@ -210,9 +214,20 @@ while True:
     motors["right"]["A"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
     motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
     motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
+    print(brain.timer.time())
 
+    if brain.timer.time() > 1000:
+        eject_setting = False
     # Intake Controls
-    if controls["INTAKE_IN_HOLD"].pressing():
+    if color_setting == "blue" and intakecolor.hue() > 100:
+        eject_setting = True
+    if controls["INTAKE_IN_HOLD"].pressing() and intakeDistance.object_distance() < 50 and eject_setting == True:
+        brain.timer.clear()
+    elif controls["INTAKE_IN_HOLD"].pressing() and brain.timer.time() > 0 and brain.timer.time() < 400:
+        motors["misc"]["intake_chain"].spin(REVERSE, 100,PERCENT)
+    elif controls["INTAKE_IN_HOLD"].pressing() and brain.timer.time() > 400 and brain.timer.time() < 1000:
+        motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
+    elif controls["INTAKE_IN_HOLD"].pressing():
         motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
         motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
     elif controls["INTAKE_OUT_HOLD"].pressing():
@@ -224,6 +239,7 @@ while True:
         motors["misc"]["intake_chain"].stop()
         motors["misc"]["intake_flex"].stop()
     
+
 
 
     # # Elevation controls
