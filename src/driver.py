@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-12-11 18:24:40.197123
+	# 2024-12-12 10:01:03.071519
 ####################
 #region Devices
 # Filename: driver.py
@@ -174,6 +174,9 @@ if not sd_fail:
     color_setting = data["config"]["initial_color_sorting"]["selected"]
 else:
     color_setting = "none"
+
+# Turn on intake color sensor LED for consistency
+intakeColor.set_light_power(100, PERCENT)
 #endregion Devices####################
 #DO NOT CHANGE THE FOLLOWING LINE:#
 #end_1301825#

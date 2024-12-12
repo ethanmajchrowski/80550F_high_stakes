@@ -169,3 +169,6 @@ if not sd_fail:
     color_setting = data["config"]["initial_color_sorting"]["selected"]
 else:
     color_setting = "none"
+
+# Turn on intake color sensor LED for consistency
+intakeColor.set_light_power(100, PERCENT)
