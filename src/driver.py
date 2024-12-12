@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-12-11 17:08:05.118252
+	# 2024-12-11 17:11:57.558391
 ####################
 #region Devices
 # Filename: driver.py
@@ -158,12 +158,20 @@ class Logger:
     def start(self):
         Thread(self.log)
 
+sd_fail = False
 # load config data from SD card
-with open("cfg/config.json", 'r') as f:
-    data = load(f)
+try:
+    with open("cfg/config.json", 'r') as f:
+        data = load(f)
+except:
+    sd_fail = True
+    print("ERROR LOADING SD CARD DATA")
 
 # Set initial color sort from SD card
-color_setting = data["config"]["initial_color_sorting"]
+if not sd_fail:
+    color_setting = data["config"]["initial_color_sorting"]
+else:
+    color_setting = "none"
 #endregion Devices####################
 #DO NOT CHANGE THE FOLLOWING LINE:#
 #end_1301825#
@@ -186,16 +194,23 @@ def switch_intake_height():
 def switch_doinker():
     doinker_pneu.set(not doinker_pneu.value())
 
+def cycle_ejector_color():
+    global color_setting
+    l = ["none", "eject_blue", "eject_red"]
+    index = l.index(color_setting)
+    if index + 1 < len(l):
+        index += 1
+    else:
+        index = 0
+    color_setting = l[index]
 
-# def toggle_side_scoring():
-#     side_scoring_a.set(not side_scoring_a.value())
-#     side_scoring_b.set(not side_scoring_b.value())
+    print(color_setting)
 
 controls["DOINKER"].pressed(switch_doinker)
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
-# controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
+controls["CYCLE_EJECTOR_COLOR"].pressed(cycle_ejector_color)
 
 color_setting = "blue"
 allow_intake_input = True

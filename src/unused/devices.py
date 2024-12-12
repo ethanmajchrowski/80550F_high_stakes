@@ -153,9 +153,17 @@ class Logger:
     def start(self):
         Thread(self.log)
 
+sd_fail = False
 # load config data from SD card
-with open("cfg/config.json", 'r') as f:
-    data = load(f)
+try:
+    with open("cfg/config.json", 'r') as f:
+        data = load(f)
+except:
+    sd_fail = True
+    print("ERROR LOADING SD CARD DATA")
 
 # Set initial color sort from SD card
-color_setting = data["config"]["initial_color_sorting"]
+if not sd_fail:
+    color_setting = data["config"]["initial_color_sorting"]
+else:
+    color_setting = "none"
