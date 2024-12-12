@@ -152,3 +152,7 @@ class Logger:
 
     def start(self):
         Thread(self.log)
+
+# load config data from SD card
+with open("cfg/config.json", 'r') as f:
+    data = load(f)

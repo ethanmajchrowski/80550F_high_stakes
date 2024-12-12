@@ -1,6 +1,6 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-12-11 17:02:49.685117
+	# 2024-12-11 17:06:07.049364
 ####################
 #region Devices
 # Filename: driver.py
@@ -157,6 +157,10 @@ class Logger:
 
     def start(self):
         Thread(self.log)
+
+# load config data from SD card
+with open("cfg/config.json", 'r') as f:
+    data = load(f)
 #endregion Devices####################
 #DO NOT CHANGE THE FOLLOWING LINE:#
 #end_1301825#
