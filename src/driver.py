@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-12-11 17:16:00.681256
+	# 2024-12-11 18:24:40.197123
 ####################
 #region Devices
 # Filename: driver.py
@@ -8,7 +8,7 @@
     # 2024-10-30 18:19:48.449465
 ####################
 #region Devices
-calibrate_imu = False
+calibrate_imu = True
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -32,9 +32,9 @@ controls = {
     "AUTO_MOGO_ENGAGE_TOGGLE": con.buttonY,
     "ELEVATION_RELEASE_1": con.buttonDown,
     "ELEVATION_RELEASE_2": con.buttonLeft,
-    "AUTO_SIDE_LOADER":    con.buttonL2,
     "CYCLE_EJECTOR_COLOR": con.buttonLeft,
     "DOINKER":             con.buttonRight,
+    "INTAKE_FLEX_HOLD":    con.buttonL2,
 }
 
 motors = {
@@ -275,7 +275,9 @@ def driver():
 
             queued_sort = True
 
-        if controls["INTAKE_IN_HOLD"].pressing():
+        if controls["INTAKE_FLEX_HOLD"].pressing():
+            motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
+        elif controls["INTAKE_IN_HOLD"].pressing():
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
             if allow_intake_input:
                 motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)

@@ -27,9 +27,9 @@ controls = {
     "AUTO_MOGO_ENGAGE_TOGGLE": con.buttonY,
     "ELEVATION_RELEASE_1": con.buttonDown,
     "ELEVATION_RELEASE_2": con.buttonLeft,
-    "AUTO_SIDE_LOADER":    con.buttonL2,
     "CYCLE_EJECTOR_COLOR": con.buttonLeft,
     "DOINKER":             con.buttonRight,
+    "INTAKE_FLEX_HOLD":    con.buttonL2,
 }
 
 motors = {
