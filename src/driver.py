@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-12-11 17:13:49.842275
+	# 2024-12-11 17:16:00.681256
 ####################
 #region Devices
 # Filename: driver.py
@@ -171,7 +171,7 @@ except:
 
 # Set initial color sort from SD card
 if not sd_fail:
-    color_setting = data["config"]["initial_color_sorting"]
+    color_setting = data["config"]["initial_color_sorting"]["selected"]
 else:
     color_setting = "none"
 #endregion Devices####################
@@ -198,6 +198,7 @@ def switch_doinker():
 
 def cycle_ejector_color():
     global color_setting
+    print(color_setting)
     l = ["none", "eject_blue", "eject_red"]
     index = l.index(color_setting)
     if index + 1 < len(l):
@@ -214,7 +215,6 @@ controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["CYCLE_EJECTOR_COLOR"].pressed(cycle_ejector_color)
 
-color_setting = "blue"
 allow_intake_input = True
 queued_sort = False
 # This will let us look lower in the intake and allow the ejector to work

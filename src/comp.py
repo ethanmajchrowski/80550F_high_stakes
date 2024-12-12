@@ -1,6 +1,6 @@
 # Filename: comp.py
 # Devices & variables last updated:
-	# 2024-12-11 17:13:49.838077
+	# 2024-12-11 17:16:00.650501
 ####################
 #region Devices
 # Filename: driver.py
@@ -171,7 +171,7 @@ except:
 
 # Set initial color sort from SD card
 if not sd_fail:
-    color_setting = data["config"]["initial_color_sorting"]
+    color_setting = data["config"]["initial_color_sorting"]["selected"]
 else:
     color_setting = "none"
 #endregion Devices####################

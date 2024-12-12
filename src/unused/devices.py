@@ -166,6 +166,6 @@ except:
 
 # Set initial color sort from SD card
 if not sd_fail:
-    color_setting = data["config"]["initial_color_sorting"]
+    color_setting = data["config"]["initial_color_sorting"]["selected"]
 else:
     color_setting = "none"
