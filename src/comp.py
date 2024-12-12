@@ -1,6 +1,6 @@
 # Filename: comp.py
 # Devices & variables last updated:
-	# 2024-12-11 17:11:57.546617
+	# 2024-12-11 17:13:49.838077
 ####################
 #region Devices
 # Filename: driver.py
@@ -34,7 +34,9 @@ controls = {
     "ELEVATION_RELEASE_2": con.buttonLeft,
     "AUTO_SIDE_LOADER":    con.buttonL2,
     "CYCLE_EJECTOR_COLOR": con.buttonLeft,
+    "DOINKER":             con.buttonRight,
 }
+
 motors = {
     "left": {
         "A": Motor( Ports.PORT3, GearSetting.RATIO_6_1, True), # stacked top
