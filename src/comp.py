@@ -708,18 +708,25 @@ def switch_mogo():
 def switch_intake_height():
     intake_pneu.set(not intake_pneu.value())
 
-# def toggle_side_scoring():
-#     side_scoring_a.set(not side_scoring_a.value())
-#     side_scoring_b.set(not side_scoring_b.value())
-
 def switch_doinker():
     doinker_pneu.set(not doinker_pneu.value())
+
+def cycle_ejector_color():
+    global color_setting
+    # print("old: " + color_setting)
+    l = ["none", "eject_blue", "eject_red"]
+    index = l.index(color_setting)
+    if index + 1 < len(l):
+        index += 1
+    else:
+        index = 0
+    color_setting = l[index]
 
 controls["DOINKER"].pressed(switch_doinker)
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
-# controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
+controls["CYCLE_EJECTOR_COLOR"].pressed(cycle_ejector_color)
 
 def intake_sorter():
     global allow_intake_input, queued_sort, eject_prep 
@@ -765,23 +772,24 @@ def driver():
         motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
         motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
 
-        if color_setting == "blue" and intakeColor.hue() > 100 and not eject_prep:
+        if color_setting == "eject_blue" and intakeColor.hue() > 100 and not eject_prep:
             eject_prep = True
-            print("READY TO EJECT")
+        if color_setting == "eject_red" and intakeColor.hue() < 18 and not eject_prep:
+            eject_prep = True
 
         if (intakeDistance.object_distance() < 70) and (not queued_sort) and (eject_prep):
-            # eject_setting = True
             motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
-
             brain.timer.event(intake_sorter, 210)
 
             queued_sort = True
-            print("DISC!")
 
         if controls["INTAKE_IN_HOLD"].pressing():
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
             if allow_intake_input:
                 motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
+        elif controls["INTAKE_OUT_HOLD"].pressing():
+            motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
+            motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
         else:
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
@@ -807,7 +815,12 @@ def driver():
         scr.clear_screen()
         scr.set_cursor(1,1)
 
-        if mogo_pneu_engaged: scr.print("MOGO ENGAGED")
+        scr.print(color_setting)
+        scr.new_line()
+
+        if mogo_pneu_engaged: 
+            scr.print("MOGO ENGAGED")
+            scr.new_line()
 
         brain.screen.render()
 
