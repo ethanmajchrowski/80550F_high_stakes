@@ -708,18 +708,40 @@ controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 # controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
 
+def intake_sorter():
+    global allow_intake_input, queued_sort, eject_prep 
+
+    # check if we are moving from manual --> auto or auto --> manual
+    if allow_intake_input:
+        motors["misc"]["intake_chain"].stop(BRAKE)
+        # motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
+        allow_intake_input = False
+
+        # At this point, allow_intake_input will be false
+        # so the current code won't run in a loop
+        # blue color timings
+        # brain.timer.event(intake_sorter, 170)
+        # distance timings
+        brain.timer.event(intake_sorter, 150)
+    else:
+        # Re-enable intake
+        allow_intake_input = True
+        queued_sort = False
+        eject_prep = False
+
 def driver():
+    global eject_prep, queued_sort
     while True:
-        global elevation_status
+        intakeColor.set_light_power(100, PERCENT)
         brain.screen.clear_screen()
 
         # Movement controls
         turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
         forwardVolts = controls["DRIVE_FORWARD_AXIS"].position() * 0.12
         if elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() > 25:
-            forwardVolts = 6
+            forwardVolts = 7.5
         elif elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() < -25:
-            forwardVolts = -6
+            forwardVolts = -7.5
 
         # Spin motors and combine controller axes
         motors["left"]["A"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
@@ -730,32 +752,26 @@ def driver():
         motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
         motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
 
-            # Intake Controls
+        if color_setting == "blue" and intakeColor.hue() > 100 and not eject_prep:
+            eject_prep = True
+            print("READY TO EJECT")
+
+        if (intakeDistance.object_distance() < 70) and (not queued_sort) and (eject_prep):
+            # eject_setting = True
+            motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
+
+            brain.timer.event(intake_sorter, 210)
+
+            queued_sort = True
+            print("DISC!")
+
         if controls["INTAKE_IN_HOLD"].pressing():
-            motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
-        elif controls["INTAKE_OUT_HOLD"].pressing():
-            motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
-            motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
-        elif controls["INTAKE_FLEX_ONLY"].pressing():
-            motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
+            if allow_intake_input:
+                motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
         else:
-            motors["misc"]["intake_chain"].stop()
             motors["misc"]["intake_flex"].stop()
-        
-
-        # # Elevation controls
-        # if controls["ELEVATION_RELEASE_1"].pressing() and controls["ELEVATION_RELEASE_2"].pressing():
-        #     elevation_pneu.set(True)
-        #     elevation_status = True
-
-        # # Side Loading
-        # if controls["AUTO_SIDE_LOADER"].pressing():
-        #     motors["misc"]["intake"].spin(FORWARD, 30, PERCENT)
-        #     if intakeDistance.object_distance() < 50 and brain.timer.time() > 1000:
-        #         brain.timer.clear()
-        #     if brain.timer.time() > 150 and brain.timer.time() < 1000:
-        #         motors["misc"]["intake"].spin(REVERSE, 50, PERCENT)
+            motors["misc"]["intake_chain"].stop()
 
         # Grabber sensors
         if mogo_pneu_engaged == True:
@@ -763,13 +779,24 @@ def driver():
                 mogo_pneu.set(False)
 
         # Screen debugging
+        scr = brain.screen
+        scr.clear_screen()
+        scr.set_cursor(1,1)
+
+        scr.print("Left distance: {}".format(leftDistance.object_distance()))
+        scr.next_row()
+        scr.print("Right distance: {}".format(rightDistance.object_distance()))
+        scr.next_row()
+        scr.print("Timer: {}".format(brain.timer.time()))
+        scr.next_row()
+
         scr = con.screen
         scr.clear_screen()
         scr.set_cursor(1,1)
-        scr.print("DRIVER")
-        # scr.render()
 
         if mogo_pneu_engaged: scr.print("MOGO ENGAGED")
+
+        brain.screen.render()
 
 #endregion driver
 

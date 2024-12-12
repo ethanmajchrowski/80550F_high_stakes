@@ -267,39 +267,6 @@ def driver():
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
 
-        # if eject_setting:
-        #     if controls["INTAKE_IN_HOLD"].pressing() and intakeDistance.object_distance() < 50:
-        #         brain.timer.clear()
-
-        # elif controls["INTAKE_IN_HOLD"].pressing() and brain.timer.time() > 0 and brain.timer.time() < 400:
-        #     motors["misc"]["intake_chain"].spin(REVERSE, 100,PERCENT)
-        # elif controls["INTAKE_IN_HOLD"].pressing() and brain.timer.time() > 400 and brain.timer.time() < 1000:
-        #     motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
-        # elif controls["INTAKE_IN_HOLD"].pressing():
-        #     motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
-        #     motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
-        # elif controls["INTAKE_OUT_HOLD"].pressing():
-        #     motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
-        #     motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
-        # elif controls["INTAKE_FLEX_ONLY"].pressing():
-        #     motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
-        # else:
-        #     motors["misc"]["intake_chain"].stop()
-        #     motors["misc"]["intake_flex"].stop()
-        
-        # # Elevation controls
-        # if controls["ELEVATION_RELEASE_1"].pressing() and controls["ELEVATION_RELEASE_2"].pressing():
-        #     elevation_pneu.set(True)
-        #     elevation_status = True
-
-        # # Side Loading
-        # if controls["AUTO_SIDE_LOADER"].pressing():
-        #     motors["misc"]["intake"].spin(FORWARD, 30, PERCENT)
-        #     if intakeDistance.object_distance() < 50 and brain.timer.time() > 1000:
-        #         brain.timer.clear()
-        #     if brain.timer.time() > 150 and brain.timer.time() < 1000:
-        #         motors["misc"]["intake"].spin(REVERSE, 50, PERCENT)
-
         # Grabber sensors
         if mogo_pneu_engaged == True:
             if leftDistance.object_distance() < 80 and rightDistance.object_distance() < 80:
