@@ -278,10 +278,10 @@ def driver():
         if controls["INTAKE_IN_HOLD"].pressing():
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
             if allow_intake_input:
-                motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
+                motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
         elif controls["INTAKE_OUT_HOLD"].pressing():
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
-            motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
+            motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
         else:
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
