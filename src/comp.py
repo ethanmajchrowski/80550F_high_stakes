@@ -503,18 +503,22 @@ class AutonomousHandler:
             # Intake color sort
             if self.dynamic_vars["intake_color_sort"] != "none":
                 if ((self.dynamic_vars["intake_color_sort"] == "eject_blue") 
-                    and intakeColor.hue() > 100 and not self.dynamic_vars["eject_prep"]):
+                    and intakeColor.hue() > 100 and not self.dynamic_vars["eject_prep"]
+                    and intakeColor.is_near_object()):
 
                     self.dynamic_vars["eject_prep"] = True
                 
                 if ((self.dynamic_vars["intake_color_sort"] == "eject_red") 
-                    and intakeColor.hue() < 18 and not self.dynamic_vars["eject_prep"]):
+                    and intakeColor.hue() < 18 and not self.dynamic_vars["eject_prep"]
+                    and intakeColor.is_near_object()):
 
                     self.dynamic_vars["eject_prep"] = True
 
                 if ((intakeDistance.object_distance() < 70) 
                         and (not self.dynamic_vars["queued_sort"]) 
                         and (self.dynamic_vars["eject_prep"])):
+                    self.dynamic_vars["intake_last_command"] = (motors["misc"]["intake_chain"].command(PERCENT), 
+                                                        motors["misc"]["intake_chain"].direction())
                     motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
                     brain.timer.event(self.color_sort, 210)
 
@@ -525,9 +529,7 @@ class AutonomousHandler:
 
     def color_sort(self):
         # Intake is spinning and it's time to engage the stop to eject
-        if motors["misc"]["intake_chain"].command() != 0:
-            self.dynamic_vars["intake_last_command"] = (motors["misc"]["intake_chain"].command(PERCENT), 
-                                                        motors["misc"]["intake_chain"].direction())
+        if motors["misc"]["intake_chain"].command(PERCENT) != 0:
             motors["misc"]["intake_chain"].stop(BRAKE)
 
             # At this point, allow_intake_input will be false
@@ -540,7 +542,7 @@ class AutonomousHandler:
             # Re-enable intake
             last_command = self.dynamic_vars["intake_last_command"]
             # spin motor with last DIRECTION and last SPEED
-            motors["misc"]["intake"].spin(last_command[1], last_command[0])
+            motors["misc"]["intake_chain"].spin(last_command[1], last_command[0], PERCENT)
             self.dynamic_vars["queued_sort"] = False
             self.dynamic_vars["eject_prep"] = False
 
