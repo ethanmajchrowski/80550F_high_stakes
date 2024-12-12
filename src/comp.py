@@ -1,6 +1,6 @@
 # Filename: comp.py
 # Devices & variables last updated:
-	# 2024-12-11 17:06:07.044846
+	# 2024-12-11 17:08:05.112797
 ####################
 #region Devices
 # Filename: driver.py
@@ -161,6 +161,9 @@ class Logger:
 # load config data from SD card
 with open("cfg/config.json", 'r') as f:
     data = load(f)
+
+# Set initial color sort from SD card
+color_setting = data["config"]["initial_color_sorting"]
 #endregion Devices####################
 #DO NOT CHANGE THE FOLLOWING LINE:#
 #end_1301825#

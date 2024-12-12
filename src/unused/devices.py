@@ -156,3 +156,6 @@ class Logger:
 # load config data from SD card
 with open("cfg/config.json", 'r') as f:
     data = load(f)
+
+# Set initial color sort from SD card
+color_setting = data["config"]["initial_color_sorting"]
