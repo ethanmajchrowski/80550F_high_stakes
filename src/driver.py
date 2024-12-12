@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-12-11 16:59:31.170280
+	# 2024-12-11 17:02:49.686884
 ####################
 #region Devices
 # Filename: driver.py
@@ -56,18 +56,16 @@ motors = {
 mogo_pneu = DigitalOut(brain.three_wire_port.a)
 
 intake_pneu = DigitalOut(brain.three_wire_port.h)
-# side_scoring_a = DigitalOut(brain.three_wire_port.a)
-# side_scoring_b = DigitalOut(brain.three_wire_port.d)
+doinker_pneu = DigitalOut(brain.three_wire_port.b)
 
 # SENSORS
-# leftEnc = motors["left"]["A"]
-# rightEnc = motors["right"]["A"]
 leftEnc = Rotation(Ports.PORT2)
 rightEnc = Rotation(Ports.PORT17)
 
 leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)
-# intakeDistance = Distance(Ports.PORT6)
+intakeDistance = Distance(Ports.PORT9)
+intakeColor = Optical(Ports.PORT10)
 
 imu = Inertial(Ports.PORT11)
 
@@ -79,6 +77,11 @@ if calibrate_imu:
 mogo_pneu_engaged = False
 mogo_pneu_status = False
 elevation_status = False
+
+# Intake ejector related booleans
+allow_intake_input = True
+queued_sort = False
+eject_prep = False
 
 lmg = MotorGroup(*motors["left"].values())
 rmg = MotorGroup(*motors["right"].values())
@@ -187,6 +190,7 @@ controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 # controls["SIDE_SCORING_TOGGLE"].pressed(toggle_side_scoring)
 
+color_setting = "blue"
 allow_intake_input = True
 queued_sort = False
 # This will let us look lower in the intake and allow the ejector to work
@@ -216,7 +220,7 @@ def intake_sorter():
 def driver():
     global eject_prep, queued_sort
     while True:
-        intakecolor.set_light_power(100, PERCENT)
+        intakeColor.set_light_power(100, PERCENT)
         brain.screen.clear_screen()
 
         # Movement controls
@@ -236,14 +240,14 @@ def driver():
         motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
         motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
 
-        if color_setting == "blue" and intakecolor.hue() > 100 and not eject_prep:
+        if color_setting == "blue" and intakeColor.hue() > 100 and not eject_prep:
             eject_prep = True
             print("READY TO EJECT")
 
         # if brain.timer.time() > 1000:
         #     eject_setting = False
         # Intake Controls
-        # if color_setting == "blue" and intakecolor.hue() > 100 and not queued_sort:
+        # if color_setting == "blue" and intakeColor.hue() > 100 and not queued_sort:
         if (intakeDistance.object_distance() < 70) and (not queued_sort) and (eject_prep):
             # eject_setting = True
             motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)

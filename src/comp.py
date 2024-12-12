@@ -1,6 +1,6 @@
 # Filename: comp.py
 # Devices & variables last updated:
-	# 2024-12-03 21:38:12.892824
+	# 2024-12-11 17:02:49.682055
 ####################
 #region Devices
 # Filename: driver.py
@@ -33,8 +33,7 @@ controls = {
     "ELEVATION_RELEASE_1": con.buttonDown,
     "ELEVATION_RELEASE_2": con.buttonLeft,
     "AUTO_SIDE_LOADER":    con.buttonL2,
-    "INTAKE_FLEX_ONLY":    con.buttonL2,
-    "DOINKER":             con.buttonRight,
+    "CYCLE_EJECTOR_COLOR": con.buttonLeft,
 }
 motors = {
     "left": {
@@ -58,18 +57,15 @@ mogo_pneu = DigitalOut(brain.three_wire_port.a)
 
 intake_pneu = DigitalOut(brain.three_wire_port.h)
 doinker_pneu = DigitalOut(brain.three_wire_port.b)
-# side_scoring_a = DigitalOut(brain.three_wire_port.a)
-# side_scoring_b = DigitalOut(brain.three_wire_port.d)
 
 # SENSORS
-# leftEnc = motors["left"]["A"]
-# rightEnc = motors["right"]["A"]
 leftEnc = Rotation(Ports.PORT2)
 rightEnc = Rotation(Ports.PORT17)
 
 leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)
 intakeDistance = Distance(Ports.PORT9)
+intakeColor = Optical(Ports.PORT10)
 
 imu = Inertial(Ports.PORT11)
 
@@ -81,6 +77,11 @@ if calibrate_imu:
 mogo_pneu_engaged = False
 mogo_pneu_status = False
 elevation_status = False
+
+# Intake ejector related booleans
+allow_intake_input = True
+queued_sort = False
+eject_prep = False
 
 lmg = MotorGroup(*motors["left"].values())
 rmg = MotorGroup(*motors["right"].values())
