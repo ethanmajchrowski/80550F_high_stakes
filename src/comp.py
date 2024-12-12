@@ -788,9 +788,9 @@ def driver():
         motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
         motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
 
-        if color_setting == "eject_blue" and intakeColor.hue() > 100 and not eject_prep:
+        if color_setting == "eject_blue" and intakeColor.hue() > 100 and not eject_prep and intakeColor.is_near_object():
             eject_prep = True
-        if color_setting == "eject_red" and intakeColor.hue() < 18 and not eject_prep:
+        if color_setting == "eject_red" and intakeColor.hue() < 18 and not eject_prep and intakeColor.is_near_object():
             eject_prep = True
 
         if (intakeDistance.object_distance() < 70) and (not queued_sort) and (eject_prep):
