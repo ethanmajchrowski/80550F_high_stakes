@@ -474,14 +474,16 @@ class AutonomousHandler:
             "drop_after_auto_halt": False,
             "raise_after_auto_halt": False,
             "jam_listen": False,
+            # Color sorting
+            "intake_color_sort": "none", # options: "none", "eject_blue", "eject_red"
+            "queued_sort": False,
+            "eject_prep": False,
+            "last_intake_command": None,
         }
         self.end_time = 0
 
     def misc_listeners(self):
         #thread
-        last_intake_pos = 0
-        change_pos = 0
-        constant_ticks = 0
 
         while True:
             if self.dynamic_vars["mogo_listen"]:
@@ -497,37 +499,50 @@ class AutonomousHandler:
                         intake_pneu.set(False)
                     if self.dynamic_vars["raise_after_auto_halt"]:
                         intake_pneu.set(True)
-                # print("INTAKE DISTANCE SENSOR NOT CONNECTED!")
             
-            # Jam listener
-            # if self.dynamic_vars["jam_listen"]:
-            #     scr = brain.screen
-            #     scr.clear_screen()
-            #     scr.set_cursor(1,1)
-            #     scr.set_font(FontType.MONO20)
-            #     scr.print(constant_ticks)
-            #     scr.new_line()
-            #     scr.print(motors["misc"]["intake"].command(VelocityUnits.PERCENT))
-            #     scr.new_line()
-            #     scr.render()
+            # Intake color sort
+            if self.dynamic_vars["intake_color_sort"] != "none":
+                if ((self.dynamic_vars["intake_color_sort"] == "eject_blue") 
+                    and intakeColor.hue() > 100 and not self.dynamic_vars["eject_prep"]):
 
-            #     if motors["misc"]["intake"].command() != 0:
-            #         intake_pos = motors["misc"]["intake"].position()
-            #         change_pos = abs(intake_pos - last_intake_pos)
+                    self.dynamic_vars["eject_prep"] = True
+                
+                if ((self.dynamic_vars["intake_color_sort"] == "eject_red") 
+                    and intakeColor.hue() < 18 and not self.dynamic_vars["eject_prep"]):
 
-            #         if change_pos < 0.8:
-            #             constant_ticks += 1
-            #         else:
-            #             constant_ticks = 0
+                    self.dynamic_vars["eject_prep"] = True
 
-            #         if constant_ticks > 5:
-            #             last_motor_velocity = motors["misc"]["intake"].command(VelocityUnits.PERCENT)
-            #             brain.timer.event(motors["misc"]["intake"].spin, 200, (FORWARD, last_motor_velocity, PERCENT))
-            #             motors["misc"]["intake"].stop(COAST)
-            #             constant_ticks = 0
+                if ((intakeDistance.object_distance() < 70) 
+                        and (not self.dynamic_vars["queued_sort"]) 
+                        and (self.dynamic_vars["eject_prep"])):
+                    motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
+                    brain.timer.event(self.color_sort, 210)
 
-            # last_intake_pos = motors["misc"]["intake"].position()
+                    self.dynamic_vars["queued_sort"] = True
+
             sleep(10, MSEC)
+            # end of thread loop
+
+    def color_sort(self):
+        # Intake is spinning and it's time to engage the stop to eject
+        if motors["misc"]["intake_chain"].command() != 0:
+            self.dynamic_vars["intake_last_command"] = (motors["misc"]["intake_chain"].command(PERCENT), 
+                                                        motors["misc"]["intake_chain"].direction())
+            motors["misc"]["intake_chain"].stop(BRAKE)
+
+            # At this point, allow_intake_input will be false
+            # so the current code won't run in a loop
+            # blue color timings
+            # brain.timer.event(intake_sorter, 170)
+            # distance timings
+            brain.timer.event(self.color_sort, 150)
+        else:
+            # Re-enable intake
+            last_command = self.dynamic_vars["intake_last_command"]
+            # spin motor with last DIRECTION and last SPEED
+            motors["misc"]["intake"].spin(last_command[1], last_command[0])
+            self.dynamic_vars["queued_sort"] = False
+            self.dynamic_vars["eject_prep"] = False
 
     # decent settings: 
     """
@@ -693,7 +708,6 @@ print(auton.run)
 #endregion auton
 
 #region driver
-
 def switch_mogo_engaged():
     global mogo_pneu_engaged
     mogo_pneu_engaged = not mogo_pneu_engaged
