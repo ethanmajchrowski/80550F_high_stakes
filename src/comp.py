@@ -482,6 +482,7 @@ class AutonomousHandler:
             "queued_sort": False,
             "eject_prep": False,
             "last_intake_command": None,
+            "intake_color_kill": "none" # options: "none", "kill_on_blue", "kill_on_red"
         }
         self.end_time = 0
 
@@ -496,7 +497,7 @@ class AutonomousHandler:
             # Intake Distance auto halt
             if self.dynamic_vars["intake_auto_halt"]:
                 if intakeDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
-                    motors["misc"]["intake"].stop(BRAKE)
+                    motors["misc"]["intake_chain"].stop(BRAKE)
 
                     if self.dynamic_vars["drop_after_auto_halt"]:
                         intake_pneu.set(False)
@@ -506,7 +507,7 @@ class AutonomousHandler:
             # Intake color sort
             if self.dynamic_vars["intake_color_sort"] != "none":
                 if ((self.dynamic_vars["intake_color_sort"] == "eject_blue") 
-                    and intakeColor.hue() > 100 and not self.dynamic_vars["eject_prep"]
+                    and intakeColor.hue() > 180 and not self.dynamic_vars["eject_prep"]
                     and intakeColor.is_near_object()):
 
                     self.dynamic_vars["eject_prep"] = True
@@ -526,6 +527,23 @@ class AutonomousHandler:
                     brain.timer.event(self.color_sort, 210)
 
                     self.dynamic_vars["queued_sort"] = True
+
+            # Intake kill on red
+            if ((
+                    self.dynamic_vars["intake_color_kill"] == "kill_on_red") 
+                    and intakeColor.hue() < 18
+                    and intakeColor.is_near_object()
+                ):
+                motors["misc"]["intake_chain"].stop()
+                motors["misc"]["intake_flex"].stop()
+            # Intake kill on blue
+            if ((
+                    self.dynamic_vars["intake_color_kill"] == "kill_on_blue") 
+                    and intakeColor.hue() > 180
+                    and intakeColor.is_near_object()
+                ):
+                motors["misc"]["intake_chain"].stop()
+                motors["misc"]["intake_flex"].stop()
 
             sleep(10, MSEC)
             # end of thread loop
@@ -693,7 +711,6 @@ class AutonomousHandler:
                             self.dynamic_vars[event[2]] = event[3]
                     elif callable(event[2]):
                         # Call the function (at index 2) with the unpacked (*) args (at index 3)
-                        # ["intake", (1200, 0), motors["misc"]["intake"].spin, (FORWARD, 50)],
                         event[2](*event[3])
 
             done = path_handler.path_complete
@@ -791,29 +808,42 @@ def driver():
         motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
         motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
 
-        if color_setting == "eject_blue" and intakeColor.hue() > 100 and not eject_prep and intakeColor.is_near_object():
-            eject_prep = True
-        if color_setting == "eject_red" and intakeColor.hue() < 18 and not eject_prep and intakeColor.is_near_object():
-            eject_prep = True
-
-        if (intakeDistance.object_distance() < 70) and (not queued_sort) and (eject_prep):
-            motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
-            brain.timer.event(intake_sorter, 210)
-
-            queued_sort = True
-
+        #NORMAL INTAKE, NO COLOR
         if controls["INTAKE_FLEX_HOLD"].pressing():
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
         elif controls["INTAKE_IN_HOLD"].pressing():
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
-            if allow_intake_input:
-                motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
+            motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
         elif controls["INTAKE_OUT_HOLD"].pressing():
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
-            motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
+            motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
         else:
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
+
+        # if color_setting == "eject_blue" and intakeColor.hue() > 180 and not eject_prep and intakeColor.is_near_object():
+        #     eject_prep = True
+        # if color_setting == "eject_red" and intakeColor.hue() < 18 and not eject_prep and intakeColor.is_near_object():
+        #     eject_prep = True
+
+        # if (intakeDistance.object_distance() < 70) and (not queued_sort) and (eject_prep):
+        #     motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
+        #     brain.timer.event(intake_sorter, 210)
+
+        #     queued_sort = True
+
+        # if controls["INTAKE_FLEX_HOLD"].pressing():
+        #     motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
+        # elif controls["INTAKE_IN_HOLD"].pressing():
+        #     motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
+        #     if allow_intake_input:
+        #         motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
+        # elif controls["INTAKE_OUT_HOLD"].pressing():
+        #     motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
+        #     motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
+        # else:
+        #     motors["misc"]["intake_flex"].stop()
+        #     motors["misc"]["intake_chain"].stop()
 
         # Grabber sensors
         if mogo_pneu_engaged == True:
