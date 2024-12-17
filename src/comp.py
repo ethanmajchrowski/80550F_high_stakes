@@ -365,6 +365,15 @@ class DeltaPositioning():
         self.last_left_encoder = self.leftEnc.position()
         return [dx, dy]
 
+class LaserPositioning():
+    def __init__(self) -> None:
+        pass
+
+    def update(self):
+        dx, dy = 0, 0
+
+        return [dx, dy]
+
 class MultipurposePID:
     def __init__(self, KP, KD, KI, KI_MAX, MIN = None) -> None:
         '''
