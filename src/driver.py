@@ -291,10 +291,17 @@ def driver():
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
 
-        # Grabber sensors
-        if mogo_pneu_engaged == True:
-            if leftDistance.object_distance() < 80 and rightDistance.object_distance() < 80:
-                mogo_pneu.set(False)
+        if controls["SIDE_STAKE_MANUAL_UP"].pressing():
+            motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
+        elif controls["SIDE_STAKE_MANUAL_DOWN"].pressing():
+            motors["misc"]["wall_stake"].spin(REVERSE, 100, PERCENT)
+        else:
+            motors["misc"]["wall_stake"].stop(BRAKE)
+
+        # # Grabber sensors
+        # if mogo_pneu_engaged == True:
+        #     if leftDistance.object_distance() < 80 and rightDistance.object_distance() < 80:
+        #         mogo_pneu.set(False)
 
         # Screen debugging
         scr = brain.screen
