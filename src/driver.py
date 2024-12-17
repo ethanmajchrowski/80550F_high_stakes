@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-12-16 18:05:16.637747
+	# 2024-12-16 19:14:01.051340
 ####################
 #region Devices
 # Filename: driver.py
@@ -8,7 +8,7 @@
     # 2024-10-30 18:19:48.449465
 ####################
 #region Devices
-calibrate_imu = True
+calibrate_imu = False
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -51,7 +51,7 @@ motors = {
     "misc": {
         "intake_chain": Motor(Ports.PORT14, GearSetting.RATIO_6_1, True),  
         "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, False), # 5.5 W flexwheel hinge
-        "wall_stake": Motor(Ports.PORT1, GearSetting.RATIO_18_1, True)
+        "wall_stake": Motor(Ports.PORT1, GearSetting.RATIO_18_1, False)
     }
 }
 
@@ -293,10 +293,11 @@ def driver():
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
 
+        # WALL STAKES MOTORS
         if controls["SIDE_STAKE_MANUAL_UP"].pressing():
             motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
         elif controls["SIDE_STAKE_MANUAL_DOWN"].pressing():
-            motors["misc"]["wall_stake"].spin(REVERSE, 100, PERCENT)
+            motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
         else:
             motors["misc"]["wall_stake"].stop(BRAKE)
 
