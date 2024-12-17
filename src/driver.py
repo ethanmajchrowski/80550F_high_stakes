@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-12-12 10:01:03.071519
+	# 2024-12-16 17:52:27.168901
 ####################
 #region Devices
 # Filename: driver.py
@@ -19,22 +19,22 @@ from vex import *
 from json import load, dump
 
 brain = Brain()
-con = Controller()
+con = Controller(PRIMARY)
+con_2 = Controller(PARTNER)
 
 controls = {
-    "DRIVE_FORWARD_AXIS":  con.axis3,
-    "DRIVE_TURN_AXIS":     con.axis1,
-    "INTAKE_IN_HOLD":      con.buttonR1,
-    "INTAKE_OUT_HOLD":     con.buttonR2,
-    "INTAKE_HEIGHT_TOGGLE":con.buttonL1,
-    "SIDE_SCORING_TOGGLE": con.buttonB,
-    "MOGO_GRABBER_TOGGLE": con.buttonA,
+    "DRIVE_FORWARD_AXIS":      con.axis3,
+    "DRIVE_TURN_AXIS":         con.axis1,
+    "INTAKE_IN_HOLD":          con.buttonR1,
+    "INTAKE_OUT_HOLD":         con.buttonR2,
+    "INTAKE_HEIGHT_TOGGLE":    con.buttonL1,
+    "SIDE_SCORING_TOGGLE":     con.buttonB,
     "AUTO_MOGO_ENGAGE_TOGGLE": con.buttonY,
-    "ELEVATION_RELEASE_1": con.buttonDown,
-    "ELEVATION_RELEASE_2": con.buttonLeft,
-    "CYCLE_EJECTOR_COLOR": con.buttonLeft,
-    "DOINKER":             con.buttonRight,
-    "INTAKE_FLEX_HOLD":    con.buttonL2,
+    "CYCLE_EJECTOR_COLOR":     con.buttonLeft,
+    "DOINKER":                 con.buttonRight,
+    "INTAKE_FLEX_HOLD":        con.buttonL2,
+    "SIDE_STAKE_MANUAL_UP":    con_2.buttonL1,
+    "SIDE_STAKE_MANUAL_DOWN":  con_2.buttonL2
 }
 
 motors = {
