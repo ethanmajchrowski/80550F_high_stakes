@@ -24,7 +24,7 @@ controls = {
     "INTAKE_OUT_HOLD":         con.buttonR2,
     "INTAKE_HEIGHT_TOGGLE":    con.buttonL1,
     "SIDE_SCORING_TOGGLE":     con.buttonB,
-    "AUTO_MOGO_ENGAGE_TOGGLE": con.buttonY,
+    "MOGO_GRABBER_TOGGLE":     con.buttonA,
     "CYCLE_EJECTOR_COLOR":     con.buttonLeft,
     "DOINKER":                 con.buttonRight,
     "INTAKE_FLEX_HOLD":        con.buttonL2,

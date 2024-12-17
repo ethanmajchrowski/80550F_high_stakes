@@ -1,6 +1,6 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-12-16 17:55:20.488166
+	# 2024-12-16 18:05:16.620787
 ####################
 #region Devices
 # Filename: driver.py
@@ -29,7 +29,7 @@ controls = {
     "INTAKE_OUT_HOLD":         con.buttonR2,
     "INTAKE_HEIGHT_TOGGLE":    con.buttonL1,
     "SIDE_SCORING_TOGGLE":     con.buttonB,
-    "AUTO_MOGO_ENGAGE_TOGGLE": con.buttonY,
+    "MOGO_GRABBER_TOGGLE":     con.buttonA,
     "CYCLE_EJECTOR_COLOR":     con.buttonLeft,
     "DOINKER":                 con.buttonRight,
     "INTAKE_FLEX_HOLD":        con.buttonL2,
