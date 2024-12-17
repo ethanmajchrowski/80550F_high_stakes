@@ -45,7 +45,8 @@ motors = {
     },
     "misc": {
         "intake_chain": Motor(Ports.PORT14, GearSetting.RATIO_6_1, True),  
-        "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, False) # 5.5 W flexwheel hinge
+        "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, False), # 5.5 W flexwheel hinge
+        "wall_stake": Motor(Ports.PORT1, GearSetting.RATIO_18_1, True)
     }
 }
 
@@ -58,6 +59,7 @@ doinker_pneu = DigitalOut(brain.three_wire_port.b)
 # SENSORS
 leftEnc = Rotation(Ports.PORT2)
 rightEnc = Rotation(Ports.PORT17)
+wallEnc = Rotation(Ports.PORT6)
 
 leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)
