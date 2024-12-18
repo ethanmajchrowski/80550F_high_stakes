@@ -1,6 +1,6 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-12-18 15:57:35.024703
+	# 2024-12-18 15:58:52.644325
 ####################
 #region Devices
 # Filename: driver.py
@@ -70,6 +70,7 @@ leftEnc = Rotation(Ports.PORT2)
 rightEnc = Rotation(Ports.PORT17)
 wallEnc = Rotation(Ports.PORT6)
 wall_setpoint = 0
+wall_control_cooldown = 0
 
 leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)
