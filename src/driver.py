@@ -313,7 +313,7 @@ def lady_brown_PID():
     pid = MultipurposePID(0.1, 0, 0, 0, None)
 
     while True:
-        output = pid.calculate(wall_setpoint, wallEnc.position())
+        output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
 
         motors["misc"]["wall_stake"].spin(FORWARD, output, VOLT)
 
@@ -381,8 +381,14 @@ def driver():
         if wall_control_cooldown == 0:
             if controls["LADY_BROWN_MACRO_DOWN_A"].pressing() and controls["LADY_BROWN_MACRO_DOWN_B"].pressing():
                 wall_control_cooldown = 25
+                if wall_setpoint > 0:
+                    wall_setpoint -= 1
+                    
             elif controls["LADY_BROWN_MACRO_UP_A"].pressing() and controls["LADY_BROWN_MACRO_UP_B"].pressing():
                 wall_control_cooldown = 25
+                if wall_setpoint < len(wall_positions) - 1:
+                    wall_setpoint += 1
+                    
         elif wall_control_cooldown > 0:
             wall_control_cooldown -= 1
 
