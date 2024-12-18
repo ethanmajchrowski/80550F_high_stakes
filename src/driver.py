@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-12-18 15:49:40.490115
+	# 2024-12-18 15:57:35.052883
 ####################
 #region Devices
 # Filename: driver.py
@@ -33,8 +33,12 @@ controls = {
     "CYCLE_EJECTOR_COLOR":     con.buttonLeft,
     "DOINKER":                 con.buttonRight,
     "INTAKE_FLEX_HOLD":        con.buttonL2,
-    "SIDE_STAKE_MANUAL_UP":    con_2.buttonL1,
-    "SIDE_STAKE_MANUAL_DOWN":  con_2.buttonL2
+    # "SIDE_STAKE_MANUAL_UP":    con_2.buttonL1,
+    # "SIDE_STAKE_MANUAL_DOWN":  con_2.buttonL2
+    "LADY_BROWN_MACRO_UP_A":  con.buttonL1,
+    "LADY_BROWN_MACRO_UP_B":  con.buttonR1,
+    "LADY_BROWN_MACRO_DOWN_A": con.buttonR1,  
+    "LADY_BROWN_MACRO_DOWN_B": con.buttonR2,  
 }
 
 motors = {
