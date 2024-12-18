@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-12-16 19:14:01.051340
+	# 2024-12-18 15:49:40.490115
 ####################
 #region Devices
 # Filename: driver.py
@@ -8,7 +8,7 @@
     # 2024-10-30 18:19:48.449465
 ####################
 #region Devices
-calibrate_imu = False
+calibrate_imu = True
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -65,6 +65,7 @@ doinker_pneu = DigitalOut(brain.three_wire_port.b)
 leftEnc = Rotation(Ports.PORT2)
 rightEnc = Rotation(Ports.PORT17)
 wallEnc = Rotation(Ports.PORT6)
+wall_setpoint = 0
 
 leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)

@@ -1,6 +1,6 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-12-16 19:14:01.034748
+	# 2024-12-18 15:49:40.464561
 ####################
 #region Devices
 # Filename: driver.py
@@ -65,6 +65,7 @@ doinker_pneu = DigitalOut(brain.three_wire_port.b)
 leftEnc = Rotation(Ports.PORT2)
 rightEnc = Rotation(Ports.PORT17)
 wallEnc = Rotation(Ports.PORT6)
+wall_setpoint = 0
 
 leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)
