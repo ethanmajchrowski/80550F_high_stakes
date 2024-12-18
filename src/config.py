@@ -1,6 +1,6 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-12-18 15:58:52.644325
+	# 2024-12-18 16:01:38.369526
 ####################
 #region Devices
 # Filename: driver.py
@@ -71,6 +71,7 @@ rightEnc = Rotation(Ports.PORT17)
 wallEnc = Rotation(Ports.PORT6)
 wall_setpoint = 0
 wall_control_cooldown = 0
+wall_positions = [0, 90] # wall_setpoint is an INDEX used to grab from THIS LIST
 
 leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)

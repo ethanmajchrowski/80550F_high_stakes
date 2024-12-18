@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2024-12-18 15:58:52.660852
+	# 2024-12-18 16:01:38.383323
 ####################
 #region Devices
 # Filename: driver.py
@@ -71,6 +71,7 @@ rightEnc = Rotation(Ports.PORT17)
 wallEnc = Rotation(Ports.PORT6)
 wall_setpoint = 0
 wall_control_cooldown = 0
+wall_positions = [0, 90] # wall_setpoint is an INDEX used to grab from THIS LIST
 
 leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)
@@ -322,7 +323,7 @@ if data["config"]["enable_lady_brown"]:
     Thread(lady_brown_PID)
 
 def driver():
-    global eject_prep, queued_sort
+    global eject_prep, queued_sort, wall_control_cooldown, wall_setpoint
     while True:
         intakeColor.set_light_power(100, PERCENT)
         brain.screen.clear_screen()
@@ -375,6 +376,15 @@ def driver():
             motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
         else:
             motors["misc"]["wall_stake"].stop(BRAKE)
+
+        # Lady Brown controls
+        if wall_control_cooldown == 0:
+            if controls["LADY_BROWN_MACRO_DOWN_A"].pressing() and controls["LADY_BROWN_MACRO_DOWN_B"].pressing():
+                wall_control_cooldown = 25
+            elif controls["LADY_BROWN_MACRO_UP_A"].pressing() and controls["LADY_BROWN_MACRO_UP_B"].pressing():
+                wall_control_cooldown = 25
+        elif wall_control_cooldown > 0:
+            wall_control_cooldown -= 1
 
         # # Grabber sensors
         # if mogo_pneu_engaged == True:
