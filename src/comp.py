@@ -899,7 +899,7 @@ def lady_brown_PID():
 
         sleep(10)
 
-if data["config"]["enable lady brown"]:
+if data["config"]["enable_lady_brown"]:
     Thread(lady_brown_PID)
 
 #region comp
