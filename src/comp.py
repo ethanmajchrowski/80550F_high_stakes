@@ -889,6 +889,19 @@ def driver():
 
 #endregion driver
 
+def lady_brown_PID():
+    pid = MultipurposePID(0.1, 0, 0, 0, None)
+
+    while True:
+        output = pid.calculate(wall_setpoint, wallEnc.position())
+
+        motors["misc"]["wall_stake"].spin(FORWARD, output, VOLT)
+
+        sleep(10)
+
+if data["config"]["enable lady brown"]:
+    Thread(lady_brown_PID)
+
 #region comp
 #  ██████  ██████  ███    ███ ██████  
 # ██      ██    ██ ████  ████ ██   ██ 
