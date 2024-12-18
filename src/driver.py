@@ -184,6 +184,62 @@ intakeColor.set_light_power(100, PERCENT)
 #end_1301825#
 ####################
 
+class MultipurposePID:
+    def __init__(self, KP, KD, KI, KI_MAX, MIN = None) -> None:
+        '''
+        Create a multipurpose PID that has individually tuned control variables.
+
+        Args:
+            KP (int): kP value for tuning controller
+            KD (int): kD value for tuning controller
+            KI (int): kI value for tuning controller
+            KI_MAX (int): integral will not be allowed to pass this value
+            MIN (int): a minimum value that the PID will output
+
+        Returns:
+            None
+        '''
+        
+        self.kP, self.kD, self.kI = KP, KD, KI
+        self.kI_max = KI_MAX
+        self.error = 0
+        self.integral = 0
+        self.derivative = 0
+        self.last_error = 0
+        self.minimum = MIN
+    def calculate(self, TARGET, INPUT, DELAY = 0) -> int:
+        '''
+        Calculates the output based on the PID's tuning and the provided target & input
+
+        Args:
+            TARGET (int): a number that the PID will try to reach
+            INPUT (int): the current sensor or other input
+            DELAY (int): the delay for the loop
+
+        Returns:
+            PID outpit (int)
+        '''
+        self.error = TARGET - INPUT
+        if self.kI != 0:
+            if abs(self.error) < self.kI_max:
+                self.integral += self.error
+            else:
+                self.integral = 0
+        else:
+            self.integral = 0
+
+        self.derivative = self.error - self.last_error
+        
+        output = (self.error * self.kP) + (self.integral * self.kI) + (self.derivative * self.kD)
+        if self.minimum is not None:
+            if abs(output) < self.minimum:
+                if self.error < 0: output = -self.minimum
+                else: output = self.minimum
+        
+        self.last_error = self.error
+        wait(DELAY, MSEC)
+        return output
+
 def switch_mogo_engaged():
     global mogo_pneu_engaged
     mogo_pneu_engaged = not mogo_pneu_engaged
