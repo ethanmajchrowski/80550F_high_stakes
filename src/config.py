@@ -1,14 +1,9 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2024-12-18 16:01:38.369526
+	# 2024-12-18 17:16:58.237957
 ####################
 #region Devices
-# Filename: driver.py
-# Devices & variables last updated:
-    # 2024-10-30 18:19:48.449465
-####################
-#region Devices
-calibrate_imu = True
+calibrate_imu = False
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -17,6 +12,15 @@ calibrate_imu = True
 
 from vex import *
 from json import load, dump
+
+sd_fail = False
+# load config data from SD card
+try:
+    with open("cfg/config.json", 'r') as f:
+        data = load(f)
+except:
+    sd_fail = True
+    print("ERROR LOADING SD CARD DATA")
 
 brain = Brain()
 con = Controller(PRIMARY)
@@ -33,12 +37,12 @@ controls = {
     "CYCLE_EJECTOR_COLOR":     con.buttonLeft,
     "DOINKER":                 con.buttonRight,
     "INTAKE_FLEX_HOLD":        con.buttonL2,
-    # "SIDE_STAKE_MANUAL_UP":    con_2.buttonL1,
-    # "SIDE_STAKE_MANUAL_DOWN":  con_2.buttonL2
+    "SIDE_STAKE_MANUAL_UP":    con_2.buttonL1,
+    "SIDE_STAKE_MANUAL_DOWN":  con_2.buttonL2,
     "LADY_BROWN_MACRO_UP_A":  con.buttonL1,
     "LADY_BROWN_MACRO_UP_B":  con.buttonR1,
     "LADY_BROWN_MACRO_DOWN_A": con.buttonR1,  
-    "LADY_BROWN_MACRO_DOWN_B": con.buttonR2,  
+    "LADY_BROWN_MACRO_DOWN_B": con.buttonL2,  
 }
 
 motors = {
@@ -69,9 +73,9 @@ doinker_pneu = DigitalOut(brain.three_wire_port.b)
 leftEnc = Rotation(Ports.PORT2)
 rightEnc = Rotation(Ports.PORT17)
 wallEnc = Rotation(Ports.PORT6)
-wall_setpoint = 0
+wall_setpoint = 2
 wall_control_cooldown = 0
-wall_positions = [0, 90] # wall_setpoint is an INDEX used to grab from THIS LIST
+wall_positions = [-0.65*360, -2*360, -2.2*360] # wall_setpoint is an INDEX used to grab from THIS LIST
 
 leftDistance = Distance(Ports.PORT13)
 rightDistance = Distance(Ports.PORT19)
@@ -82,8 +86,20 @@ imu = Inertial(Ports.PORT11)
 
 if calibrate_imu:
     imu.calibrate()
-    while imu.is_calibrating(): 
-        wait(5)
+
+if not sd_fail:
+    enable_macro_lady_brown = data["config"]["enable_macro_lady_brown"]
+else:
+    enable_macro_lady_brown = False
+
+if enable_macro_lady_brown:
+    motors["misc"]["wall_stake"].spin_for(FORWARD, 1000, MSEC, 100, PERCENT)
+    wallEnc.set_position(0)
+    # put wall stake back up
+    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
+
+while imu.is_calibrating() and calibrate_imu: 
+    wait(5)
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False
@@ -168,15 +184,6 @@ class Logger:
 
     def start(self):
         Thread(self.log)
-
-sd_fail = False
-# load config data from SD card
-try:
-    with open("cfg/config.json", 'r') as f:
-        data = load(f)
-except:
-    sd_fail = True
-    print("ERROR LOADING SD CARD DATA")
 
 # Set initial color sort from SD card
 if not sd_fail:
