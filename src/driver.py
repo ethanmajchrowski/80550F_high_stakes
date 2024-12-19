@@ -18,6 +18,15 @@ calibrate_imu = False
 from vex import *
 from json import load, dump
 
+sd_fail = False
+# load config data from SD card
+try:
+    with open("cfg/config.json", 'r') as f:
+        data = load(f)
+except:
+    sd_fail = True
+    print("ERROR LOADING SD CARD DATA")
+
 brain = Brain()
 con = Controller(PRIMARY)
 con_2 = Controller(PARTNER)
@@ -33,8 +42,8 @@ controls = {
     "CYCLE_EJECTOR_COLOR":     con.buttonLeft,
     "DOINKER":                 con.buttonRight,
     "INTAKE_FLEX_HOLD":        con.buttonL2,
-    # "SIDE_STAKE_MANUAL_UP":    con_2.buttonL1,
-    # "SIDE_STAKE_MANUAL_DOWN":  con_2.buttonL2
+    "SIDE_STAKE_MANUAL_UP":    con_2.buttonL1,
+    "SIDE_STAKE_MANUAL_DOWN":  con_2.buttonL2,
     "LADY_BROWN_MACRO_UP_A":  con.buttonL1,
     "LADY_BROWN_MACRO_UP_B":  con.buttonR1,
     "LADY_BROWN_MACRO_DOWN_A": con.buttonR1,  
@@ -83,10 +92,16 @@ imu = Inertial(Ports.PORT11)
 if calibrate_imu:
     imu.calibrate()
 
-motors["misc"]["wall_stake"].spin_for(FORWARD, 1000, MSEC, 100, PERCENT)
-wallEnc.set_position(0)
-# put wall stake back up
-motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
+if not sd_fail:
+    enable_macro_lady_brown = data["config"]["enable_macro_lady_brown"]
+else:
+    enable_macro_lady_brown = False
+
+if enable_macro_lady_brown:
+    motors["misc"]["wall_stake"].spin_for(FORWARD, 1000, MSEC, 100, PERCENT)
+    wallEnc.set_position(0)
+    # put wall stake back up
+    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
 
 while imu.is_calibrating() and calibrate_imu: 
     wait(5)
@@ -174,15 +189,6 @@ class Logger:
 
     def start(self):
         Thread(self.log)
-
-sd_fail = False
-# load config data from SD card
-try:
-    with open("cfg/config.json", 'r') as f:
-        data = load(f)
-except:
-    sd_fail = True
-    print("ERROR LOADING SD CARD DATA")
 
 # Set initial color sort from SD card
 if not sd_fail:
@@ -327,7 +333,7 @@ def lady_brown_PID():
 
         sleep(10)
 
-if data["config"]["enable_lady_brown"]:
+if enable_macro_lady_brown:
     Thread(lady_brown_PID)
 
 def driver():
@@ -366,41 +372,40 @@ def driver():
 
         if controls["INTAKE_FLEX_HOLD"].pressing():
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
-        elif controls["INTAKE_IN_HOLD"].pressing() and not controls["LADY_BROWN_MACRO_UP_A"].pressing():
+        elif controls["INTAKE_IN_HOLD"].pressing() and ((not controls["LADY_BROWN_MACRO_UP_A"].pressing()) and enable_macro_lady_brown):
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
             if allow_intake_input:
                 motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
-        elif controls["INTAKE_OUT_HOLD"].pressing() and not controls["LADY_BROWN_MACRO_DOWN_B"].pressing():
+        elif controls["INTAKE_OUT_HOLD"].pressing() and ((not controls["LADY_BROWN_MACRO_DOWN_B"].pressing()) and enable_macro_lady_brown):
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
             motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
         else:
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
 
-        # # WALL STAKES MOTORS
-        # if controls["SIDE_STAKE_MANUAL_UP"].pressing():
-        #     motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
-        # elif controls["SIDE_STAKE_MANUAL_DOWN"].pressing():
-        #     motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
-        # else:
-        #     motors["misc"]["wall_stake"].stop(BRAKE)
+        # WALL STAKES MOTORS
+        if not enable_macro_lady_brown:
+            if controls["SIDE_STAKE_MANUAL_UP"].pressing():
+                motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
+            elif controls["SIDE_STAKE_MANUAL_DOWN"].pressing():
+                motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
+            else:
+                motors["misc"]["wall_stake"].stop(BRAKE)
+        else:
+            # Lady Brown controls
+            if wall_control_cooldown == 0:
+                if controls["LADY_BROWN_MACRO_DOWN_A"].pressing() and controls["LADY_BROWN_MACRO_DOWN_B"].pressing():
+                    wall_control_cooldown = 5
+                    if wall_setpoint > 0:
+                        wall_setpoint -= 1
 
-        # Lady Brown controls
-        if wall_control_cooldown == 0:
-            if controls["LADY_BROWN_MACRO_DOWN_A"].pressing() and controls["LADY_BROWN_MACRO_DOWN_B"].pressing():
-                wall_control_cooldown = 5
-                if wall_setpoint > 0:
-                    wall_setpoint -= 1
+                elif controls["LADY_BROWN_MACRO_UP_A"].pressing() and controls["LADY_BROWN_MACRO_UP_B"].pressing():
+                    wall_control_cooldown = 5
+                    if wall_setpoint < len(wall_positions) - 1:
+                        wall_setpoint += 1
 
-            elif controls["LADY_BROWN_MACRO_UP_A"].pressing() and controls["LADY_BROWN_MACRO_UP_B"].pressing():
-                wall_control_cooldown = 5
-                if wall_setpoint < len(wall_positions) - 1:
-                    wall_setpoint += 1
-
-        elif wall_control_cooldown > 0:
-            wall_control_cooldown -= 1
-
-        print(wall_control_cooldown)
+            elif wall_control_cooldown > 0:
+                wall_control_cooldown -= 1
 
         # # Grabber sensors
         # if mogo_pneu_engaged == True:
