@@ -2,7 +2,6 @@
 # Devices & variables last updated:
     # 2024-10-30 18:19:48.449465
 ####################
-#region Devices
 calibrate_imu = True
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
