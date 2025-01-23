@@ -32,17 +32,13 @@ controls = {
     "INTAKE_IN_HOLD":          con.buttonR1,
     "INTAKE_OUT_HOLD":         con.buttonR2,
     "INTAKE_HEIGHT_TOGGLE":    con.buttonL1,
-    "SIDE_SCORING_TOGGLE":     con.buttonB,
+    # "SIDE_SCORING_TOGGLE":     con.buttonB,
     "MOGO_GRABBER_TOGGLE":     con.buttonA,
     "CYCLE_EJECTOR_COLOR":     con.buttonLeft,
     "DOINKER":                 con.buttonRight,
     "INTAKE_FLEX_HOLD":        con.buttonL2,
     "SIDE_STAKE_MANUAL_UP":    con_2.buttonL1,
-    "SIDE_STAKE_MANUAL_DOWN":  con_2.buttonL2,
-    "LADY_BROWN_MACRO_UP_A":  con.buttonL1,
-    "LADY_BROWN_MACRO_UP_B":  con.buttonR1,
-    "LADY_BROWN_MACRO_DOWN_A": con.buttonR1,  
-    "LADY_BROWN_MACRO_DOWN_B": con.buttonL2,  
+    "SIDE_STAKE_MANUAL_DOWN":  con_2.buttonL2, 
 }
 
 motors = {
@@ -394,28 +390,28 @@ def driver():
             motors["misc"]["intake_chain"].stop()
 
         # WALL STAKES MOTORS
-        if not enable_macro_lady_brown:
-            if controls["SIDE_STAKE_MANUAL_UP"].pressing():
-                motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
-            elif controls["SIDE_STAKE_MANUAL_DOWN"].pressing():
-                motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
-            else:
-                motors["misc"]["wall_stake"].stop(BRAKE)
-        else:
-            # Lady Brown controls
-            if wall_control_cooldown == 0:
-                if controls["LADY_BROWN_MACRO_DOWN_A"].pressing() and controls["LADY_BROWN_MACRO_DOWN_B"].pressing():
-                    wall_control_cooldown = 5
-                    if wall_setpoint > 0:
-                        wall_setpoint -= 1
+        # if not enable_macro_lady_brown:
+        #     if controls["SIDE_STAKE_MANUAL_UP"].pressing():
+        #         motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
+        #     elif controls["SIDE_STAKE_MANUAL_DOWN"].pressing():
+        #         motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
+        #     else:
+        #         motors["misc"]["wall_stake"].stop(BRAKE)
+        # else:
+        #     # Lady Brown controls
+        #     if wall_control_cooldown == 0:
+        #         if controls["LADY_BROWN_MACRO_DOWN_A"].pressing() and controls["LADY_BROWN_MACRO_DOWN_B"].pressing():
+        #             wall_control_cooldown = 5
+        #             if wall_setpoint > 0:
+        #                 wall_setpoint -= 1
 
-                elif controls["LADY_BROWN_MACRO_UP_A"].pressing() and controls["LADY_BROWN_MACRO_UP_B"].pressing():
-                    wall_control_cooldown = 5
-                    if wall_setpoint < len(wall_positions) - 1:
-                        wall_setpoint += 1
+        #         elif controls["LADY_BROWN_MACRO_UP_A"].pressing() and controls["LADY_BROWN_MACRO_UP_B"].pressing():
+        #             wall_control_cooldown = 5
+        #             if wall_setpoint < len(wall_positions) - 1:
+        #                 wall_setpoint += 1
 
-            elif wall_control_cooldown > 0:
-                wall_control_cooldown -= 1
+        #     elif wall_control_cooldown > 0:
+        #         wall_control_cooldown -= 1
 
         # # Grabber sensors
         # if mogo_pneu_engaged == True:
