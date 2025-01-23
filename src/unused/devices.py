@@ -104,7 +104,6 @@ while imu.is_calibrating() and calibrate_imu:
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False
-elevation_status = False
 
 # Intake ejector related booleans
 allow_intake_input = True
