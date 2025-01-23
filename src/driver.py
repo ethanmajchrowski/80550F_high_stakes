@@ -427,10 +427,6 @@ def driver():
         scr.clear_screen()
         scr.set_cursor(1,1)
 
-        scr.print("Left distance: {}".format(leftDistance.object_distance()))
-        scr.next_row()
-        scr.print("Right distance: {}".format(rightDistance.object_distance()))
-        scr.next_row()
         scr.print("Timer: {}".format(brain.timer.time()))
         scr.next_row()
 

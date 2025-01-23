@@ -524,10 +524,6 @@ class AutonomousHandler:
         #thread
 
         while True:
-            if self.dynamic_vars["mogo_listen"]:
-                if leftDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"] and rightDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
-                    mogo_pneu.set(False)
-
             # Intake Distance auto halt
             if self.dynamic_vars["intake_auto_halt"]:
                 if intakeDistance.object_distance() < self.dynamic_vars["mogo_grab_tolerance"]:
@@ -895,22 +891,10 @@ def driver():
         elif wall_control_cooldown > 0:
             wall_control_cooldown -= 1
 
-        # Grabber sensors
-        if mogo_pneu_engaged == True:
-            if leftDistance.object_distance() < 80 and rightDistance.object_distance() < 80:
-                mogo_pneu.set(False)
-
         # Screen debugging
         scr = brain.screen
         scr.clear_screen()
         scr.set_cursor(1,1)
-
-        scr.print("Left distance: {}".format(leftDistance.object_distance()))
-        scr.next_row()
-        scr.print("Right distance: {}".format(rightDistance.object_distance()))
-        scr.next_row()
-        scr.print("Timer: {}".format(brain.timer.time()))
-        scr.next_row()
 
         scr = con.screen
         scr.clear_screen()
