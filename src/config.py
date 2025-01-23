@@ -1,6 +1,6 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2025-01-22 19:32:42.811905
+	# 2025-01-22 19:45:03.506529
 ####################
 #region Devices
 calibrate_imu = False
@@ -115,6 +115,8 @@ elevation_status = False
 allow_intake_input = True
 queued_sort = False
 eject_prep = False
+
+tank_drive = False
 
 lmg = MotorGroup(*motors["left"].values())
 rmg = MotorGroup(*motors["right"].values())

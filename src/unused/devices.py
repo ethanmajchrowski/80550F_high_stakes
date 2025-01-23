@@ -111,6 +111,8 @@ allow_intake_input = True
 queued_sort = False
 eject_prep = False
 
+tank_drive = False
+
 lmg = MotorGroup(*motors["left"].values())
 rmg = MotorGroup(*motors["right"].values())
 """
