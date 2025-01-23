@@ -657,7 +657,8 @@ class AutonomousHandler:
     def path(self, path, events, checkpoints=[], backwards = False,
              look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
              heading_authority=1, max_turn_volts = 8,
-             hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,) -> None:
+             hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
+             turn_speed_weight = 0) -> None:
 
         if timeout is not None:
             time_end = brain.timer.system() + timeout
@@ -696,11 +697,13 @@ class AutonomousHandler:
 
             heading_output = heading_pid.calculate(0, heading_error)
 
+            # dynamic forwards speed
+            dynamic_forwards_speed = heading_error * turn_speed_weight
+
             # Grab constant speed from dynamic variables
-            constant_forwards_speed = self.dynamic_vars["fwd_speed"]
+            forwards_speed = self.dynamic_vars["fwd_speed"]
             if backwards:
-                constant_forwards_speed *= -1
-                # heading_output *= -1
+                forwards_speed *= -1
 
             # Do some stuff that lowers the authority of turning, no idea if this is reasonable
             heading_output *= heading_authority
@@ -710,13 +713,15 @@ class AutonomousHandler:
             if rollover:
                 heading_output *= -1
             if not waiting:
-                motors["left"]["A"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
-                motors["left"]["B"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
-                motors["left"]["C"].spin(FORWARD, constant_forwards_speed + heading_output, VOLT)
+                left_speed = forwards_speed - dynamic_forwards_speed + heading_output
+                right_speed = forwards_speed - dynamic_forwards_speed - heading_output
+                motors["left"]["A"].spin(FORWARD, left_speed, VOLT)
+                motors["left"]["B"].spin(FORWARD, left_speed, VOLT)
+                motors["left"]["C"].spin(FORWARD, left_speed, VOLT)
 
-                motors["right"]["A"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
-                motors["right"]["B"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
-                motors["right"]["C"].spin(FORWARD, constant_forwards_speed - heading_output, VOLT)
+                motors["right"]["A"].spin(FORWARD, right_speed, VOLT)
+                motors["right"]["B"].spin(FORWARD, right_speed, VOLT)
+                motors["right"]["C"].spin(FORWARD, right_speed, VOLT)
             else:
                 if brain.timer.system() >= wait_stop:
                     waiting = False
