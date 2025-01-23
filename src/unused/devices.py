@@ -22,22 +22,19 @@ con = Controller(PRIMARY)
 con_2 = Controller(PARTNER)
 
 controls = {
-    "DRIVE_FORWARD_AXIS":      con.axis3,
-    "DRIVE_TURN_AXIS":         con.axis1,
-    "INTAKE_IN_HOLD":          con.buttonR1,
-    "INTAKE_OUT_HOLD":         con.buttonR2,
-    "INTAKE_HEIGHT_TOGGLE":    con.buttonL1,
-    "SIDE_SCORING_TOGGLE":     con.buttonB,
-    "MOGO_GRABBER_TOGGLE":     con.buttonA,
-    "CYCLE_EJECTOR_COLOR":     con.buttonLeft,
-    "DOINKER":                 con.buttonRight,
-    "INTAKE_FLEX_HOLD":        con.buttonL2,
-    "SIDE_STAKE_MANUAL_UP":    con_2.buttonL1,
-    "SIDE_STAKE_MANUAL_DOWN":  con_2.buttonL2,
-    "LADY_BROWN_MACRO_UP_A":  con.buttonL1,
-    "LADY_BROWN_MACRO_UP_B":  con.buttonR1,
-    "LADY_BROWN_MACRO_DOWN_A": con.buttonR1,  
-    "LADY_BROWN_MACRO_DOWN_B": con.buttonL2,  
+    "DRIVE_FORWARD_AXIS":          con.axis3,
+    "DRIVE_TURN_AXIS":             con.axis1,
+    "INTAKE_IN_HOLD":              con.buttonR1,
+    "INTAKE_OUT_HOLD":             con.buttonR2,
+    "INTAKE_HEIGHT_TOGGLE":        con.buttonL1,
+    # "SIDE_SCORING_TOGGLE":         con.buttonB,
+    "MOGO_GRABBER_TOGGLE":         con.buttonA,
+    "CYCLE_EJECTOR_COLOR":         con.buttonLeft,
+    "DOINKER":                     con.buttonRight,
+    "INTAKE_FLEX_HOLD":            con.buttonL2,
+    "SIDE_STAKE_MANUAL_UP":        con_2.buttonL1,
+    "SIDE_STAKE_MANUAL_DOWN":      con_2.buttonL2, 
+    "MANUAL_ELEVATION_PNEUMATICS": con.buttonUp,
 }
 
 motors = {
