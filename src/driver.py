@@ -277,6 +277,9 @@ def switch_intake_height():
 def switch_doinker():
     doinker_pneu.set(not doinker_pneu.value())
 
+def manual_elevation():
+    elevation_bar_lift.set(not elevation_bar_lift.value())
+
 def cycle_ejector_color():
     global color_setting
     # print("old: " + color_setting)
@@ -295,6 +298,7 @@ controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 # controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["CYCLE_EJECTOR_COLOR"].pressed(cycle_ejector_color)
+controls["MANUAL_ELEVATION_PNEUMATICS"].pressed(manual_elevation)
 
 allow_intake_input = True
 queued_sort = False
