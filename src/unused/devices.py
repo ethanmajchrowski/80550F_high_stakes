@@ -53,31 +53,40 @@ motors = {
     },
     "misc": {
         "intake_chain": Motor(Ports.PORT14, GearSetting.RATIO_6_1, True),  
-        "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, False), # 5.5 W flexwheel hinge
-        "wall_stake": Motor(Ports.PORT1, GearSetting.RATIO_18_1, False)
+        "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, True), # 5.5 W flexwheel hinge
+        "wall_stake": Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
     }
 }
 
 # PNEUMATICS
 mogo_pneu = DigitalOut(brain.three_wire_port.a)
-
+elevation_hook_release = DigitalOut(brain.three_wire_port.b)
+elevation_bar_lift = DigitalOut(brain.three_wire_port.c)
+PTO_left_pneu = DigitalOut(brain.three_wire_port.d) #! left/right not done yet
+PTO_right_pneu = DigitalOut(brain.three_wire_port.e)
+passive_hook_release_pneu = DigitalOut(brain.three_wire_port.f)
+doinker_pneu = DigitalOut(brain.three_wire_port.g)
 intake_pneu = DigitalOut(brain.three_wire_port.h)
-doinker_pneu = DigitalOut(brain.three_wire_port.b)
 
-# SENSORS
+#### SENSORS
+# ENCODERS
 leftEnc = Rotation(Ports.PORT2)
 rightEnc = Rotation(Ports.PORT17)
-wallEnc = Rotation(Ports.PORT6)
+wallEnc = Rotation(Ports.PORT1)
+# DISTANCE SENSORS
+intakeDistance = Distance(Ports.PORT9)
+
+leftWallDistance = Distance(Ports.PORT6)
+backWallDistance = Distance(Ports.PORT13)
+
+# MISC SENSORS
+intakeColor = Optical(Ports.PORT10)
+imu = Inertial(Ports.PORT11)
+
+# SENSOR VARIABLES
 wall_setpoint = 2
 wall_control_cooldown = 0
 wall_positions = [-0.65*360, -2*360, -2.2*360] # wall_setpoint is an INDEX used to grab from THIS LIST
-
-leftDistance = Distance(Ports.PORT13)
-rightDistance = Distance(Ports.PORT19)
-intakeDistance = Distance(Ports.PORT9)
-intakeColor = Optical(Ports.PORT10)
-
-imu = Inertial(Ports.PORT11)
 
 if calibrate_imu:
     imu.calibrate()
