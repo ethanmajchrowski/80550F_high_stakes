@@ -206,6 +206,9 @@ intakeColor.set_light_power(100, PERCENT)
 #end_1301825#
 ####################
 
+def log(data):
+    print("=" + ", ".join(data) + "*")
+
 #region Helpers
 # ██   ██ ███████ ██      ██████  ███████ ██████  ███████ 
 # ██   ██ ██      ██      ██   ██ ██      ██   ██ ██      
@@ -260,7 +263,7 @@ class PurePursuit():
         # Iterate over every un-crossed point in our path.
         #if we are close to the finish point, regardless of what has happened, finish the path
         try:
-            if dist(current_pos, self.path[len(self.path)-1]) < self.finish_margin:
+            if dist(current_pos, self.path[len(self.path)-1][:2]) < self.finish_margin:
                 self.path_complete = True      
             else:
                 # Iterate from our current point to the next checkpoint, or the end of the path.
@@ -321,7 +324,7 @@ class PurePursuit():
                                     goal = sol2
                             
                         # first, check if the robot is not close to the end point in the path
-                        distance_to_end = dist(current_pos, self.path[len(self.path)-1])
+                        distance_to_end = dist(current_pos, self.path[len(self.path)-1][:2])
                         if (distance_to_end < self.look_dist) and self.checkpoints_complete:
                             goal = self.path[len(self.path)-1]
                         else:
@@ -496,7 +499,7 @@ class AutonomousHandler:
 
         ### Variables
         self.dynamic_vars = {
-            "fwd_speed": 9.6,
+            "fwd_speed": 10,
             # common speeds:
             # 25%: 3
             # 50%: 6
@@ -610,24 +613,6 @@ class AutonomousHandler:
     hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,"""
     def position_thread(self):
         while True:
-            # scr = brain.screen
-            # scr.clear_screen()
-            # scr.set_pen_color(Color.WHITE)
-            # scr.set_cursor(1,1)
-            # scr.set_font(FontType.MONO20)
-            # scr.print(str(self.dynamic_vars["position"]))
-            # scr.new_line()
-            # scr.print(str(self.heading))
-            # scr.new_line()
-            # scr.print(str(brain.timer.system() / 1000))
-            # scr.new_line()
-            # scr.print(str(self.end_time / 1000))
-            # scr.new_line()
-            
-            # scr.print("Change Pos: {}".format(str(self.change_pos)))
-            # scr.new_line()
-            # scr.render()
-
             self.heading = imu.heading()
             dx, dy = self.position_controller.update()
             self.dynamic_vars["position"][0] += dx
@@ -648,7 +633,31 @@ class AutonomousHandler:
         print("started listener thread")
 
         print("starting sequence")
-        self.sequence(globals())
+        #! self.sequence(globals()) !!!!!!!!!!!!!!!!!!!!!!
+        paths = {
+                "test_curve_90": {
+                     "points": ((1196.27, -1206.59), (1198.82, -1086.62), (1200.54, -966.63), (1201.55, -846.64), (1201.94, -726.64), (1201.78, -606.64), (1201.14, -486.64), (1200.07, -366.65), (1198.64, -246.65), (1196.89, -126.67), (1194.87, -6.68), (1192.66, 113.3), (1190.32, 233.27), (1187.98, 353.25), (1185.76, 473.23), (1184.08, 593.22), (1187.39, 713.04), (1195.71, 832.73), (1192.19, 952.57), (1159.35, 1066.97), (1070.17, 1143.15), (953.39, 1168.84), (833.72, 1177.23), (713.82, 1181.99), (593.84, 1184.15), (473.85, 1185.59), (353.86, 1187.03), (233.87, 1188.47), (113.88, 1189.91), (-6.11, 1191.35), (-126.1, 1192.79), (-246.1, 1194.23), (-366.09, 1195.67), (-486.08, 1197.11), (-603.0, 1198.51)),
+                     "events": [],
+                     "checkpoints": [],
+                     "custom_args": (False, 400, 100, 75, None, 1, 8, 0.1, 0.01, 0, 0, None, 0.2)
+                },
+                "test_curve_180": {
+                     "points": ((1201.43, -1195.41), (1197.79, -1095.48), (1194.81, -995.52), (1192.48, -895.55), (1190.76, -795.56), (1189.6, -695.57), (1188.95, -595.57), (1188.76, -495.57), (1188.96, -395.57), (1189.48, -295.57), (1190.25, -195.58), (1191.22, -95.58), (1192.33, 4.41), (1193.51, 104.41), (1194.73, 204.4), (1195.95, 304.39), (1197.13, 404.38), (1198.24, 504.38), (1199.24, 604.37), (1200.12, 704.37), (1200.89, 804.37), (1200.75, 904.35), (1196.27, 1004.25), (1182.64, 1103.14), (1123.92, 1179.25), (1026.05, 1197.19), (926.11, 1200.44), (826.19, 1197.77), (727.18, 1184.83), (644.14, 1132.96), (607.51, 1040.81), (594.4, 941.76), (589.34, 841.89), (587.54, 741.91), (586.98, 622.65)),
+                     "events": [],
+                     "checkpoints": [],
+                     "custom_args": (False, 350, 100, 75, None, 1, 8, 0.1, 0.01, 0, 0, None, 0.1)
+                }, 
+                "test_curve_all_over": {
+                     "points": ((1201.43, -1206.59), (1204.0, -1106.63), (1206.57, -1006.66), (1209.14, -906.69), (1211.71, -806.72), (1214.26, -706.76), (1216.82, -606.79), (1219.27, -506.82), (1221.42, -406.84), (1223.56, -306.87), (1225.33, -206.88), (1226.52, -106.89), (1227.71, -6.9), (1227.4, 93.1), (1226.87, 193.1), (1224.54, 293.06), (1221.22, 393.01), (1214.84, 492.79), (1206.98, 592.47), (1192.93, 691.48), (1173.25, 789.41), (1144.97, 885.1), (1103.33, 975.62), (1043.77, 1055.21), (966.01, 1117.03), (875.48, 1158.47), (778.78, 1183.02), (679.79, 1196.37), (580.07, 1203.01), (480.12, 1205.65), (380.12, 1204.93), (280.15, 1202.82), (180.19, 1199.99), (80.25, 1196.54), (-19.69, 1193.09), (-119.67, 1190.99), (-219.65, 1188.89), (-319.44, 1182.8), (-419.2, 1175.76), (-518.55, 1164.67), (-617.79, 1152.35), (-716.24, 1134.88), (-814.31, 1115.52), (-911.31, 1091.19), (-1006.89, 1061.98), (-1100.76, 1027.77), (-1191.81, 986.61), (-1277.66, 935.59), (-1353.03, 870.47), (-1404.33, 786.12), (-1389.71, 689.79), (-1316.08, 623.46), (-1226.17, 580.6), (-1130.2, 553.03), (-1031.95, 535.09), (-932.72, 523.27), (-832.94, 516.63), (-732.98, 515.38), (-633.15, 514.24), (-538.13, 483.18), (-445.78, 444.95), (-358.63, 396.03), (-277.7, 337.45), (-203.06, 270.96), (-133.63, 199.02), (-66.89, 124.55), (-1.53, 48.87), (63.67, -26.96), (129.25, -102.45), (195.54, -177.31), (262.69, -251.41), (330.72, -324.7), (399.56, -397.23), (469.47, -468.74), (597.31, -595.86)),
+                     "events": [],
+                     "checkpoints": [15, 30, 65],
+                     "custom_args": (False, 350, 100, 75, None, 1, 8, 0.1, 0.01, 0, 0, None)
+                     
+                }
+        }
+        self.heading = 5
+        self.dynamic_vars["position"] = []
+        #! sequence done!!!!!!!!!!!!!!!!!!!!!!!!!
         print("sequence done")
         
         self.end_time = brain.timer.system()
@@ -730,21 +739,14 @@ class AutonomousHandler:
 
             heading_output = heading_pid.calculate(0, heading_error)
 
-            index = path_handler.last_found_point + turn_speed_look_ahead
-            index = min(index, len(path) - 1)
-
-            pos = self.dynamic_vars["position"]
-            hdx, hdy = path[index][0] - pos[0], path[index][1] - pos[1]
-            dynamic_speed_heading_error = abs(self.heading - math.degrees(math.atan2(hdx, hdy)))
-
             # dynamic forwards speed
-            dynamic_forwards_speed = abs(dynamic_speed_heading_error) * 0.05
+            dynamic_forwards_speed = abs(heading_output) * 2.4
             unclamped = dynamic_forwards_speed
             # clamp speed
             if dynamic_forwards_speed < -4:
-                dynamic_forwards_speed = -3.8
+                dynamic_forwards_speed = -4
             elif dynamic_forwards_speed > 4:
-                dynamic_forwards_speed = 3.8
+                dynamic_forwards_speed = 4
 
             # Grab constant speed from dynamic variables
             forwards_speed = self.dynamic_vars["fwd_speed"]
@@ -805,6 +807,24 @@ class AutonomousHandler:
                 if brain.timer.system() > time_end:
                     done = True
 
+            data = [
+                str(brain.timer.system()), 
+                str(left_speed), 
+                str(right_speed), 
+                str(dynamic_forwards_speed),
+                str(unclamped),
+                str(heading_output),
+                str(target_point[0]),
+                str(target_point[1]),
+                str(path_handler.last_found_point),
+                # str(abs(dynamic_speed_heading_error)),
+                str(heading_error),
+                str(self.heading),
+                str(self.dynamic_vars["position"][0]),
+                str(self.dynamic_vars["position"][1]),
+            ]
+            Thread(log, (data,))
+
             if not done:
                 # brain.timer.event(self.run, self.clock_time)
                 sleep(20, MSEC)
@@ -830,21 +850,6 @@ class AutonomousHandler:
             # # scr.new_line()
 
             # scr.render()
-            data = [
-                str(brain.timer.system()), 
-                str(left_speed), 
-                str(right_speed), 
-                str(dynamic_forwards_speed),
-                str(unclamped),
-                str(heading_output),
-                str(target_point[0]),
-                str(target_point[1]),
-                str(path_handler.last_found_point),
-                str(index),
-                str(abs(dynamic_speed_heading_error)),
-                str(heading_error)
-            ]
-            print("DATA:" + ", ".join(data))
 
 auton = AutonomousHandler(data["autons"]["selected"])
 print(auton.run)
@@ -1075,6 +1080,14 @@ if brain.sdcard.is_inserted():
         sleep(200, MSEC)
         print("run auton")
         auton.run()
+        sleep(1, SECONDS)
+        motors["left"]["A"].stop(COAST)
+        motors["left"]["B"].stop(COAST)
+        motors["left"]["C"].stop(COAST)
+
+        motors["right"]["A"].stop(COAST)
+        motors["right"]["B"].stop(COAST)
+        motors["right"]["C"].stop(COAST)
     else:
         comp = Competition(driver, auton.run)
     # auton.run()

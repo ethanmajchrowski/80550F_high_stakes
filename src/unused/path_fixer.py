@@ -18,8 +18,7 @@ with open(get_latest_file(r"C:\Users\ethan\Downloads"), "r") as f:
 data = data[1:-2] 
 nd = []
 for line in data:
-    line = line.strip().split(",")[:2]
-
+    line = line.strip().split(",")[:2] # only keep x, y
     nl = []
     for i, num in enumerate(line):
         num = round(float(num)*10, 2)
