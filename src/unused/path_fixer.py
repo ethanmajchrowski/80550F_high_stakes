@@ -1,5 +1,5 @@
 import os
-# import pyperclip #type:ignore
+# import pyperclip
 
 def get_latest_file(download_path):
     """Gets the most recently downloaded file in the specified directory."""

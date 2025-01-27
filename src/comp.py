@@ -259,88 +259,91 @@ class PurePursuit():
 
         # Iterate over every un-crossed point in our path.
         #if we are close to the finish point, regardless of what has happened, finish the path
-        if dist(current_pos, self.path[len(self.path)-1]) < self.finish_margin:
-            self.path_complete = True      
-        else:
-            # Iterate from our current point to the next checkpoint, or the end of the path.
-            # Once we reach that checkpoint, move the checkpoint to the next and keep going.
-            if self.checkpoints_complete:
-                end = len(self.path)-1
+        try:
+            if dist(current_pos, self.path[len(self.path)-1]) < self.finish_margin:
+                self.path_complete = True      
             else:
-                end = self.current_checkpoint
-            
-            start = self.last_found_point
-            
-            for i in range(start, end):
-                # step 1: line and circle intersection
-                h, k = current_pos
-                point1 = self.path[i][:2]
-                point2 = self.path[i+1][:2]
-                ax, ay = point1[:2]
-                bx, by = point2[:2]
+                # Iterate from our current point to the next checkpoint, or the end of the path.
+                # Once we reach that checkpoint, move the checkpoint to the next and keep going.
+                if self.checkpoints_complete:
+                    end = len(self.path)-1
+                else:
+                    end = self.current_checkpoint
                 
-                m = (by - ay) / (bx - ax) # slope of line between point a and b
-                b = m*(-ax) + ay # y-intercept of line
-                r = self.look_dist
-                # quadratic terms
-                A = (m*m) + 1
-                B = (2*m*(b-k)-(2*h))
-                C = ((h*h) + ((b-k)*(b-k)) - (r*r))
+                start = self.last_found_point
+                
+                for i in range(start, end):
+                    # step 1: line and circle intersection
+                    h, k = current_pos
+                    point1 = self.path[i][:2]
+                    point2 = self.path[i+1][:2]
+                    ax, ay = point1[:2]
+                    bx, by = point2[:2]
+                    
+                    m = (by - ay) / (bx - ax) # slope of line between point a and b
+                    b = m*(-ax) + ay # y-intercept of line
+                    r = self.look_dist
+                    # quadratic terms
+                    A = (m*m) + 1
+                    B = (2*m*(b-k)-(2*h))
+                    C = ((h*h) + ((b-k)*(b-k)) - (r*r))
 
-                discriminant = (B*B) - (4*A*C)
-                if discriminant >= 0:
-                    sol1_x = (-B + math.sqrt(discriminant)) / (2*A)
-                    sol1_y = m*sol1_x + b
+                    discriminant = (B*B) - (4*A*C)
+                    if discriminant >= 0:
+                        sol1_x = (-B + math.sqrt(discriminant)) / (2*A)
+                        sol1_y = m*sol1_x + b
 
-                    sol2_x = (-B - math.sqrt(discriminant)) / (2*A)
-                    sol2_y = m*sol2_x + b
+                        sol2_x = (-B - math.sqrt(discriminant)) / (2*A)
+                        sol2_y = m*sol2_x + b
 
-                    sol1 = (sol1_x, sol1_y)
-                    sol2 = (sol2_x, sol2_y)
+                        sol1 = (sol1_x, sol1_y)
+                        sol2 = (sol2_x, sol2_y)
 
-                    minX, minY = min(ax, bx), min(ay, by)
-                    maxX, maxY = max(ax, bx), max(ay, by)
-                    # general check to see if either point is on the line 
-                    if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) or ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
-                        if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) and ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
-                            # both solutions are within bounds, so we need to compare and decide which is better
-                            # choose based on distance to pt2
-                            sol1_distance = dist(sol1, point2)
-                            sol2_distance = dist(sol2, point2)
+                        minX, minY = min(ax, bx), min(ay, by)
+                        maxX, maxY = max(ax, bx), max(ay, by)
+                        # general check to see if either point is on the line 
+                        if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) or ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
+                            if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) and ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
+                                # both solutions are within bounds, so we need to compare and decide which is better
+                                # choose based on distance to pt2
+                                sol1_distance = dist(sol1, point2)
+                                sol2_distance = dist(sol2, point2)
 
-                            if sol1_distance < sol2_distance:
-                                goal = sol1
+                                if sol1_distance < sol2_distance:
+                                    goal = sol1
+                                else:
+                                    goal = sol2
                             else:
-                                goal = sol2
+                                if (minX < sol1_x < maxX) and (minY < sol1_y < maxY):
+                                    # solution 1 is within bounds
+                                    goal = sol1
+                                else:
+                                    goal = sol2
+                            
+                        # first, check if the robot is not close to the end point in the path
+                        distance_to_end = dist(current_pos, self.path[len(self.path)-1])
+                        if (distance_to_end < self.look_dist) and self.checkpoints_complete:
+                            goal = self.path[len(self.path)-1]
                         else:
-                            if (minX < sol1_x < maxX) and (minY < sol1_y < maxY):
-                                # solution 1 is within bounds
-                                goal = sol1
+                            # update last_found_point
+                            # only keep the goal if the goal point is closer to the target than our robot
+                            if dist(goal[:2], self.path[self.last_found_point+1][:2]) < dist(current_pos, self.path[self.last_found_point+1][:2]):
+                                # found point is closer to the target than we are, so we keep it
+                                goal = goal
                             else:
-                                goal = sol2
-                        
-                    # first, check if the robot is not close to the end point in the path
-                    distance_to_end = dist(current_pos, self.path[len(self.path)-1])
-                    if (distance_to_end < self.look_dist) and self.checkpoints_complete:
-                        goal = self.path[len(self.path)-1]
-                    else:
-                        # update last_found_point
-                        # only keep the goal if the goal point is closer to the target than our robot
-                        if dist(goal[:2], self.path[self.last_found_point+1][:2]) < dist(current_pos, self.path[self.last_found_point+1][:2]):
-                            # found point is closer to the target than we are, so we keep it
-                            goal = goal
-                        else:
-                            self.last_found_point = i 
+                                self.last_found_point = i 
 
-                if not self.checkpoints_complete:
-                    if (self.last_found_point + 2 >= self.current_checkpoint):
-                        # If we are done with our checkpoints,
-                        if (self.checkpoints.index(self.current_checkpoint)+1) >= len(self.checkpoints):
-                            self.checkpoints_complete = True
-                        else:
-                            # Set the current checkpoint to the next checkpoint in the checkpoints list
-                            self.current_checkpoint = self.checkpoints[self.checkpoints.index(self.current_checkpoint) + 1]
-       
+                    if not self.checkpoints_complete:
+                        if (self.last_found_point + 2 >= self.current_checkpoint):
+                            # If we are done with our checkpoints,
+                            if (self.checkpoints.index(self.current_checkpoint)+1) >= len(self.checkpoints):
+                                self.checkpoints_complete = True
+                            else:
+                                # Set the current checkpoint to the next checkpoint in the checkpoints list
+                                self.current_checkpoint = self.checkpoints[self.checkpoints.index(self.current_checkpoint) + 1]
+        except ZeroDivisionError:
+            raise NameError
+    
         return goal
 
 class DeltaPositioning():
@@ -348,6 +351,8 @@ class DeltaPositioning():
         self.last_time = brain.timer.time()
         self.leftEnc = leftEnc
         self.rightEnc = rightEnc
+        self.leftEnc.reset_position()
+        self.rightEnc.reset_position()
         self.imu = imu
 
         self.last_left_encoder = 0
@@ -607,17 +612,20 @@ class AutonomousHandler:
         while True:
             # scr = brain.screen
             # scr.clear_screen()
+            # scr.set_pen_color(Color.WHITE)
             # scr.set_cursor(1,1)
             # scr.set_font(FontType.MONO20)
             # scr.print(str(self.dynamic_vars["position"]))
+            # scr.new_line()
+            # scr.print(str(self.heading))
             # scr.new_line()
             # scr.print(str(brain.timer.system() / 1000))
             # scr.new_line()
             # scr.print(str(self.end_time / 1000))
             # scr.new_line()
             
-            # # scr.print("Change Pos: {}".format(str(self.change_pos)))
-            # # scr.new_line()
+            # scr.print("Change Pos: {}".format(str(self.change_pos)))
+            # scr.new_line()
             # scr.render()
 
             self.heading = imu.heading()
@@ -632,10 +640,16 @@ class AutonomousHandler:
         """
         Call once at start of auton. This is where all the sequential commands are located.
         """
+        print("start pos thread")
         t1 = Thread(self.position_thread)
+        print("started pos thread")
+        print("start listener thread")
         t2 = Thread(self.misc_listeners)
+        print("started listener thread")
 
+        print("starting sequence")
         self.sequence(globals())
+        print("sequence done")
         
         self.end_time = brain.timer.system()
 
@@ -653,11 +667,31 @@ class AutonomousHandler:
         motors["right"]["B"].stop(brake_type)
         motors["right"]["C"].stop(brake_type)
 
+    def turn_to_heading(self, target, threshold = 5, speed_constant = 1):
+        pid = MultipurposePID(0.1, 0, 0, 0)
+        # use absolute heading
+        heading = imu.rotation()
+
+        error = heading - target
+        while abs(error) > threshold:
+            heading = imu.rotation()
+            error = heading - target
+            output = pid.calculate(0, error) * speed_constant
+
+            motors["left"]["A"].spin(FORWARD, output, VOLT)
+            motors["left"]["B"].spin(FORWARD, output, VOLT)
+            motors["left"]["C"].spin(FORWARD, output, VOLT)
+
+            motors["right"]["A"].spin(REVERSE, output, VOLT)
+            motors["right"]["B"].spin(REVERSE, output, VOLT)
+            motors["right"]["C"].spin(REVERSE, output, VOLT)
+        self.kill_motors()
+
     def path(self, path, events, checkpoints=[], backwards = False,
              look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
              heading_authority=1, max_turn_volts = 8,
              hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
-             turn_speed_weight = 0) -> None:
+             turn_speed_weight = 0, turn_speed_look_ahead = 1) -> None:
 
         if timeout is not None:
             time_end = brain.timer.system() + timeout
@@ -696,8 +730,21 @@ class AutonomousHandler:
 
             heading_output = heading_pid.calculate(0, heading_error)
 
+            index = path_handler.last_found_point + turn_speed_look_ahead
+            index = min(index, len(path) - 1)
+
+            pos = self.dynamic_vars["position"]
+            hdx, hdy = path[index][0] - pos[0], path[index][1] - pos[1]
+            dynamic_speed_heading_error = abs(self.heading - math.degrees(math.atan2(hdx, hdy)))
+
             # dynamic forwards speed
-            dynamic_forwards_speed = heading_error * turn_speed_weight
+            dynamic_forwards_speed = abs(dynamic_speed_heading_error) * 0.05
+            unclamped = dynamic_forwards_speed
+            # clamp speed
+            if dynamic_forwards_speed < -4:
+                dynamic_forwards_speed = -3.8
+            elif dynamic_forwards_speed > 4:
+                dynamic_forwards_speed = 3.8
 
             # Grab constant speed from dynamic variables
             forwards_speed = self.dynamic_vars["fwd_speed"]
@@ -714,6 +761,11 @@ class AutonomousHandler:
             if not waiting:
                 left_speed = forwards_speed - dynamic_forwards_speed + heading_output
                 right_speed = forwards_speed - dynamic_forwards_speed - heading_output
+                # left_speed /= 1.2
+                # right_speed /= 1.2
+                # print("\nL: {} - {} + {} = {}".format(forwards_speed, dynamic_forwards_speed, heading_output, left_speed))
+                # print("R: {} - {} - {} = {}".format(forwards_speed, dynamic_forwards_speed, heading_output, right_speed))
+                    
                 motors["left"]["A"].spin(FORWARD, left_speed, VOLT)
                 motors["left"]["B"].spin(FORWARD, left_speed, VOLT)
                 motors["left"]["C"].spin(FORWARD, left_speed, VOLT)
@@ -758,6 +810,41 @@ class AutonomousHandler:
                 sleep(20, MSEC)
             else:
                 self.kill_motors()
+            
+            # scr = brain.screen
+            # scr.clear_screen()
+            # scr.set_cursor(1,1)
+            # scr.print(path_handler.last_found_point)
+            # scr.new_line()
+            # scr.print(dx, dy)
+            # scr.new_line()
+            # scr.print(heading_error)
+            # scr.new_line()
+            # scr.print(left_speed)
+            # scr.new_line()
+            # scr.print(right_speed)
+            # scr.new_line()
+            # scr.print(dynamic_forwards_speed)
+            # scr.new_line()
+            # # scr.print(path.index(target_point))
+            # # scr.new_line()
+
+            # scr.render()
+            data = [
+                str(brain.timer.system()), 
+                str(left_speed), 
+                str(right_speed), 
+                str(dynamic_forwards_speed),
+                str(unclamped),
+                str(heading_output),
+                str(target_point[0]),
+                str(target_point[1]),
+                str(path_handler.last_found_point),
+                str(index),
+                str(abs(dynamic_speed_heading_error)),
+                str(heading_error)
+            ]
+            print("DATA:" + ", ".join(data))
 
 auton = AutonomousHandler(data["autons"]["selected"])
 print(auton.run)
@@ -985,6 +1072,8 @@ def no_auton():
 #             driver_thread.stop() #type: ignore
 if brain.sdcard.is_inserted():
     if data["config"]["auton_test"]:
+        sleep(200, MSEC)
+        print("run auton")
         auton.run()
     else:
         comp = Competition(driver, auton.run)
