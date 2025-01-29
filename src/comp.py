@@ -1,9 +1,9 @@
 # Filename: comp.py
 # Devices & variables last updated:
-	# 2025-01-22 19:45:03.503048
+	# 2025-01-29 15:57:19.364118
 ####################
 #region Devices
-calibrate_imu = True
+calibrate_imu = False
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -22,13 +22,9 @@ except:
     sd_fail = True
     print("ERROR LOADING SD CARD DATA")
 
-if not sd_fail: print("SD loaded")
-
 brain = Brain()
 con = Controller(PRIMARY)
 con_2 = Controller(PARTNER)
-
-print("Battery at: {}%".format(brain.battery.capacity()))
 
 controls = {
     "DRIVE_FORWARD_AXIS":          con.axis3,
@@ -44,6 +40,8 @@ controls = {
     "SIDE_STAKE_MANUAL_UP":        con_2.buttonL1,
     "SIDE_STAKE_MANUAL_DOWN":      con_2.buttonL2, 
     "MANUAL_ELEVATION_PNEUMATICS": con.buttonUp,
+    "LB_MACRO_INCREASE":           con.buttonB,
+    "LB_MACRO_DECREASE":           con.buttonDown,
 }
 
 motors = {
@@ -92,11 +90,10 @@ imu = Inertial(Ports.PORT11)
 # SENSOR VARIABLES
 wall_setpoint = 2
 wall_control_cooldown = 0
-wall_positions = [-0.65*360, -2*360, -2.2*360] # wall_setpoint is an INDEX used to grab from THIS LIST
+wall_positions = [10, 125, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
 
 if calibrate_imu:
     imu.calibrate()
-    print("calibrating IMU")
 
 if not sd_fail:
     enable_macro_lady_brown = data["config"]["enable_macro_lady_brown"]
@@ -104,18 +101,14 @@ else:
     enable_macro_lady_brown = False
 
 if enable_macro_lady_brown:
-    motors["misc"]["wall_stake"].spin_for(FORWARD, 1000, MSEC, 100, PERCENT)
-    wallEnc.set_position(0)
-    # put wall stake back up
     motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
+    wallEnc.set_position(0)
 
 while imu.is_calibrating() and calibrate_imu: 
     wait(5)
-print("IMU complete")
 
 mogo_pneu_engaged = False
 mogo_pneu_status = False
-elevation_status = False
 
 # Intake ejector related booleans
 allow_intake_input = True

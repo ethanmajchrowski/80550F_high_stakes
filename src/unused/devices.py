@@ -35,6 +35,8 @@ controls = {
     "SIDE_STAKE_MANUAL_UP":        con_2.buttonL1,
     "SIDE_STAKE_MANUAL_DOWN":      con_2.buttonL2, 
     "MANUAL_ELEVATION_PNEUMATICS": con.buttonUp,
+    "LB_MACRO_INCREASE":           con.buttonB,
+    "LB_MACRO_DECREASE":           con.buttonDown,
 }
 
 motors = {
@@ -83,7 +85,7 @@ imu = Inertial(Ports.PORT11)
 # SENSOR VARIABLES
 wall_setpoint = 2
 wall_control_cooldown = 0
-wall_positions = [-0.65*360, -2*360, -2.2*360] # wall_setpoint is an INDEX used to grab from THIS LIST
+wall_positions = [10, 125, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
 
 if calibrate_imu:
     imu.calibrate()
@@ -94,10 +96,8 @@ else:
     enable_macro_lady_brown = False
 
 if enable_macro_lady_brown:
-    motors["misc"]["wall_stake"].spin_for(FORWARD, 1000, MSEC, 100, PERCENT)
-    wallEnc.set_position(0)
-    # put wall stake back up
     motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
+    wallEnc.set_position(0)
 
 while imu.is_calibrating() and calibrate_imu: 
     wait(5)
