@@ -94,6 +94,7 @@ inp = """
 
 import pygame as pg
 from pygame.locals import *
+import serial.serialwin32
 
 split_data = inp.split("=")
 refined_data = []
@@ -128,3 +129,8 @@ while running:
         pg.draw.circle(display_surface, (255, 0, 0), ((line[12] // 2 + 450), (line[13] // 2 + 450)), 5)
 
     pg.display.flip()
+
+import serial
+
+com = serial.serialwin32.Serial("COM3", 115200)
+com.open()
