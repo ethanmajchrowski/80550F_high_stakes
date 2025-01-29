@@ -339,11 +339,9 @@ def lady_brown_PID():
         output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
 
         motors["misc"]["wall_stake"].spin(FORWARD, output/2, VOLT)
-        data = [str(wall_setpoint), str(wall_positions), str(wallEnc.position()), str(output/2)]
-        print(", ".join(data))
-
-        # print("\nOutput: {}\nOutput scaled: {}\nError: {}".format(output, output/2, pid.error))
-
+        # data = [str(wall_setpoint), str(wall_positions), str(wallEnc.position()), str(output/2)]
+        # print(", ".join(data))
+        
         sleep(10)
 
 if enable_macro_lady_brown:

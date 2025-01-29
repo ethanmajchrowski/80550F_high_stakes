@@ -1023,9 +1023,9 @@ def lady_brown_PID():
         output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
 
         motors["misc"]["wall_stake"].spin(FORWARD, output/2, VOLT)
-
-        # print("\nOutput: {}\nOutput scaled: {}\nError: {}".format(output, output/2, pid.error))
-
+        # data = [str(wall_setpoint), str(wall_positions), str(wallEnc.position()), str(output/2)]
+        # print(", ".join(data))
+        
         sleep(10)
 
 if enable_macro_lady_brown:
@@ -1080,15 +1080,15 @@ def driver():
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
         elif (
                 (controls["INTAKE_IN_HOLD"].pressing() and not enable_macro_lady_brown) or
-                (controls["INTAKE_IN_HOLD"].pressing() and 
-                    ((not controls["LADY_BROWN_MACRO_UP_A"].pressing()) and enable_macro_lady_brown))):
+                (controls["INTAKE_IN_HOLD"].pressing())): #and 
+                    # ((not controls["LADY_BROWN_MACRO_UP_A"].pressing()) and enable_macro_lady_brown))):
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
             if allow_intake_input:
                 motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
         elif (
                 (controls["INTAKE_OUT_HOLD"].pressing() and not enable_macro_lady_brown) or
-                (controls["INTAKE_OUT_HOLD"].pressing() and 
-                    ((not controls["LADY_BROWN_MACRO_DOWN_B"].pressing()) and enable_macro_lady_brown))):
+                (controls["INTAKE_OUT_HOLD"].pressing())): #and 
+                   # ((not controls["LADY_BROWN_MACRO_DOWN_B"].pressing()) and enable_macro_lady_brown))):
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
             motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
         else:
@@ -1105,19 +1105,19 @@ def driver():
         #         motors["misc"]["wall_stake"].stop(BRAKE)
         # else:
         #     # Lady Brown controls
-        #     if wall_control_cooldown == 0:
-        #         if controls["LADY_BROWN_MACRO_DOWN_A"].pressing() and controls["LADY_BROWN_MACRO_DOWN_B"].pressing():
-        #             wall_control_cooldown = 5
-        #             if wall_setpoint > 0:
-        #                 wall_setpoint -= 1
+        if wall_control_cooldown == 0:
+            if controls["LB_MACRO_DECREASE"].pressing():
+                wall_control_cooldown = 5
+                if wall_setpoint > 0:
+                    wall_setpoint -= 1
 
-        #         elif controls["LADY_BROWN_MACRO_UP_A"].pressing() and controls["LADY_BROWN_MACRO_UP_B"].pressing():
-        #             wall_control_cooldown = 5
-        #             if wall_setpoint < len(wall_positions) - 1:
-        #                 wall_setpoint += 1
+            elif controls["LB_MACRO_INCREASE"].pressing():
+                wall_control_cooldown = 5
+                if wall_setpoint < len(wall_positions) - 1:
+                    wall_setpoint += 1
 
-        #     elif wall_control_cooldown > 0:
-        #         wall_control_cooldown -= 1
+        elif wall_control_cooldown > 0:
+            wall_control_cooldown -= 1
 
         # # Grabber sensors
         # if mogo_pneu_engaged == True:
@@ -1130,6 +1130,8 @@ def driver():
         scr.set_cursor(1,1)
 
         scr.print("Timer: {}".format(brain.timer.time()))
+        scr.next_row()
+        scr.print(wall_setpoint)
         scr.next_row()
 
         scr = con.screen
