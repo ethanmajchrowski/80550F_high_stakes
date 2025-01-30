@@ -83,6 +83,8 @@ intakeDistance = Distance(Ports.PORT9)
 leftWallDistance = Distance(Ports.PORT6)
 backWallDistance = Distance(Ports.PORT13)
 
+elevationDistance = Distance(Ports.PORT20)
+
 # MISC SENSORS
 intakeColor = Optical(Ports.PORT10)
 imu = Inertial(Ports.PORT11)
@@ -91,6 +93,7 @@ imu = Inertial(Ports.PORT11)
 wall_setpoint = 0
 wall_control_cooldown = 0
 wall_positions = [15, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
+LB_enable_PID = True
 
 if calibrate_imu:
     imu.calibrate()
@@ -301,19 +304,82 @@ def cycle_ejector_color():
         index = 0
     color_setting = l[index]
 
-def elevation_macro():
-    print("start elevation")
+def drivebase_command(command, speed):
+    motors["left"]["A"].spin(command, speed, PERCENT)
+    motors["left"]["B"].spin(command, speed, PERCENT)
+    motors["left"]["C"].spin(command, speed, PERCENT)
+
+    motors["right"]["A"].spin(command, speed, PERCENT)
+    motors["right"]["B"].spin(command, speed, PERCENT)
+    motors["right"]["C"].spin(command, speed, PERCENT)
+
+def stop_drivebase(BrakeType):
+    motors["left"]["A"].stop(BrakeType)
+    motors["left"]["B"].stop(BrakeType)
+    motors["left"]["C"].stop(BrakeType)
+
+    motors["right"]["A"].stop(BrakeType)
+    motors["right"]["B"].stop(BrakeType)
+    motors["right"]["C"].stop(BrakeType)
+
+
+# def elevation_macro():
+#     global LB_enable_PID
+#     print("start elevation")
+#     # PTO
+#     PTO_left_pneu.set(True)
+#     PTO_right_pneu.set(True)
+
+#     LB_enable_PID = False
+#     motors["misc"]["wall_stake"].spin_for(FORWARD, 500, MSEC, 100, PERCENT)
+
+#     pitch_pid = MultipurposePID(0.1, 0, 0, 0)
+
+#     elevation_hook_release.set(True)
+#     # wait and close these pistons cause leak :(
+#     sleep(200, MSEC)
+#     intake_pneu.set(True)
+#     doinker_pneu.set(True)
+#     elevation_hook_release.set(False)
+#     elevation_bar_lift.set(True)
+
+#     # wait for matics
+#     sleep(100, MSEC)
+#     motors["misc"]["wall_stake"].spin_for(REVERSE, 1200, MSEC, 100, PERCENT)
+#     elevation_bar_lift.set(False)
+
+#     while True:
+#         pitch = imu.orientation(OrientationType.PITCH, RotationUnits.DEG)
+#         pid_output = round(pitch_pid.calculate(0, pitch), 3)
+
+#         print(pid_output, elevationDistance.object_distance())
+
+#         motors["left"]["A"].spin(REVERSE, 6 - pid_output, VOLT)
+#         motors["left"]["B"].spin(REVERSE, 6 - pid_output, VOLT)
+#         motors["left"]["C"].spin(REVERSE, 6 - pid_output, VOLT)
+
+#         motors["right"]["A"].spin(REVERSE, 6 + pid_output, VOLT)
+#         motors["right"]["B"].spin(REVERSE, 6 + pid_output, VOLT)
+#         motors["right"]["C"].spin(REVERSE, 6 + pid_output, VOLT)
+
+#         if elevationDistance.object_distance() > 115:
+#             sleep(50, MSEC)
+#             break
+
+#         sleep(10)
+
+#     stop_drivebase(BrakeType.HOLD)
 
 controls["DOINKER"].pressed(switch_doinker)
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 # controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["CYCLE_EJECTOR_COLOR"].pressed(cycle_ejector_color)
-if not enable_elevation_macro:
-    controls["MANUAL_ELEVATION_PNEUMATICS"].pressed(manual_elevation)
-    con.buttonLeft.pressed(toggle_tank)
-else:
-    controls["START_ELEVATE"].pressed(elevation_macro)
+# if not enable_elevation_macro:
+#     controls["MANUAL_ELEVATION_PNEUMATICS"].pressed(manual_elevation)
+#     con.buttonLeft.pressed(toggle_tank)
+# else:
+#     controls["START_ELEVATE"].pressed(elevation_macro)
 
 allow_intake_input = True
 queued_sort = False
@@ -345,13 +411,12 @@ def lady_brown_PID():
     pid = MultipurposePID(0.15, 0.015, 0.01, 25, None)
 
     while True:
-        output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
+        if LB_enable_PID:
+            output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
 
-        motors["misc"]["wall_stake"].spin(FORWARD, output/2, VOLT)
-        # data = [str(wall_setpoint), str(wall_positions), str(wallEnc.position()), str(output/2)]
-        # print(", ".join(data))
-        
-        sleep(10)
+            motors["misc"]["wall_stake"].spin(FORWARD, output/2, VOLT)
+            
+        sleep(20)
 
 if enable_macro_lady_brown:
     Thread(lady_brown_PID)
