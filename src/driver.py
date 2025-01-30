@@ -88,9 +88,9 @@ intakeColor = Optical(Ports.PORT10)
 imu = Inertial(Ports.PORT11)
 
 # SENSOR VARIABLES
-wall_setpoint = 2
+wall_setpoint = 0
 wall_control_cooldown = 0
-wall_positions = [10, 125, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
+wall_positions = [15, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
 
 if calibrate_imu:
     imu.calibrate()
@@ -135,6 +135,11 @@ Over Under Settings:
     drivetrain.set_turn_constant(0.28)
     drivetrain.set_turn_threshold(0.25)
 """
+
+# Elevation macro vars
+enable_elevation_macro = True
+if enable_elevation_macro:
+    controls["START_ELEVATE"] = con.buttonUp
 
 class Logger:
     def __init__(self, interval: int, data: list[tuple[Callable, str]]) -> None:
@@ -296,15 +301,19 @@ def cycle_ejector_color():
         index = 0
     color_setting = l[index]
 
-    # print("new: " + color_setting)
+def elevation_macro():
+    print("start elevation")
 
 controls["DOINKER"].pressed(switch_doinker)
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 # controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["CYCLE_EJECTOR_COLOR"].pressed(cycle_ejector_color)
-controls["MANUAL_ELEVATION_PNEUMATICS"].pressed(manual_elevation)
-con.buttonLeft.pressed(toggle_tank)
+if not enable_elevation_macro:
+    controls["MANUAL_ELEVATION_PNEUMATICS"].pressed(manual_elevation)
+    con.buttonLeft.pressed(toggle_tank)
+else:
+    controls["START_ELEVATE"].pressed(elevation_macro)
 
 allow_intake_input = True
 queued_sort = False
