@@ -466,6 +466,7 @@ class MultipurposePID:
 
 class AutonomousHandler:
     def __init__(self, selected_filename) -> None:
+        global LB_enable_PID
         ### Load paths
         # DO NOT turn the brain off when this is running! This may corrupt the files :)
         # Import auton module
@@ -494,10 +495,6 @@ class AutonomousHandler:
         ## Position data
         imu.set_heading(self.autonomous_data["start_heading"])
         self.heading = self.autonomous_data["start_heading"]
-
-        ### Logging
-        # deal with this later :)
-
 
         ### Variables
         self.dynamic_vars = {
@@ -630,6 +627,11 @@ class AutonomousHandler:
         Call once at start of auton. This is where all the sequential commands are located.
         """
         self.start_time = brain.timer.system()
+
+        # disable LB PID unless turned on in auton
+        LB_enable_PID = False
+        print("disabled LB PID! will auto re-enable after auton")
+        
         print("start pos thread")
         t1 = Thread(self.position_thread)
         print("started pos thread")
@@ -650,6 +652,8 @@ class AutonomousHandler:
         
         motors["misc"]["intake_chain"].stop()
         motors["misc"]["intake_flex"].stop()
+        LB_enable_PID = True
+        print("re-enabled LB PID")
 
         t1.stop()
         t1 = None
