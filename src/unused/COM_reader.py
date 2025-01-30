@@ -93,7 +93,7 @@ inp = """
 """
 
 import pygame as pg
-from pygame.locals import *
+from pygame.locals import *  # type: ignore
 import serial.serialwin32
 
 split_data = inp.split("=")

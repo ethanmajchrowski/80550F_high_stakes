@@ -88,10 +88,10 @@ intakeColor = Optical(Ports.PORT10)
 imu = Inertial(Ports.PORT11)
 
 # SENSOR VARIABLES
-wall_setpoint = 2
+wall_setpoint = 0
 wall_control_cooldown = 0
-wall_positions = [10, 125, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
-LB_enable_PID = True
+wall_positions = [15, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
+LB_enable_PID = False
 
 if calibrate_imu:
     imu.calibrate()
@@ -630,8 +630,9 @@ class AutonomousHandler:
 
         # disable LB PID unless turned on in auton
         LB_enable_PID = False
+        motors["misc"]["wall_stake"].stop(COAST)
         print("disabled LB PID! will auto re-enable after auton")
-        
+
         print("start pos thread")
         t1 = Thread(self.position_thread)
         print("started pos thread")
@@ -693,7 +694,7 @@ class AutonomousHandler:
              look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
              heading_authority=1.0, max_turn_volts = 8,
              hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
-             turn_speed_weight = 2.0) -> None:
+             turn_speed_weight = 0.0) -> None:
 
         if timeout is not None:
             time_end = brain.timer.system() + timeout
@@ -939,7 +940,8 @@ if enable_macro_lady_brown:
     Thread(lady_brown_PID)
 
 def driver():
-    global eject_prep, queued_sort, wall_control_cooldown, wall_setpoint
+    global eject_prep, queued_sort, wall_control_cooldown, wall_setpoint, LB_enable_PID
+    if enable_macro_lady_brown: LB_enable_PID = True
     while True:
         intakeColor.set_light_power(100, PERCENT)
         brain.screen.clear_screen()
