@@ -3,7 +3,7 @@
 	# 2025-01-29 15:57:19.364118
 ####################
 #region Devices
-calibrate_imu = False
+calibrate_imu = True
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -91,6 +91,7 @@ imu = Inertial(Ports.PORT11)
 wall_setpoint = 2
 wall_control_cooldown = 0
 wall_positions = [10, 125, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
+LB_enable_PID = True
 
 if calibrate_imu:
     imu.calibrate()
@@ -101,7 +102,9 @@ else:
     enable_macro_lady_brown = False
 
 if enable_macro_lady_brown:
-    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
+    motors["misc"]["wall_stake"].spin(REVERSE, 100, PERCENT)
+    sleep(250, MSEC)
+    motors["misc"]["wall_stake"].stop(COAST)
     wallEnc.set_position(0)
 
 while imu.is_calibrating() and calibrate_imu: 
@@ -622,7 +625,7 @@ class AutonomousHandler:
             wait(20, MSEC)
 
     def run(self):
-        global driver_thread
+        global driver_thread, LB_enable_PID
         """
         Call once at start of auton. This is where all the sequential commands are located.
         """
@@ -646,32 +649,32 @@ class AutonomousHandler:
                      "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }, 
                 "grab_border_rings": {
-                     "points": ((576.13, 492.17), (508.3, 565.55), (450.34, 646.88), (404.78, 735.74), (373.04, 830.43), (354.92, 928.68), (348.72, 1028.42), (351.86, 1128.33), (361.43, 1227.87), (373.28, 1327.16), (432.13, 1391.3), (529.89, 1407.67), (617.51, 1365.69), (665.59, 1278.91), (690.19, 1182.06), (709.72, 1084.01), (771.45, 1026.49), (871.02, 1035.58), (970.97, 1037.63), (1070.48, 1028.89), (1167.09, 1004.24), (1254.37, 956.78), (1319.6, 881.74), (1357.45, 789.69), (1376.31, 691.65), (1382.6, 591.91), (1381.35, 491.93), (1375.97, 392.08), (1368.11, 292.39), (1358.85, 192.82), (1348.93, 93.32), (1339.04, -6.19), (1329.56, -105.74), (1320.68, -205.35), (1311.6, -318.45)),
+                     "points": ((576.13, 492.17), (523.6, 577.15), (483.29, 668.58), (453.25, 763.91), (431.37, 861.45), (415.67, 960.19), (404.4, 1059.55), (395.83, 1159.18), (388.09, 1258.88), (378.5, 1358.41), (461.27, 1402.91), (559.22, 1418.49), (645.27, 1374.28), (687.09, 1284.25), (714.08, 1188.01), (795.5, 1156.71), (895.37, 1161.49), (995.24, 1157.71), (1093.89, 1142.3), (1187.11, 1107.14), (1264.9, 1045.35), (1316.95, 960.57), (1344.49, 864.61), (1356.97, 765.45), (1360.0, 665.52), (1358.19, 565.54), (1352.15, 465.74), (1341.44, 366.33), (1327.26, 267.34), (1311.34, 168.61), (1295.76, 69.84), (1283.91, -29.44), (1282.79, -129.31), (1305.12, -226.18), (1365.06, -304.81), (1413.57, -336.74)),
                      "events": [["raise intake", (1274, 0), intake_pneu.set, (False,)]], # 1130, 470
                      "checkpoints": [],
                      "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }, 
                 "backup_for_stack_ring": {
-                     "points": ((1343.81, -318.45), (1348.06, -218.54), (1351.23, -118.59), (1352.52, -18.6)),
+                     "points": ((1446.26, -344.01), (1378.21, -271.14), (1346.34, -177.62), (1346.82, -77.7), (1352.03, 22.16), (1354.55, 100.28)),
                     #  "points": ((1547.38, 312.87), (1493.37, 397.02), (1436.66, 479.38), (1376.91, 559.55), (1313.8, 637.1), (1247.06, 711.54), (1176.48, 782.34), (1101.93, 848.93), (1023.38, 910.78), (940.89, 967.27), (854.44, 1017.5), (764.79, 1061.71), (672.36, 1099.78), (577.65, 1131.74), (481.14, 1157.76), (383.28, 1178.13), (284.46, 1193.23), (185.02, 1203.51), (-9.02, 1211.53)),
                      "events": [],
                      "checkpoints": [],
                      "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 },
                 "bottom_blue_ring": {
-                     "points": ((1349.18, 94.91), (1294.01, 11.51), (1239.42, -72.27), (1186.92, -157.38), (1138.62, -244.91), (1098.13, -336.27), (1070.05, -432.12), (1058.1, -531.28), (1062.13, -631.12), (1078.4, -729.74), (1103.31, -826.56), (1133.41, -921.91), (1089.9, -1010.81), (1031.91, -1092.16), (961.83, -1163.32), (881.54, -1222.73), (793.45, -1269.86), (699.96, -1305.17), (603.37, -1330.92), (505.03, -1348.93), (415.08, -1359.91)),
+                     "points": ((1349.18, 94.91), (1303.19, 6.14), (1264.05, -85.86), (1231.49, -180.39), (1205.05, -276.81), (1184.06, -374.57), (1167.77, -473.23), (1155.52, -572.47), (1146.6, -672.06), (1140.29, -771.86), (1136.03, -871.77), (1114.25, -967.15), (1062.54, -1052.65), (998.28, -1129.13), (922.81, -1194.55), (838.33, -1247.85), (747.2, -1288.82), (651.96, -1319.13), (554.36, -1340.78)),
                      "events": [],
                      "checkpoints": [],
                      "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 },
                 "last_mogo": {
-                     "points": ((377.5, -1376.02), (432.45, -1292.47), (483.2, -1206.32), (527.71, -1116.81), (563.67, -1023.57), (588.05, -926.67), (599.42, -827.41), (597.36, -727.51), (584.03, -628.46), (570.76, -565.4)),
+                     "points": ((377.5, -1376.02), (432.45, -1292.47), (483.2, -1206.32), (527.71, -1116.81), (563.67, -1023.57), (588.05, -926.67), (599.42, -827.41), (597.36, -727.51), (584.03, -628.46)),
                      "events": [],
                      "checkpoints": [],
                      "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }, 
                 "ladder_hit": {
-                     "points": ((640.55, -640.55), (627.84, -541.37), (618.72, -441.8), (616.01, -341.86), (621.47, -242.02), (627.45, -142.22), (626.52, -42.24), (619.08, 68.07)),
+                     "points": ((640.55, -640.55), (631.43, -541.01), (633.9, -441.14), (652.46, -343.03), (686.34, -249.04), (726.18, -157.33), (757.44, -62.47), (771.64, 36.36), (769.39, 137.86)),
                      "events": [],
                      "checkpoints": [],
                      "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -679,21 +682,30 @@ class AutonomousHandler:
         }
         imu.set_heading(150)
         imu.set_rotation(150)
+        LB_enable_PID = False
+        motors["misc"]["wall_stake"].stop(BrakeType.COAST)
         self.heading = 150 # 150!
         sleep(100, MSEC)
         self.dynamic_vars["position"] = [1560, 330]
         self.dynamic_vars["intake_color_sort"] = "eject_red"
 
         # drop preload onto alliance wall stake
-        motors["misc"]["wall_stake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+        # motors["misc"]["wall_stake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
         # wait for LB to move
-        sleep(1000, TimeUnits.MSEC)
+        end_time = 7500 + brain.timer.system()
+        while (wallEnc.position() < 190):
+            print(wallEnc.position())
+            if (brain.timer.system() < end_time):
+                break
+            else:
+                motors["misc"]["wall_stake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
         # stop LB mech
         motors["misc"]["wall_stake"].stop(BrakeType.COAST)
         # path to grab mogo @ 8V
         self.dynamic_vars["fwd_speed"] = 7
         motors["misc"]["wall_stake"].spin(DirectionType.REVERSE, 100, VelocityUnits.PERCENT)
         self.path(paths["grab_mogo_1"]["points"], [], [], True, 200, 100, 75, None, 1.25, 8, 0.1, 0.01, 0, 0, None, 0)
+        motors["misc"]["wall_stake"].stop(BrakeType.COAST)
         # after we are at the mogo start retracting the LB bar
         # grab mobile goal
         mogo_pneu.set(True)
@@ -708,20 +720,23 @@ class AutonomousHandler:
         drivetrain.set_turn_constant(0.6)
         drivetrain.turn_for(LEFT, 90, DEGREES, 100, PERCENT)
 
-        self.dynamic_vars["fwd_speed"] = 5
+        self.dynamic_vars["fwd_speed"] = 6
         print("path: grab_border_rings")
-        self.path(paths["grab_border_rings"]["points"], [["raise intake", (1294, 741), intake_pneu.set, (True,)]], [], False, 200, 100, 80, None, 1.25, 8, 0.1, 0.01, 0, 0, None, 0)
+        self.path(paths["grab_border_rings"]["points"], [
+            ["raise intake", (1294, 741), intake_pneu.set, (True,)], 
+            ["speed up", (1294, 741), "fwd_speed", 7]
+        ], [22], False, 200, 130, 120, None, 1.25, 8, 0.1, 0.01, 0, 0, None, 0)
 
         intake_pneu.set(False)
-        sleep(200, MSEC)
+        sleep(250, MSEC)
         self.dynamic_vars["fwd_speed"] = 3
         print("path: backup_for_stack_ring")
         self.path(paths["backup_for_stack_ring"]["points"], [], [], True)
-        sleep(200, MSEC)
+        # sleep(200, MSEC)
 
         motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
 
-        self.dynamic_vars["fwd_speed"] = 8
+        self.dynamic_vars["fwd_speed"] = 9
         print("path: bottom_blue_ring")
         self.path(paths["bottom_blue_ring"]["points"], [["drop goal", (951, -1162), mogo_pneu.set, [False]]], [], False, 300, 100, 200)
 
@@ -734,19 +749,23 @@ class AutonomousHandler:
         mogo_pneu.set(True)
         motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 65, VelocityUnits.PERCENT)
         motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+
+        self.dynamic_vars["intake_color_sort"] = "none"
         
-        drivetrain.turn_for(LEFT, 180, DEGREES, 100, PERCENT)
-        self.dynamic_vars["fwd_speed"] = 6
+        drivetrain.turn_for(LEFT, 150, DEGREES, 100, PERCENT)
+        self.dynamic_vars["fwd_speed"] = 8
         print("path: ladder_hit")
-        self.path(paths["ladder_hit"]["points"], [], [], False, 300, 100, 75, 2)
+        self.path(paths["ladder_hit"]["points"], [], [], False, 300, 70, 75, 2000)
+
+        #! sequence done!!!!!!!!!!!!!!!!!!!!!!!!!
+        print("sequence done at {}/15000 msec".format(brain.timer.system() - self.start_time))
+        
+        self.end_time = brain.timer.system()
+
+        sleep(2, SECONDS)
         
         motors["misc"]["intake_chain"].stop()
         motors["misc"]["intake_flex"].stop()
-
-        #! sequence done!!!!!!!!!!!!!!!!!!!!!!!!!
-        print("sequence done at {}/1500 msec".format(brain.timer.system() - self.start_time))
-        
-        self.end_time = brain.timer.system()
 
         t1.stop()
         t1 = None
@@ -889,13 +908,15 @@ class AutonomousHandler:
                         event[2](*event[3])
 
             done = path_handler.path_complete
+            if done:
+                print("path complete")
 
             if timeout is not None:
                 if brain.timer.system() > time_end:
                     done = True
+                    print("path timed out")
 
             data = [
-                str(brain.timer.system()), 
                 str(brain.timer.system() - self.start_time), 
                 # str(left_speed), 
                 # str(right_speed), 
@@ -908,7 +929,6 @@ class AutonomousHandler:
                 # # str(abs(dynamic_speed_heading_error)),
                 # str(heading_error),
                 str(round(self.heading)),
-                str(round(imu.heading())),
                 str(round(self.dynamic_vars["position"][0])),
                 str(round(self.dynamic_vars["position"][1])),
             ]
@@ -1009,7 +1029,7 @@ def intake_sorter():
         # blue color timings
         # brain.timer.event(intake_sorter, 170)
         # distance timings
-        brain.timer.event(intake_sorter, 150)
+        brain.timer.event(intake_sorter, 175)
     else:
         # Re-enable intake
         allow_intake_input = True
@@ -1020,13 +1040,12 @@ def lady_brown_PID():
     pid = MultipurposePID(0.15, 0.015, 0.01, 25, None)
 
     while True:
-        output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
+        if LB_enable_PID:
+            output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
 
-        motors["misc"]["wall_stake"].spin(FORWARD, output/2, VOLT)
-        # data = [str(wall_setpoint), str(wall_positions), str(wallEnc.position()), str(output/2)]
-        # print(", ".join(data))
-        
-        sleep(10)
+            motors["misc"]["wall_stake"].spin(FORWARD, output/2, VOLT)
+            
+        sleep(20)
 
 if enable_macro_lady_brown:
     Thread(lady_brown_PID)
@@ -1072,7 +1091,7 @@ def driver():
 
         if (intakeDistance.object_distance() < 70) and (not queued_sort) and (eject_prep):
             motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
-            brain.timer.event(intake_sorter, 210)
+            brain.timer.event(intake_sorter, 200)
 
             queued_sort = True
 
