@@ -1124,10 +1124,10 @@ def driver():
             motors["misc"]["intake_chain"].stop()
 
         # WALL STAKES MOTORS
-        if controls["LB_STAKE_MANUAL_UP"].pressing():
+        if controls["LB_MANUAL_UP"].pressing():
             motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
             LB_enable_PID = False
-        elif controls["LB_STAKE_MANUAL_DOWN"].pressing():
+        elif controls["LB_MANUAL_DOWN"].pressing():
             motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
             LB_enable_PID = False
         else:
