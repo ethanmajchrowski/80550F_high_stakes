@@ -40,8 +40,7 @@ controls = {
     "LB_MANUAL_UP":                con_2.buttonL1,
     "LB_MANUAL_DOWN":              con_2.buttonL2, 
     "MANUAL_ELEVATION_PNEUMATICS": con.buttonUp,
-    "LB_MACRO_INCREASE":           con.buttonB,
-    "LB_MACRO_DECREASE":           con.buttonDown,
+    "LB_MACRO_HOME":           con.buttonDown,
 }
 
 motors = {
@@ -1035,11 +1034,18 @@ def elevation_macro():
 
     # stop_drivebase(BrakeType.HOLD)
 
+def home_lady_brown_PID():
+    print("run home_lady_brown_PID")
+    global wall_setpoint, LB_enable_PID
+    LB_enable_PID = True
+    wall_setpoint = 1
+
 controls["DOINKER"].pressed(switch_doinker)
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 # controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["CYCLE_EJECTOR_COLOR"].pressed(cycle_ejector_color)
+controls["LB_MACRO_HOME"].pressed(home_lady_brown_PID)
 
 # if not enable_elevation_macro:
 #     controls["MANUAL_ELEVATION_PNEUMATICS"].pressed(manual_elevation)
