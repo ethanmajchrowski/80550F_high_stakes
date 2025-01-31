@@ -663,7 +663,7 @@ class AutonomousHandler:
                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }, 
                 "top_border_ring": {
-                    "points": ((510.12, 419.89), (551.03, 488.63), (590.8, 558.04), (628.93, 628.35), (664.74, 699.88), (697.1, 773.02), (724.32, 848.19), (743.79, 925.71), (747.05, 1005.4), (723.7, 1081.2), (669.35, 1139.09), (599.92, 1178.38), (525.24, 1206.92), (448.8, 1230.49), (371.84, 1252.32), (294.96, 1274.47), (218.58, 1298.23), (105.03, 1338.91)), 
+                    "points": ((510.12, 419.89), (550.74, 488.81), (589.83, 558.59), (626.82, 629.5), (660.9, 701.86), (690.86, 776.01), (714.97, 852.23), (730.72, 930.57), (732.28, 1010.28), (712.4, 1087.2), (666.45, 1151.92), (601.96, 1198.64), (528.83, 1230.75), (452.25, 1253.76), (374.17, 1271.12), (295.53, 1285.79), (216.68, 1299.32), (83.55, 1323.39)),   
                     "events": [],
                     "checkpoints": [],
                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -675,19 +675,19 @@ class AutonomousHandler:
                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }, 
                 "bottom_border_ring": {
-                    "points": ((824.4, 1177.86), (746.18, 1161.1), (669.14, 1139.62), (593.37, 1113.95), (517.9, 1087.42), (440.77, 1066.39), (361.58, 1055.54), (281.63, 1054.51), (201.88, 1060.53), (94.3, 1075.86)),
+                    "points": ((824.4, 1177.86), (746.22, 1160.92), (669.46, 1138.49), (594.59, 1110.32), (519.76, 1082.11), (441.71, 1065.17), (361.85, 1062.02), (282.08, 1067.61), (161.33, 1084.96)),
                     "events": [],
                     "checkpoints": [],
                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }, 
                 "last_ring_reorient": {
-                    "points": ((110.4, 1081.23), (187.0, 1058.15), (263.21, 1033.83), (339.22, 1008.89), (415.21, 983.87), (491.4, 959.48), (567.99, 936.39), (645.16, 915.32), (723.11, 897.38), (802.06, 884.58), (881.76, 878.39), (961.48, 883.73), (1038.24, 905.13), (1105.77, 947.01), (1157.3, 1007.63), (1190.83, 1080.03), (1211.07, 1157.31), (1223.61, 1299.02)),
+                    "points": ((110.4, 1081.23), (187.14, 1058.63), (263.69, 1035.39), (340.15, 1011.84), (416.62, 988.34), (493.24, 965.33), (570.11, 943.19), (647.36, 922.4), (725.24, 904.11), (803.75, 888.82), (883.15, 879.23), (963.04, 878.15), (1041.47, 892.38), (1108.85, 933.7), (1147.21, 1002.8), (1156.39, 1093.4)),
                     "events": [],
                     "checkpoints": [],
                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 },
                 "last_ring": {
-                    "points": ((1223.61, 1218.32), (1222.44, 1138.33), (1221.42, 1058.34), (1220.54, 978.34), (1219.8, 898.35), (1219.17, 818.35), (1218.61, 738.35), (1218.08, 658.35), (1217.53, 578.36), (1216.91, 498.36), (1216.14, 418.36), (1215.17, 338.37), (1213.96, 258.38), (1212.41, 178.39), (1210.53, 98.41), (1208.27, 18.45), (1204.35, -96.67)), 
+                    "points": ((1227.37, 897.57), (1224.54, 817.63), (1218.58, 737.86), (1207.65, 658.63), (1190.02, 580.64), (1162.98, 505.4), (1127.79, 433.58), (1092.83, 361.66), (1066.72, 286.12), (1050.28, 207.88), (1041.14, 128.43), (1037.14, 62.69)),
                     "events": [],
                     "checkpoints": [],
                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -714,7 +714,7 @@ class AutonomousHandler:
             self.path(paths["corner"]["points"], [], [], False, 350, 100, 75, 2000)
 
             # motors["misc"]["intake_flex"].stop()
-            self.dynamic_vars["fwd_speed"] = 8
+            self.dynamic_vars["fwd_speed"] = 5.5
             print("starting path: mogo")
             self.path(paths["mogo"]["points"], [], [], True)
 
@@ -722,7 +722,8 @@ class AutonomousHandler:
             sleep(200, TimeUnits.MSEC)
 
             #motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-            motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 65, VelocityUnits.PERCENT)
+            brain.timer.event(motors["misc"]["intake_chain"].spin, 300, (DirectionType.FORWARD, 65, VelocityUnits.PERCENT))
+            # motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 65, VelocityUnits.PERCENT)
             self.dynamic_vars["fwd_speed"] = 5
             print("starting path: top_border_ring")
             self.path(paths["top_border_ring"]["points"], [], [], False)
@@ -737,7 +738,7 @@ class AutonomousHandler:
 
             self.dynamic_vars["fwd_speed"] = 7
             print("starting path: last_ring_reorient")
-            self.path(paths["last_ring_reorient"]["points"], [], [], True)
+            self.path(paths["last_ring_reorient"]["points"], [], [], True, 350, 200)
 
             print("intake up")
             intake_pneu.set(True)
@@ -750,6 +751,7 @@ class AutonomousHandler:
             sleep(200, TimeUnits.MSEC)
             print("intake down")
             intake_pneu.set(False)
+            sleep(100, TimeUnits.MSEC)
 
             motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 60, VelocityUnits.PERCENT)
             self.dynamic_vars["fwd_speed"] = 4
