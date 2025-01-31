@@ -648,6 +648,8 @@ class AutonomousHandler:
         else:
             # self.sequence(globals())
             
+
+            #?### auton 6 ring
             print("auton testing")
             paths = {
                 "corner": {
@@ -663,7 +665,7 @@ class AutonomousHandler:
                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }, 
                 "top_border_ring": {
-                    "points": ((510.12, 419.89), (550.74, 488.81), (589.83, 558.59), (626.82, 629.5), (660.9, 701.86), (690.86, 776.01), (714.97, 852.23), (730.72, 930.57), (732.28, 1010.28), (712.4, 1087.2), (666.45, 1151.92), (601.96, 1198.64), (528.83, 1230.75), (452.25, 1253.76), (374.17, 1271.12), (295.53, 1285.79), (216.68, 1299.32), (83.55, 1323.39)),   
+                    "points": ((510.12, 419.89), (550.53, 488.93), (589.13, 558.98), (625.26, 630.33), (657.99, 703.3), (686.01, 778.2), (707.46, 855.2), (719.85, 934.12), (717.5, 1013.81), (694.65, 1089.98), (648.01, 1154.33), (583.93, 1201.66), (511.0, 1234.17), (434.24, 1256.52), (355.87, 1272.49), (276.83, 1284.83), (197.62, 1296.09), (146.18, 1304.0)),    
                     "events": [],
                     "checkpoints": [],
                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -762,6 +764,37 @@ class AutonomousHandler:
             motors["misc"]["intake_chain"].stop()
             self.kill_motors()
             mogo_pneu.set(False)
+
+            #?### auton goal rush
+            # print("auton testing")
+            # paths = {
+            #     "rush": {
+            #          "points": ((1488.62, -1496.73), (1408.85, -1502.83), (1328.96, -1507.04), (1249.02, -1509.93), (1169.04, -1511.76), (1089.04, -1512.6), (1009.05, -1512.53), (929.05, -1511.37), (849.09, -1509.2), (769.15, -1505.93), (689.3, -1501.19), (609.54, -1494.96), (529.94, -1486.97), (450.65, -1476.38), (371.81, -1462.87), (293.94, -1444.6), (213.48, -1417.04)),
+            #          "events": [],
+            #          "checkpoints": [],
+            #          "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #     },
+            #     "ring_1": {} 
+            # }
+
+            # # 6 ring elims
+            # imu.set_heading(45)
+            # self.heading = 45
+            # self.dynamic_vars["position"] = [1500, 1500]
+            # print("{}, {}".format(self.dynamic_vars["position"], imu.heading()))
+            # motors["misc"]["wall_stake"].stop(BrakeType.COAST)
+            # self.dynamic_vars["intake_color_sort"] = "eject_red"
+
+            # self.dynamic_vars["fwd_speed"] = 10
+            # print("starting path: rush")
+            # self.path(paths["rush"]["points"], [], [], False)
+            # doinker_pneu.set(True)
+
+            # sleep(100, MSEC)
+            # self.dynamic_vars["fwd_speed"] = 7
+            # print("starting path: ring_1")
+            # self.path(paths["ring_1"]["points"], [], [], True)
+
 
         #! sequence done!!!!!!!!!!!!!!!!!!!!!!!!!
         print("sequence done at {}/15000 msec".format(brain.timer.system() - self.start_time))
@@ -944,6 +977,7 @@ class AutonomousHandler:
                 self.kill_motors(BRAKE)
 
 auton = AutonomousHandler(data["autons"]["selected"])
+
 print(auton.run)
 #endregion auton
 
