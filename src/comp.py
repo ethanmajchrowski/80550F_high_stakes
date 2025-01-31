@@ -37,8 +37,8 @@ controls = {
     # "CYCLE_EJECTOR_COLOR":         con.buttonLeft,
     "DOINKER":                     con.buttonRight,
     "INTAKE_FLEX_HOLD":            con.buttonL2,
-    "LB_MANUAL_UP":                con_2.buttonL1,
-    "LB_MANUAL_DOWN":              con_2.buttonL2, 
+    "LB_MANUAL_UP":                con.buttonL1,
+    "LB_MANUAL_DOWN":              con.buttonL2, 
     "MANUAL_ELEVATION_PNEUMATICS": con.buttonUp,
     "LB_MACRO_HOME":           con.buttonDown,
 }
@@ -139,12 +139,6 @@ Over Under Settings:
     drivetrain.set_turn_constant(0.28)
     drivetrain.set_turn_threshold(0.25)
 """
-# elevation macro vars
-if enable_macro_lady_brown:
-    print("calibrating wall stake")
-    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
-    wallEnc.set_position(0)
-    print(wallEnc.position())
 
 class Logger:
     def __init__(self, interval: int, data: list[tuple[Callable, str]]) -> None:
@@ -1066,13 +1060,15 @@ def intake_sorter():
         eject_prep = False
 
 def lady_brown_PID():
-    pid = MultipurposePID(0.15, 0.015, 0.01, 25, None)
+    pid = MultipurposePID(0.15, 0.015, 0.02, 5, None)
 
     while True:
         if LB_enable_PID:
             output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
+            # print(wallEnc.position(), output)
 
-            motors["misc"]["wall_stake"].spin(FORWARD, output/2, VOLT)
+            motors["misc"]["wall_stake"].spin(FORWARD, output*2, VOLT)
+            # print(motors["misc"]["wall_stake"].command(VOLT))
             
         sleep(20)
 
@@ -1110,9 +1106,7 @@ def driver():
 
             queued_sort = True
 
-        if controls["INTAKE_FLEX_HOLD"].pressing():
-            motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
-        elif (controls["INTAKE_IN_HOLD"].pressing()):
+        if (controls["INTAKE_IN_HOLD"].pressing()):
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
             if allow_intake_input:
                 motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
@@ -1131,24 +1125,24 @@ def driver():
             motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
             LB_enable_PID = False
         else:
-            motors["misc"]["wall_stake"].stop(BRAKE)
+            motors["misc"]["wall_stake"].stop(HOLD)
         
         #     # Lady Brown controls
-        if wall_control_cooldown == 0:
-            if controls["LB_MACRO_DECREASE"].pressing():
-                LB_enable_PID = True
-                wall_control_cooldown = 2
-                if wall_setpoint > 0:
-                    wall_setpoint -= 1
+        # if wall_control_cooldown == 0:
+        #     if controls["LB_MACRO_DECREASE"].pressing():
+        #         LB_enable_PID = True
+        #         wall_control_cooldown = 2
+        #         if wall_setpoint > 0:
+        #             wall_setpoint -= 1
             
-            elif controls["LB_MACRO_INCREASE"].pressing():
-                LB_enable_PID = True
-                wall_control_cooldown = 2
-                if wall_setpoint < len(wall_positions) - 1:
-                    wall_setpoint += 1
+        #     elif controls["LB_MACRO_INCREASE"].pressing():
+        #         LB_enable_PID = True
+        #         wall_control_cooldown = 2
+        #         if wall_setpoint < len(wall_positions) - 1:
+        #             wall_setpoint += 1
 
-        elif wall_control_cooldown > 0:
-            wall_control_cooldown -= 1
+        # elif wall_control_cooldown > 0:
+        #     wall_control_cooldown -= 1
 
         # 3levation hold button
         if con.buttonUp.pressing() and not elevating:
