@@ -1118,17 +1118,11 @@ def driver():
 
         if controls["INTAKE_FLEX_HOLD"].pressing():
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
-        elif (
-                (controls["INTAKE_IN_HOLD"].pressing() and not enable_macro_lady_brown) or
-                (controls["INTAKE_IN_HOLD"].pressing())): #and 
-                    # ((not controls["LADY_BROWN_MACRO_UP_A"].pressing()) and enable_macro_lady_brown))):
+        elif (controls["INTAKE_IN_HOLD"].pressing()):
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
             if allow_intake_input:
                 motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
-        elif (
-                (controls["INTAKE_OUT_HOLD"].pressing() and not enable_macro_lady_brown) or
-                (controls["INTAKE_OUT_HOLD"].pressing())): #and 
-                   # ((not controls["LADY_BROWN_MACRO_DOWN_B"].pressing()) and enable_macro_lady_brown))):
+        elif (controls["INTAKE_OUT_HOLD"].pressing()):
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
             motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
         else:
