@@ -854,10 +854,6 @@ class AutonomousHandler:
                 sleep(20, MSEC)
             else:
                 self.kill_motors(BRAKE)
-
-auton = AutonomousHandler(data["autons"]["selected"])
-
-print(auton.run)
 #endregion auton
 
 #region driver
@@ -1164,6 +1160,9 @@ def driver():
 
 # driver_thread = None
 
+
+auton = AutonomousHandler(data["autons"]["selected"])
+
 def no_auton():
     pass
 
@@ -1183,6 +1182,9 @@ if brain.sdcard.is_inserted():
     else:
         print("competition")
         comp = Competition(driver, auton.run)
+        print("field control: " + str(comp.is_field_control()))
+        print("autonomous: " + str(comp.is_autonomous()))
+        print("driver: " + str(comp.is_driver_control()))
 else:
     comp = Competition(driver, no_auton)
 
