@@ -854,11 +854,7 @@ class AutonomousHandler:
             if not waiting:
                 left_speed = forwards_speed - dynamic_forwards_speed + heading_output
                 right_speed = forwards_speed - dynamic_forwards_speed - heading_output
-                # left_speed /= 1.2
-                # right_speed /= 1.2
-                # print("\nL: {} - {} + {} = {}".format(forwards_speed, dynamic_forwards_speed, heading_output, left_speed))
-                # print("R: {} - {} - {} = {}".format(forwards_speed, dynamic_forwards_speed, heading_output, right_speed))
-                    
+    
                 motors["left"]["A"].spin(FORWARD, left_speed, VOLT)
                 motors["left"]["B"].spin(FORWARD, left_speed, VOLT)
                 motors["left"]["C"].spin(FORWARD, left_speed, VOLT)
@@ -921,30 +917,9 @@ class AutonomousHandler:
             Thread(log, (data,))
 
             if not done:
-                # brain.timer.event(self.run, self.clock_time)
                 sleep(20, MSEC)
             else:
                 self.kill_motors(BRAKE)
-            
-            # scr = brain.screen
-            # scr.clear_screen()
-            # scr.set_cursor(1,1)
-            # scr.print(path_handler.last_found_point)
-            # scr.new_line()
-            # scr.print(dx, dy)
-            # scr.new_line()
-            # scr.print(heading_error)
-            # scr.new_line()
-            # scr.print(left_speed)
-            # scr.new_line()
-            # scr.print(right_speed)
-            # scr.new_line()
-            # scr.print(dynamic_forwards_speed)
-            # scr.new_line()
-            # # scr.print(path.index(target_point))
-            # # scr.new_line()
-
-            # scr.render()
 
 auton = AutonomousHandler(data["autons"]["selected"])
 print(auton.run)
@@ -1047,10 +1022,6 @@ def driver():
             # Movement controls
             turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
             forwardVolts = controls["DRIVE_FORWARD_AXIS"].position() * 0.12
-            # if elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() > 25:
-            #     forwardVolts = 7.5
-            # elif elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() < -25:
-            #     forwardVolts = -7.5
 
             # Spin motors and combine controller axes
             motors["left"]["A"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
@@ -1101,16 +1072,6 @@ def driver():
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
 
-        # WALL STAKES MOTORS
-        # if not enable_macro_lady_brown:
-        #     if controls["SIDE_STAKE_MANUAL_UP"].pressing():
-        #         motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
-        #     elif controls["SIDE_STAKE_MANUAL_DOWN"].pressing():
-        #         motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
-        #     else:
-        #         motors["misc"]["wall_stake"].stop(BRAKE)
-        # else:
-        #     # Lady Brown controls
         if wall_control_cooldown == 0:
             if controls["LB_MACRO_DECREASE"].pressing():
                 wall_control_cooldown = 5
@@ -1124,11 +1085,6 @@ def driver():
 
         elif wall_control_cooldown > 0:
             wall_control_cooldown -= 1
-
-        # # Grabber sensors
-        # if mogo_pneu_engaged == True:
-        #     if leftDistance.object_distance() < 80 and rightDistance.object_distance() < 80:
-        #         mogo_pneu.set(False)
 
         # Screen debugging
         scr = brain.screen
@@ -1167,11 +1123,6 @@ def driver():
 def no_auton():
     pass
 
-# def override_comp(comp):
-#     while True:
-#         if comp.is_driver_control():
-#             driver()
-#             driver_thread.stop() #type: ignore
 if brain.sdcard.is_inserted():
     if data["config"]["auton_test"]:
         sleep(1000, MSEC)
@@ -1187,12 +1138,8 @@ if brain.sdcard.is_inserted():
         motors["right"]["C"].stop(COAST)
     else:
         comp = Competition(driver, auton.run)
-    # auton.run()
-
-    # driver_thread = Thread(override_comp, (comp,))
 else:
     comp = Competition(driver, no_auton)
-    # driver_thread = Thread(override_comp, (comp,))
 
     for i in range(5):
         brain.screen.set_cursor(0, 0)
