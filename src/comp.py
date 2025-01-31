@@ -646,42 +646,42 @@ class AutonomousHandler:
         if not data["config"]["auton_test"]:
             self.sequence(globals())
         else:
-            # self.sequence(globals())
+            self.sequence(globals())
 
-            #?### auton goal rush
-            print("auton testing")
-            paths = {
-                "rush": {
-                     "points": ((1500.0, -1500.0), (1421.08, -1513.08), (1342.55, -1528.36), (1264.14, -1544.23), (1185.57, -1559.24), (1106.63, -1572.17), (1027.25, -1582.04), (947.47, -1587.9), (867.5, -1589.02), (787.59, -1585.54), (708.1, -1576.65), (629.24, -1563.32), (551.43, -1544.79), (474.7, -1522.2), (399.19, -1495.82), (324.99, -1465.94), (256.09, -1434.68)),
-                     "events": [],
-                     "checkpoints": [],
-                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
-                },
-                "ring_1": {
-                     "points": ((208.79, -1407.66), (286.68, -1425.88), (365.55, -1439.04), (445.34, -1442.07), (521.65, -1421.32), (570.52, -1360.17), (587.26, -1282.11), (595.95, -1202.59), (608.25, -1123.57), (630.56, -1046.85), (665.81, -975.22), (705.72, -920.11)),
-                     "events": [],
-                     "checkpoints": [],
-                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
-                } 
-            }
+            # #?### auton goal rush
+            # print("auton testing")
+            # paths = {
+            #     "rush": {
+            #          "points": ((1500.0, -1500.0), (1421.08, -1513.08), (1342.55, -1528.36), (1264.14, -1544.23), (1185.57, -1559.24), (1106.63, -1572.17), (1027.25, -1582.04), (947.47, -1587.9), (867.5, -1589.02), (787.59, -1585.54), (708.1, -1576.65), (629.24, -1563.32), (551.43, -1544.79), (474.7, -1522.2), (399.19, -1495.82), (324.99, -1465.94), (256.09, -1434.68)),
+            #          "events": [],
+            #          "checkpoints": [],
+            #          "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #     },
+            #     "ring_1": {
+            #          "points": ((208.79, -1407.66), (286.68, -1425.88), (365.55, -1439.04), (445.34, -1442.07), (521.65, -1421.32), (570.52, -1360.17), (587.26, -1282.11), (595.95, -1202.59), (608.25, -1123.57), (630.56, -1046.85), (665.81, -975.22), (705.72, -920.11)),
+            #          "events": [],
+            #          "checkpoints": [],
+            #          "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #     } 
+            # }
 
-            # 6 ring elims
-            imu.set_heading(270)
-            self.heading = 270
-            self.dynamic_vars["position"] = [1501, -1501]
-            print("{}, {}".format(self.dynamic_vars["position"], imu.heading()))
-            motors["misc"]["wall_stake"].stop(BrakeType.COAST)
-            self.dynamic_vars["intake_color_sort"] = "eject_red"
+            # # 6 ring elims
+            # imu.set_heading(270)
+            # self.heading = 270
+            # self.dynamic_vars["position"] = [1501, -1501]
+            # print("{}, {}".format(self.dynamic_vars["position"], imu.heading()))
+            # motors["misc"]["wall_stake"].stop(BrakeType.COAST)
+            # self.dynamic_vars["intake_color_sort"] = "eject_red"
 
-            self.dynamic_vars["fwd_speed"] = 10
-            print("starting path: rush")
-            self.path(paths["rush"]["points"], [], [], False)
-            doinker_pneu.set(True)
+            # self.dynamic_vars["fwd_speed"] = 10
+            # print("starting path: rush")
+            # self.path(paths["rush"]["points"], [], [], False)
+            # doinker_pneu.set(True)
 
-            sleep(100, MSEC)
-            self.dynamic_vars["fwd_speed"] = 7
-            print("starting path: ring_1")
-            self.path(paths["ring_1"]["points"], [], [], True)
+            # sleep(100, MSEC)
+            # self.dynamic_vars["fwd_speed"] = 7
+            # print("starting path: ring_1")
+            # self.path(paths["ring_1"]["points"], [], [], True)
 
 
         #! sequence done!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1081,6 +1081,7 @@ if brain.sdcard.is_inserted():
         motors["right"]["B"].stop(COAST)
         motors["right"]["C"].stop(COAST)
     else:
+        print("competition")
         comp = Competition(driver, auton.run)
 else:
     comp = Competition(driver, no_auton)
