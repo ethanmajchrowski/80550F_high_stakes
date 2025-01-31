@@ -35,7 +35,7 @@ def gen_paths(main):
                      "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 },
                 "last_mogo": {
-                     "points": ((377.5, -1376.02), (432.45, -1292.47), (483.2, -1206.32), (527.71, -1116.81), (563.67, -1023.57), (588.05, -926.67), (599.42, -827.41), (597.36, -727.51), (584.03, -628.46)),
+                     "points": ((377.5, -1376.02), (433.93, -1293.46), (489.34, -1210.22), (542.1, -1125.28), (590.03, -1037.54), (630.38, -946.1), (659.69, -850.59), (674.18, -751.77), (672.92, -651.91), (656.66, -554.66)),
                      "events": [],
                      "checkpoints": [],
                      "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -83,17 +83,26 @@ def run(main):
     # drop preload onto alliance wall stake
     # motors["misc"]["wall_stake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     # wait for LB to move
+    
+    print(brain.timer.system())
     end_time = 7500 + brain.timer.system()
-    while (main["wallEnc"].position() < 190):
+    print(end_time)
+
+    main["wallEnc"].set_position(20)
+    while (main["wallEnc"].position() < 380):
+        print(main["wallEnc"].position())
         if (brain.timer.system() > end_time):
             break
         else:
             motors["misc"]["wall_stake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+        main["sleep"](20)
+
+    print(main["wallEnc"].position())
     # stop LB mech
     motors["misc"]["wall_stake"].stop(BrakeType.COAST)
     # path to grab mogo @ 8V
     controller.dynamic_vars["fwd_speed"] = 7
-    motors["misc"]["wall_stake"].spin(DirectionType.REVERSE, 100, VelocityUnits.PERCENT)
+    brain.timer.event(motors["misc"]["wall_stake"].spin, 200, (DirectionType.REVERSE, 100, VelocityUnits.PERCENT))
     controller.path(paths["grab_mogo_1"]["points"], [], [], True, 200, 100, 75, None, 1.25, 8, 0.1, 0.01, 0, 0, None, 0)
     motors["misc"]["wall_stake"].stop(BrakeType.COAST)
     # after we are at the mogo start retracting the LB bar
@@ -135,7 +144,7 @@ def run(main):
 
     print("path: last_mogo")
     controller.dynamic_vars["fwd_speed"] = 6
-    controller.path(paths["last_mogo"]["points"], [], [], True, 300, 100, 75)
+    controller.path(paths["last_mogo"]["points"], [], [], True, 300, 175, 75)
     main["mogo_pneu"].set(True)
     motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
 
@@ -146,6 +155,3 @@ def run(main):
     controller.dynamic_vars["fwd_speed"] = 8
     print("path: ladder_hit")
     controller.path(paths["ladder_hit"]["points"], [], [], False, 300, 70, 75, 2000)
-
-
-
