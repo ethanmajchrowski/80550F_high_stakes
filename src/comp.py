@@ -650,131 +650,56 @@ class AutonomousHandler:
             
 
             #?### auton 6 ring
-            print("auton testing")
-            paths = {
-                "corner": {
-                     "points": ((1508.16, 1494.38), (1571.54, 1542.91), (1625.95, 1601.5), (1675.33, 1664.42), (1722.48, 1729.05), (1767.23, 1791.67)),
-                     "events": [],
-                     "checkpoints": [],
-                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
-                },
-                "mogo": {
-                    "points": ((1699.44, 1660.51), (1626.21, 1628.29), (1553.94, 1594.03), (1482.92, 1557.25), (1413.57, 1517.41), (1346.41, 1474.0), (1282.05, 1426.54), (1221.15, 1374.73), (1164.29, 1318.5), (1112.69, 1257.4), (1065.62, 1192.74), (1022.65, 1125.29), (982.56, 1056.06), (943.6, 986.19), (904.22, 916.55), (863.28, 847.83), (820.01, 780.54), (773.7, 715.33), (724.39, 652.35), (672.28, 591.66), (617.61, 533.27), (560.68, 477.07), (493.13, 415.64)),     
-                    "events": [],
-                    "checkpoints": [],
-                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
-                }, 
-                "top_border_ring": {
-                    "points": ((510.12, 419.89), (550.53, 488.93), (589.13, 558.98), (625.26, 630.33), (657.99, 703.3), (686.01, 778.2), (707.46, 855.2), (719.85, 934.12), (717.5, 1013.81), (694.65, 1089.98), (648.01, 1154.33), (583.93, 1201.66), (511.0, 1234.17), (434.24, 1256.52), (355.87, 1272.49), (276.83, 1284.83), (197.62, 1296.09), (146.18, 1304.0)),    
-                    "events": [],
-                    "checkpoints": [],
-                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
-                }, 
-                "backup_for_bottom_border_ring": {
-                    "points": ((105.03, 1344.28), (184.97, 1347.05), (264.92, 1345.12), (344.21, 1334.89), (420.67, 1311.88), (489.41, 1271.31), (553.43, 1223.38), (625.76, 1190.02), (704.44, 1176.51), (824.4, 1177.86)),
-                    "events": [],
-                    "checkpoints": [],
-                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
-                }, 
-                "bottom_border_ring": {
-                    "points": ((824.4, 1177.86), (746.22, 1160.92), (669.46, 1138.49), (594.59, 1110.32), (519.76, 1082.11), (441.71, 1065.17), (361.85, 1062.02), (282.08, 1067.61), (161.33, 1084.96)),
-                    "events": [],
-                    "checkpoints": [],
-                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
-                }, 
-                "last_ring_reorient": {
-                    "points": ((110.4, 1081.23), (187.14, 1058.63), (263.69, 1035.39), (340.15, 1011.84), (416.62, 988.34), (493.24, 965.33), (570.11, 943.19), (647.36, 922.4), (725.24, 904.11), (803.75, 888.82), (883.15, 879.23), (963.04, 878.15), (1041.47, 892.38), (1108.85, 933.7), (1147.21, 1002.8), (1156.39, 1093.4)),
-                    "events": [],
-                    "checkpoints": [],
-                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
-                },
-                "last_ring": {
-                    "points": ((1227.37, 897.57), (1224.54, 817.63), (1218.58, 737.86), (1207.65, 658.63), (1190.02, 580.64), (1162.98, 505.4), (1127.79, 433.58), (1092.83, 361.66), (1066.72, 286.12), (1050.28, 207.88), (1041.14, 128.43), (1037.14, 62.69)),
-                    "events": [],
-                    "checkpoints": [],
-                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
-                }, 
-                "end_backup": {
-                    "points": ((1189.64, 16.42), (1189.1, 96.42), (1188.04, 176.41), (1186.94, 256.41), (1186.11, 336.4), (1185.89, 416.4), (1186.73, 496.39), (1189.64, 577.03)),
-                    "events": [],
-                    "checkpoints": [],
-                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
-                }, 
-            }
-
-            # 6 ring elims
-            imu.set_heading(45)
-            self.heading = 45
-            self.dynamic_vars["position"] = [1500, 1500]
-            print("{}, {}".format(self.dynamic_vars["position"], imu.heading()))
-            motors["misc"]["wall_stake"].stop(BrakeType.COAST)
-            self.dynamic_vars["intake_color_sort"] = "eject_red"
-
-            motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-            self.dynamic_vars["fwd_speed"] = 10
-            print("starting path: corner")
-            self.path(paths["corner"]["points"], [], [], False, 350, 100, 75, 2000)
-
-            # motors["misc"]["intake_flex"].stop()
-            self.dynamic_vars["fwd_speed"] = 5.5
-            print("starting path: mogo")
-            self.path(paths["mogo"]["points"], [], [], True)
-
-            mogo_pneu.set(True)
-            sleep(200, TimeUnits.MSEC)
-
-            #motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-            brain.timer.event(motors["misc"]["intake_chain"].spin, 300, (DirectionType.FORWARD, 65, VelocityUnits.PERCENT))
-            # motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 65, VelocityUnits.PERCENT)
-            self.dynamic_vars["fwd_speed"] = 5
-            print("starting path: top_border_ring")
-            self.path(paths["top_border_ring"]["points"], [], [], False)
-
-            self.dynamic_vars["fwd_speed"] = 7
-            print("starting path: backup_for_bottom_border_ring")
-            self.path(paths["backup_for_bottom_border_ring"]["points"], [], [], True)
-
-            self.dynamic_vars["fwd_speed"] = 5
-            print("starting path: bottom_border_ring")
-            self.path(paths["bottom_border_ring"]["points"], [], [], False)
-
-            self.dynamic_vars["fwd_speed"] = 7
-            print("starting path: last_ring_reorient")
-            self.path(paths["last_ring_reorient"]["points"], [], [], True, 350, 200)
-
-            print("intake up")
-            intake_pneu.set(True)
-
-            self.dynamic_vars["fwd_speed"] = 6
-            print("starting path: last_ring")
-            self.path(paths["last_ring"]["points"], [], [], False, 350, 100, 75, 5000)
-
-            motors["misc"]["intake_chain"].stop()
-            sleep(200, TimeUnits.MSEC)
-            print("intake down")
-            intake_pneu.set(False)
-            sleep(100, TimeUnits.MSEC)
-
-            motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 60, VelocityUnits.PERCENT)
-            self.dynamic_vars["fwd_speed"] = 4
-            print("starting path: end_backup")
-            self.path(paths["end_backup"]["points"], [], [], True)
-
-            motors["misc"]["intake_flex"].stop()
-            motors["misc"]["intake_chain"].stop()
-            self.kill_motors()
-            mogo_pneu.set(False)
-
-            #?### auton goal rush
             # print("auton testing")
             # paths = {
-            #     "rush": {
-            #          "points": ((1488.62, -1496.73), (1408.85, -1502.83), (1328.96, -1507.04), (1249.02, -1509.93), (1169.04, -1511.76), (1089.04, -1512.6), (1009.05, -1512.53), (929.05, -1511.37), (849.09, -1509.2), (769.15, -1505.93), (689.3, -1501.19), (609.54, -1494.96), (529.94, -1486.97), (450.65, -1476.38), (371.81, -1462.87), (293.94, -1444.6), (213.48, -1417.04)),
+            #     "corner": {
+            #          "points": ((1508.16, 1494.38), (1571.54, 1542.91), (1625.95, 1601.5), (1675.33, 1664.42), (1722.48, 1729.05), (1767.23, 1791.67)),
             #          "events": [],
             #          "checkpoints": [],
             #          "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
             #     },
-            #     "ring_1": {} 
+            #     "mogo": {
+            #         "points": ((1699.44, 1660.51), (1626.21, 1628.29), (1553.94, 1594.03), (1482.92, 1557.25), (1413.57, 1517.41), (1346.41, 1474.0), (1282.05, 1426.54), (1221.15, 1374.73), (1164.29, 1318.5), (1112.69, 1257.4), (1065.62, 1192.74), (1022.65, 1125.29), (982.56, 1056.06), (943.6, 986.19), (904.22, 916.55), (863.28, 847.83), (820.01, 780.54), (773.7, 715.33), (724.39, 652.35), (672.28, 591.66), (617.61, 533.27), (560.68, 477.07), (493.13, 415.64)),
+            #         "events": [],
+            #         "checkpoints": [],
+            #         "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #     }, 
+            #     "top_border_ring": {
+            #         "points": ((510.12, 419.89), (550.58, 488.9), (589.3, 558.89), (625.64, 630.13), (658.69, 702.96), (687.16, 777.68), (709.21, 854.52), (722.32, 933.33), (720.32, 1013.03), (696.96, 1088.98), (648.83, 1152.14), (583.14, 1197.22), (509.09, 1227.16), (431.7, 1247.21), (353.0, 1261.47), (273.81, 1272.82), (158.62, 1289.34)),
+            #         "events": [],
+            #         "checkpoints": [],
+            #         "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #     }, 
+            #     "backup_for_bottom_border_ring": {
+            #         "points": ((142.86, 1346.06), (222.81, 1348.81), (302.75, 1346.66), (381.88, 1335.5), (457.13, 1309.15), (521.56, 1262.2), (583.17, 1211.4), (657.61, 1183.32), (737.05, 1174.95), (824.4, 1177.86)),
+            #         "events": [],
+            #         "checkpoints": [],
+            #         "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #     }, 
+            #     "bottom_border_ring": {
+            #         "points": ((824.4, 1177.86), (746.22, 1160.92), (669.46, 1138.49), (594.59, 1110.32), (519.76, 1082.11), (441.71, 1065.17), (361.85, 1062.02), (282.08, 1067.61), (161.33, 1084.96)),
+            #         "events": [],
+            #         "checkpoints": [],
+            #         "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #     }, 
+            #     "last_ring_reorient": {
+            #         "points": ((139.71, 1103.44), (216.38, 1080.6), (292.75, 1056.75), (368.91, 1032.27), (444.98, 1007.51), (521.11, 982.95), (597.45, 959.02), (674.17, 936.35), (751.51, 915.91), (829.64, 898.78), (908.77, 887.19), (988.68, 885.7), (1066.04, 904.17), (1126.75, 954.32), (1152.94, 1029.13), (1156.39, 1093.4)),
+            #         "events": [],
+            #         "checkpoints": [],
+            #         "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #     },
+            #     "last_ring": {
+            #         "points": ((1227.37, 897.57), (1225.59, 817.59), (1222.81, 737.64), (1218.51, 657.76), (1212.22, 578.01), (1203.25, 498.52), (1191.46, 419.4), (1178.58, 340.44), (1167.43, 261.23), (1159.06, 181.67), (1153.13, 101.89), (1147.99, -2.51)), 
+            #         "events": [],
+            #         "checkpoints": [],
+            #         "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #     }, 
+            #     "end_backup": {
+            #         "points": ((1189.64, 16.42), (1189.1, 96.42), (1188.04, 176.41), (1186.94, 256.41), (1186.11, 336.4), (1185.89, 416.4), (1186.73, 496.39), (1189.64, 577.03)),
+            #         "events": [],
+            #         "checkpoints": [],
+            #         "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #     }, 
             # }
 
             # # 6 ring elims
@@ -785,15 +710,97 @@ class AutonomousHandler:
             # motors["misc"]["wall_stake"].stop(BrakeType.COAST)
             # self.dynamic_vars["intake_color_sort"] = "eject_red"
 
+            # motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
             # self.dynamic_vars["fwd_speed"] = 10
-            # print("starting path: rush")
-            # self.path(paths["rush"]["points"], [], [], False)
-            # doinker_pneu.set(True)
+            # print("starting path: corner")
+            # self.path(paths["corner"]["points"], [], [], False, 350, 100, 75, 1000)
 
-            # sleep(100, MSEC)
+            # # motors["misc"]["intake_flex"].stop()
+            # self.dynamic_vars["fwd_speed"] = 5.5
+            # print("starting path: mogo")
+            # self.path(paths["mogo"]["points"], [], [], True)
+
+            # mogo_pneu.set(True)
+            # sleep(200, TimeUnits.MSEC)
+
+            # #motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+            # brain.timer.event(motors["misc"]["intake_chain"].spin, 300, (DirectionType.FORWARD, 65, VelocityUnits.PERCENT))
+            # # motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 65, VelocityUnits.PERCENT)
+            # self.dynamic_vars["fwd_speed"] = 4.5
+            # print("starting path: top_border_ring")
+            # self.path(paths["top_border_ring"]["points"], [], [], False)
+            # sleep(200, TimeUnits.MSEC)
+
             # self.dynamic_vars["fwd_speed"] = 7
-            # print("starting path: ring_1")
-            # self.path(paths["ring_1"]["points"], [], [], True)
+            # print("starting path: backup_for_bottom_border_ring")
+            # self.path(paths["backup_for_bottom_border_ring"]["points"], [], [], True)
+
+            # self.dynamic_vars["fwd_speed"] = 4.5
+            # print("starting path: bottom_border_ring")
+            # self.path(paths["bottom_border_ring"]["points"], [], [], False)
+            # sleep(200, TimeUnits.MSEC)
+
+            # self.dynamic_vars["fwd_speed"] = 7
+            # print("starting path: last_ring_reorient")
+            # self.path(paths["last_ring_reorient"]["points"], [], [], True, 350, 200)
+
+            # print("intake up")
+            # intake_pneu.set(True)
+
+            # self.dynamic_vars["fwd_speed"] = 6
+            # print("starting path: last_ring")
+            # self.path(paths["last_ring"]["points"], [], [], False, 350, 100, 75, 5000)
+
+            # motors["misc"]["intake_chain"].stop()
+            # sleep(500, TimeUnits.MSEC)
+            # print("intake down")
+            # intake_pneu.set(False)
+            # sleep(250, TimeUnits.MSEC)
+
+            # motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 60, VelocityUnits.PERCENT)
+            # self.dynamic_vars["fwd_speed"] = 4
+            # print("starting path: end_backup")
+            # self.path(paths["end_backup"]["points"], [], [], True)
+
+            # motors["misc"]["intake_flex"].stop()
+            # motors["misc"]["intake_chain"].stop()
+            # self.kill_motors()
+            # mogo_pneu.set(True)
+
+            #?### auton goal rush
+            print("auton testing")
+            paths = {
+                "rush": {
+                     "points": ((1500.0, -1500.0), (1421.08, -1513.08), (1342.55, -1528.36), (1264.14, -1544.23), (1185.57, -1559.24), (1106.63, -1572.17), (1027.25, -1582.04), (947.47, -1587.9), (867.5, -1589.02), (787.59, -1585.54), (708.1, -1576.65), (629.24, -1563.32), (551.43, -1544.79), (474.7, -1522.2), (399.19, -1495.82), (324.99, -1465.94), (256.09, -1434.68)),
+                     "events": [],
+                     "checkpoints": [],
+                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+                },
+                "ring_1": {
+                     "points": ((208.79, -1407.66), (286.68, -1425.88), (365.55, -1439.04), (445.34, -1442.07), (521.65, -1421.32), (570.52, -1360.17), (587.26, -1282.11), (595.95, -1202.59), (608.25, -1123.57), (630.56, -1046.85), (665.81, -975.22), (705.72, -920.11)),
+                     "events": [],
+                     "checkpoints": [],
+                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+                } 
+            }
+
+            # 6 ring elims
+            imu.set_heading(270)
+            self.heading = 270
+            self.dynamic_vars["position"] = [1501, -1501]
+            print("{}, {}".format(self.dynamic_vars["position"], imu.heading()))
+            motors["misc"]["wall_stake"].stop(BrakeType.COAST)
+            self.dynamic_vars["intake_color_sort"] = "eject_red"
+
+            self.dynamic_vars["fwd_speed"] = 10
+            print("starting path: rush")
+            self.path(paths["rush"]["points"], [], [], False)
+            doinker_pneu.set(True)
+
+            sleep(100, MSEC)
+            self.dynamic_vars["fwd_speed"] = 7
+            print("starting path: ring_1")
+            self.path(paths["ring_1"]["points"], [], [], True)
 
 
         #! sequence done!!!!!!!!!!!!!!!!!!!!!!!!!
