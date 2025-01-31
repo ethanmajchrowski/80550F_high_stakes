@@ -291,6 +291,7 @@ def switch_doinker():
     doinker_pneu.set(not doinker_pneu.value())
 
 def manual_elevation():
+    print("manual elevation")
     elevation_bar_lift.set(not elevation_bar_lift.value())
     doinker_pneu.set(elevation_bar_lift.value())
 
