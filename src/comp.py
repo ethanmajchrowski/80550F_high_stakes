@@ -896,17 +896,6 @@ def toggle_tank():
     global tank_drive
     tank_drive = not tank_drive
 
-def cycle_ejector_color():
-    global color_setting
-    # print("old: " + color_setting)
-    l = ["none", "eject_blue", "eject_red"]
-    index = l.index(color_setting)
-    if index + 1 < len(l):
-        index += 1
-    else:
-        index = 0
-    color_setting = l[index]
-
 def drivebase_command(command, speed):
     motors["left"]["A"].spin(command, speed, PERCENT)
     motors["left"]["B"].spin(command, speed, PERCENT)
@@ -1044,7 +1033,6 @@ controls["DOINKER"].pressed(switch_doinker)
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 # controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
-controls["CYCLE_EJECTOR_COLOR"].pressed(cycle_ejector_color)
 controls["LB_MACRO_HOME"].pressed(home_lady_brown_PID)
 
 # if not enable_elevation_macro:
@@ -1170,27 +1158,6 @@ def driver():
                 elevation_macro()
         else:
             elevation_hold_duration = 10
-
-        # Screen debugging
-        scr = brain.screen
-        scr.clear_screen()
-        scr.set_cursor(1,1)
-
-        scr.print("Timer: {}".format(brain.timer.time()))
-        scr.next_row()
-        scr.print(wall_setpoint)
-        scr.next_row()
-
-        scr = con.screen
-        scr.clear_screen()
-        scr.set_cursor(1,1)
-
-        scr.print(color_setting)
-        scr.new_line()
-
-        if mogo_pneu_engaged: 
-            scr.print("MOGO ENGAGED")
-            scr.new_line()
 
         brain.screen.render()
 
