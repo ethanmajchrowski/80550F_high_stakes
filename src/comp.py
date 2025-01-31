@@ -3,7 +3,7 @@
 	# 2025-01-29 15:57:19.364118
 ####################
 #region Devices
-calibrate_imu = True
+calibrate_imu = False
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -83,6 +83,8 @@ intakeDistance = Distance(Ports.PORT9)
 leftWallDistance = Distance(Ports.PORT6)
 backWallDistance = Distance(Ports.PORT13)
 
+elevationDistance = Distance(Ports.PORT20)
+
 # MISC SENSORS
 intakeColor = Optical(Ports.PORT10)
 imu = Inertial(Ports.PORT11)
@@ -91,7 +93,7 @@ imu = Inertial(Ports.PORT11)
 wall_setpoint = 0
 wall_control_cooldown = 0
 wall_positions = [15, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
-LB_enable_PID = False
+LB_enable_PID = True
 
 if calibrate_imu:
     imu.calibrate()
@@ -102,9 +104,7 @@ else:
     enable_macro_lady_brown = False
 
 if enable_macro_lady_brown:
-    motors["misc"]["wall_stake"].spin(REVERSE, 100, PERCENT)
-    sleep(250, MSEC)
-    motors["misc"]["wall_stake"].stop(COAST)
+    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
     wallEnc.set_position(0)
 
 while imu.is_calibrating() and calibrate_imu: 
@@ -138,6 +138,14 @@ Over Under Settings:
     drivetrain.set_turn_constant(0.28)
     drivetrain.set_turn_threshold(0.25)
 """
+
+# Elevation macro vars
+enable_elevation_macro = True
+if enable_elevation_macro:
+    controls["START_ELEVATE"] = con.buttonUp
+manual_elevation_controls = True
+elevating = False
+elevation_hold_duration = 20
 
 class Logger:
     def __init__(self, interval: int, data: list[tuple[Callable, str]]) -> None:
@@ -642,7 +650,23 @@ class AutonomousHandler:
 
         print("starting sequence")
         #! !!!!!!!!!!!!!!!!!!!!!!
-        self.sequence(globals())
+        if not data["config"]["auton_test"]:
+            self.sequence(globals())
+        else:
+            # self.sequence(globals())
+            
+            paths = {
+                "grab_mogo_1": {
+                     "points": ((1547.38, 312.87), (1509.84, 405.3), (1449.82, 485.02), (1373.22, 549.05), (1285.75, 597.23), (1191.58, 630.47), (1093.57, 649.61), (993.85, 654.94), (894.34, 646.14), (797.41, 621.95), (706.28, 581.18), (651.29, 545.86)),
+                    #  "points": ((1547.38, 312.87), (1493.37, 397.02), (1436.66, 479.38), (1376.91, 559.55), (1313.8, 637.1), (1247.06, 711.54), (1176.48, 782.34), (1101.93, 848.93), (1023.38, 910.78), (940.89, 967.27), (854.44, 1017.5), (764.79, 1061.71), (672.36, 1099.78), (577.65, 1131.74), (481.14, 1157.76), (383.28, 1178.13), (284.46, 1193.23), (185.02, 1203.51), (-9.02, 1211.53)),
+                     "events": [],
+                     "checkpoints": [],
+                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+                }
+            }
+
+            # 6 ring elims
+
 
         #! sequence done!!!!!!!!!!!!!!!!!!!!!!!!!
         print("sequence done at {}/15000 msec".format(brain.timer.system() - self.start_time))
