@@ -85,7 +85,7 @@ def run(main):
     # wait for LB to move
     end_time = 7500 + brain.timer.system()
     while (main["wallEnc"].position() < 190):
-        if (brain.timer.system() < end_time):
+        if (brain.timer.system() > end_time):
             break
         else:
             motors["misc"]["wall_stake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)

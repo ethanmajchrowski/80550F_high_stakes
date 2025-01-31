@@ -83,11 +83,16 @@ def run(main):
     # motors["misc"]["wall_stake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     # wait for LB to move
     end_time = 7500 + brain.timer.system()
-    while (main["wallEnc"].position() < 190):
-        if (brain.timer.system() < end_time):
-            break
-        else:
-            motors["misc"]["wall_stake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    print("cur: {}, end: {}".format(brain.timer.system(), end_time))
+    # while (main["wallEnc"].position() < 190):
+    while True:
+        print(main["wallEnc"].position())
+        main["sleep"](20)
+        # if (brain.timer.system() > end_time):
+        #     print("LB timed out")
+        #     break
+        # else:
+        #     motors["misc"]["wall_stake"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     # stop LB mech
     motors["misc"]["wall_stake"].stop(BrakeType.COAST)
     # path to grab mogo @ 8V
