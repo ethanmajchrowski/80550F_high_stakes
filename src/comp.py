@@ -680,14 +680,20 @@ class AutonomousHandler:
                     "checkpoints": [],
                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }, 
-                "ladder_reorient": {
-                    "points": ((824.4, 1177.86), (746.18, 1161.1), (669.14, 1139.62), (593.37, 1113.95), (517.9, 1087.42), (440.77, 1066.39), (361.58, 1055.54), (281.63, 1054.51), (201.88, 1060.53), (94.3, 1075.86)),
+                "last_ring_reorient": {
+                    "points": ((110.4, 1081.23), (187.0, 1058.15), (263.21, 1033.83), (339.22, 1008.89), (415.21, 983.87), (491.4, 959.48), (567.99, 936.39), (645.16, 915.32), (723.11, 897.38), (802.06, 884.58), (881.76, 878.39), (961.48, 883.73), (1038.24, 905.13), (1105.77, 947.01), (1157.3, 1007.63), (1190.83, 1080.03), (1211.07, 1157.31), (1223.61, 1299.02)),
                     "events": [],
                     "checkpoints": [],
                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
                 },
-                "ladder_touch": {
-                    "points": ((110.4, 1081.23), (186.02, 1055.23), (258.75, 1022.06), (326.81, 980.21), (388.58, 929.5), (441.84, 869.95), (486.42, 803.65), (521.96, 732.04), (549.27, 656.9), (570.27, 579.73), (585.38, 501.18), (596.61, 421.99), (604.5, 342.38), (609.94, 262.57), (613.72, 182.66), (616.33, 102.71), (618.13, 22.73), (620.4, -99.81)),
+                "last_ring": {
+                    "points": ((1223.61, 1218.32), (1222.44, 1138.33), (1221.42, 1058.34), (1220.54, 978.34), (1219.8, 898.35), (1219.17, 818.35), (1218.61, 738.35), (1218.08, 658.35), (1217.53, 578.36), (1216.91, 498.36), (1216.14, 418.36), (1215.17, 338.37), (1213.96, 258.38), (1212.41, 178.39), (1210.53, 98.41), (1208.27, 18.45), (1204.35, -96.67)), 
+                    "events": [],
+                    "checkpoints": [],
+                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+                }, 
+                "end_backup": {
+                    "points": ((1189.64, 16.42), (1189.1, 96.42), (1188.04, 176.41), (1186.94, 256.41), (1186.11, 336.4), (1185.89, 416.4), (1186.73, 496.39), (1189.64, 577.03)),
                     "events": [],
                     "checkpoints": [],
                     "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -707,7 +713,7 @@ class AutonomousHandler:
             print("starting path: corner")
             self.path(paths["corner"]["points"], [], [], False, 350, 100, 75, 2000)
 
-            motors["misc"]["intake_flex"].stop()
+            # motors["misc"]["intake_flex"].stop()
             self.dynamic_vars["fwd_speed"] = 8
             print("starting path: mogo")
             self.path(paths["mogo"]["points"], [], [], True)
@@ -715,7 +721,7 @@ class AutonomousHandler:
             mogo_pneu.set(True)
             sleep(200, TimeUnits.MSEC)
 
-            motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+            #motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
             motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 65, VelocityUnits.PERCENT)
             self.dynamic_vars["fwd_speed"] = 5
             print("starting path: top_border_ring")
@@ -730,16 +736,30 @@ class AutonomousHandler:
             self.path(paths["bottom_border_ring"]["points"], [], [], False)
 
             self.dynamic_vars["fwd_speed"] = 7
-            print("starting path: ladder_reorient")
-            self.path(paths["ladder_reorient"]["points"], [], [], True)
-            mogo_pneu.set(False)
+            print("starting path: last_ring_reorient")
+            self.path(paths["last_ring_reorient"]["points"], [], [], True)
+
+            print("intake up")
+            intake_pneu.set(True)
+
+            self.dynamic_vars["fwd_speed"] = 6
+            print("starting path: last_ring")
+            self.path(paths["last_ring"]["points"], [], [], False, 350, 100, 75, 5000)
+
+            motors["misc"]["intake_chain"].stop()
+            sleep(200, TimeUnits.MSEC)
+            print("intake down")
+            intake_pneu.set(False)
+
+            motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 60, VelocityUnits.PERCENT)
+            self.dynamic_vars["fwd_speed"] = 4
+            print("starting path: end_backup")
+            self.path(paths["end_backup"]["points"], [], [], True)
 
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
-
-            self.dynamic_vars["fwd_speed"] = 7
-            print("starting path: ladder_touch")
-            self.path(paths["ladder_touch"]["points"], [], [], False, 350, 100, 75, 5000)
+            self.kill_motors()
+            mogo_pneu.set(False)
 
         #! sequence done!!!!!!!!!!!!!!!!!!!!!!!!!
         print("sequence done at {}/15000 msec".format(brain.timer.system() - self.start_time))
