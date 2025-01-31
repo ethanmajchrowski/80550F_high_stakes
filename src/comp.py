@@ -3,7 +3,7 @@
 	# 2025-01-29 15:57:19.364118
 ####################
 #region Devices
-calibrate_imu = False
+calibrate_imu = True
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -507,13 +507,6 @@ class AutonomousHandler:
         ### Variables
         self.dynamic_vars = {
             "fwd_speed": 10,
-            # common speeds:
-            # 25%: 3
-            # 50%: 6
-            # 60%: 7.2
-            # 75%: 9
-            # 80%: 9.6
-            # 90%: 10.8
             "position": list(self.autonomous_data["start_pos"]),
             #### Thread flags
             # Mogo
@@ -655,18 +648,98 @@ class AutonomousHandler:
         else:
             # self.sequence(globals())
             
+            print("auton testing")
             paths = {
-                "grab_mogo_1": {
-                     "points": ((1547.38, 312.87), (1509.84, 405.3), (1449.82, 485.02), (1373.22, 549.05), (1285.75, 597.23), (1191.58, 630.47), (1093.57, 649.61), (993.85, 654.94), (894.34, 646.14), (797.41, 621.95), (706.28, 581.18), (651.29, 545.86)),
-                    #  "points": ((1547.38, 312.87), (1493.37, 397.02), (1436.66, 479.38), (1376.91, 559.55), (1313.8, 637.1), (1247.06, 711.54), (1176.48, 782.34), (1101.93, 848.93), (1023.38, 910.78), (940.89, 967.27), (854.44, 1017.5), (764.79, 1061.71), (672.36, 1099.78), (577.65, 1131.74), (481.14, 1157.76), (383.28, 1178.13), (284.46, 1193.23), (185.02, 1203.51), (-9.02, 1211.53)),
+                "corner": {
+                     "points": ((1508.16, 1494.38), (1571.54, 1542.91), (1625.95, 1601.5), (1675.33, 1664.42), (1722.48, 1729.05), (1767.23, 1791.67)),
                      "events": [],
                      "checkpoints": [],
                      "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
-                }
+                },
+                "mogo": {
+                    "points": ((1699.44, 1660.51), (1626.21, 1628.29), (1553.94, 1594.03), (1482.92, 1557.25), (1413.57, 1517.41), (1346.41, 1474.0), (1282.05, 1426.54), (1221.15, 1374.73), (1164.29, 1318.5), (1112.69, 1257.4), (1065.62, 1192.74), (1022.65, 1125.29), (982.56, 1056.06), (943.6, 986.19), (904.22, 916.55), (863.28, 847.83), (820.01, 780.54), (773.7, 715.33), (724.39, 652.35), (672.28, 591.66), (617.61, 533.27), (560.68, 477.07), (493.13, 415.64)),     
+                    "events": [],
+                    "checkpoints": [],
+                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+                }, 
+                "top_border_ring": {
+                    "points": ((510.12, 419.89), (551.03, 488.63), (590.8, 558.04), (628.93, 628.35), (664.74, 699.88), (697.1, 773.02), (724.32, 848.19), (743.79, 925.71), (747.05, 1005.4), (723.7, 1081.2), (669.35, 1139.09), (599.92, 1178.38), (525.24, 1206.92), (448.8, 1230.49), (371.84, 1252.32), (294.96, 1274.47), (218.58, 1298.23), (105.03, 1338.91)), 
+                    "events": [],
+                    "checkpoints": [],
+                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+                }, 
+                "backup_for_bottom_border_ring": {
+                    "points": ((105.03, 1344.28), (184.97, 1347.05), (264.92, 1345.12), (344.21, 1334.89), (420.67, 1311.88), (489.41, 1271.31), (553.43, 1223.38), (625.76, 1190.02), (704.44, 1176.51), (824.4, 1177.86)),
+                    "events": [],
+                    "checkpoints": [],
+                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+                }, 
+                "bottom_border_ring": {
+                    "points": ((824.4, 1177.86), (746.18, 1161.1), (669.14, 1139.62), (593.37, 1113.95), (517.9, 1087.42), (440.77, 1066.39), (361.58, 1055.54), (281.63, 1054.51), (201.88, 1060.53), (94.3, 1075.86)),
+                    "events": [],
+                    "checkpoints": [],
+                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+                }, 
+                "ladder_reorient": {
+                    "points": ((824.4, 1177.86), (746.18, 1161.1), (669.14, 1139.62), (593.37, 1113.95), (517.9, 1087.42), (440.77, 1066.39), (361.58, 1055.54), (281.63, 1054.51), (201.88, 1060.53), (94.3, 1075.86)),
+                    "events": [],
+                    "checkpoints": [],
+                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+                },
+                "ladder_touch": {
+                    "points": ((110.4, 1081.23), (186.02, 1055.23), (258.75, 1022.06), (326.81, 980.21), (388.58, 929.5), (441.84, 869.95), (486.42, 803.65), (521.96, 732.04), (549.27, 656.9), (570.27, 579.73), (585.38, 501.18), (596.61, 421.99), (604.5, 342.38), (609.94, 262.57), (613.72, 182.66), (616.33, 102.71), (618.13, 22.73), (620.4, -99.81)),
+                    "events": [],
+                    "checkpoints": [],
+                    "custom_args": () #!!!!!!!!!!!!!!!!!!!!!!!!!!
+                }, 
             }
 
             # 6 ring elims
+            imu.set_heading(45)
+            self.heading = 45
+            self.dynamic_vars["position"] = [1500, 1500]
+            print("{}, {}".format(self.dynamic_vars["position"], imu.heading()))
+            motors["misc"]["wall_stake"].stop(BrakeType.COAST)
+            self.dynamic_vars["intake_color_sort"] = "eject_red"
 
+            motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+            self.dynamic_vars["fwd_speed"] = 10
+            print("starting path: corner")
+            self.path(paths["corner"]["points"], [], [], False, 350, 100, 75, 2000)
+
+            motors["misc"]["intake_flex"].stop()
+            self.dynamic_vars["fwd_speed"] = 8
+            print("starting path: mogo")
+            self.path(paths["mogo"]["points"], [], [], True)
+
+            mogo_pneu.set(True)
+            sleep(200, TimeUnits.MSEC)
+
+            motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+            motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 65, VelocityUnits.PERCENT)
+            self.dynamic_vars["fwd_speed"] = 5
+            print("starting path: top_border_ring")
+            self.path(paths["top_border_ring"]["points"], [], [], False)
+
+            self.dynamic_vars["fwd_speed"] = 7
+            print("starting path: backup_for_bottom_border_ring")
+            self.path(paths["backup_for_bottom_border_ring"]["points"], [], [], True)
+
+            self.dynamic_vars["fwd_speed"] = 5
+            print("starting path: bottom_border_ring")
+            self.path(paths["bottom_border_ring"]["points"], [], [], False)
+
+            self.dynamic_vars["fwd_speed"] = 7
+            print("starting path: ladder_reorient")
+            self.path(paths["ladder_reorient"]["points"], [], [], True)
+            mogo_pneu.set(False)
+
+            motors["misc"]["intake_flex"].stop()
+            motors["misc"]["intake_chain"].stop()
+
+            self.dynamic_vars["fwd_speed"] = 7
+            print("starting path: ladder_touch")
+            self.path(paths["ladder_touch"]["points"], [], [], False, 350, 100, 75, 5000)
 
         #! sequence done!!!!!!!!!!!!!!!!!!!!!!!!!
         print("sequence done at {}/15000 msec".format(brain.timer.system() - self.start_time))
