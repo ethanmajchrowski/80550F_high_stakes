@@ -493,9 +493,6 @@ class AutonomousHandler:
         ### Global positioning
         ## Position controller
         self.position_controller = DeltaPositioning(leftEnc, rightEnc, imu)
-        ## Position data
-        imu.set_heading(self.autonomous_data["start_heading"])
-        self.heading = self.autonomous_data["start_heading"]
 
         ### Variables
         self.dynamic_vars = {
@@ -621,6 +618,10 @@ class AutonomousHandler:
         Call once at start of auton. This is where all the sequential commands are located.
         """
         self.start_time = brain.timer.system()
+        
+        ## Position data
+        imu.set_heading(self.autonomous_data["start_heading"])
+        self.heading = self.autonomous_data["start_heading"]
 
         # disable LB PID unless turned on in auton
         LB_enable_PID = False
