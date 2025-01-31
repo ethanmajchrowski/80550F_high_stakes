@@ -104,6 +104,7 @@ else:
     enable_macro_lady_brown = False
 
 if enable_macro_lady_brown:
+    print("calibrating LB")
     motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
     wallEnc.set_position(0)
 
@@ -1082,22 +1083,18 @@ def lady_brown_PID():
         sleep(20)
 
 if enable_macro_lady_brown:
+    print("starting LB thread")
     Thread(lady_brown_PID)
 
 def driver():
     global eject_prep, queued_sort, wall_control_cooldown, wall_setpoint, elevating
+    print("starting driver")
     while True:
         intakeColor.set_light_power(100, PERCENT)
         brain.screen.clear_screen()
 
-        # if not tank_drive:
-        # Movement controls
         turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
         forwardVolts = controls["DRIVE_FORWARD_AXIS"].position() * 0.12
-        # if elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() > 25:
-        #     forwardVolts = 7.5
-        # elif elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() < -25:
-        #     forwardVolts = -7.5
 
         # Spin motors and combine controller axes
         motors["left"]["A"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
@@ -1107,16 +1104,6 @@ def driver():
         motors["right"]["A"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
         motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
         motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
-        # else:
-        #     leftVolts = con.axis3.position() * 0.12
-        #     rightVolts = con.axis2.position() * 0.12
-        #     motors["left"]["A"].spin(FORWARD, leftVolts, VOLT)
-        #     motors["left"]["B"].spin(FORWARD, leftVolts, VOLT)
-        #     motors["left"]["C"].spin(FORWARD, leftVolts, VOLT)
-        #     # leftMotorC.spin(FORWARD, forwardVolts + turnVolts, VOLT)
-        #     motors["right"]["A"].spin(FORWARD, rightVolts, VOLT)
-        #     motors["right"]["B"].spin(FORWARD, rightVolts, VOLT)
-        #     motors["right"]["C"].spin(FORWARD, rightVolts, VOLT)
 
         if color_setting == "eject_blue" and intakeColor.hue() > 100 and not eject_prep and intakeColor.is_near_object():
             eject_prep = True
