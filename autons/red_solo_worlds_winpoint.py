@@ -1,7 +1,7 @@
 def gen_data():
     data = {
-        "start_pos": [1560, 330],
-        "start_heading": 150,
+        "start_pos": [-1560, 330],
+        "start_heading": 210,
     }
     print(data["start_pos"])
     return data
