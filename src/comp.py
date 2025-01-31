@@ -1087,7 +1087,7 @@ if enable_macro_lady_brown:
     Thread(lady_brown_PID)
 
 def driver():
-    global eject_prep, queued_sort, wall_control_cooldown, wall_setpoint, elevating
+    global eject_prep, queued_sort, wall_control_cooldown, wall_setpoint, elevating, LB_enable_PID
     print("starting driver")
     while True:
         intakeColor.set_light_power(100, PERCENT)
@@ -1136,23 +1136,26 @@ def driver():
             motors["misc"]["intake_chain"].stop()
 
         # WALL STAKES MOTORS
-        # if not enable_macro_lady_brown:
-        #     if controls["SIDE_STAKE_MANUAL_UP"].pressing():
-        #         motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
-        #     elif controls["SIDE_STAKE_MANUAL_DOWN"].pressing():
-        #         motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
-        #     else:
-        #         motors["misc"]["wall_stake"].stop(BRAKE)
-        # else:
+        if controls["SIDE_STAKE_MANUAL_UP"].pressing():
+            motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
+            LB_enable_PID = False
+        elif controls["SIDE_STAKE_MANUAL_DOWN"].pressing():
+            motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
+            LB_enable_PID = False
+        else:
+            motors["misc"]["wall_stake"].stop(BRAKE)
+        
         #     # Lady Brown controls
         if wall_control_cooldown == 0:
             if controls["LB_MACRO_DECREASE"].pressing():
-                wall_control_cooldown = 5
+                LB_enable_PID = True
+                wall_control_cooldown = 2
                 if wall_setpoint > 0:
                     wall_setpoint -= 1
-
+            
             elif controls["LB_MACRO_INCREASE"].pressing():
-                wall_control_cooldown = 5
+                LB_enable_PID = True
+                wall_control_cooldown = 2
                 if wall_setpoint < len(wall_positions) - 1:
                     wall_setpoint += 1
 
