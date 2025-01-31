@@ -9,6 +9,7 @@ def get_latest_file(download_path):
         raise FileNotFoundError
 
     latest_file = max(files, key=lambda f: os.path.getmtime(os.path.join(download_path, f)))
+    print(f"Parsing {latest_file}")
     return os.path.join(download_path, latest_file)
 
 with open(get_latest_file(r"C:\Users\ethan\Downloads"), "r") as f:
