@@ -49,6 +49,7 @@ for path_number, path in enumerate(all_paths_segments):
         nd.append(tuple(nl))
 
     path = tuple(nd)
+    print("#"*20)
     print(f"Path {path_number+1}")
     print(path, end=",\n")
 
