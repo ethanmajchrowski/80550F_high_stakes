@@ -1,6 +1,6 @@
 # Filename: driver.py
 # Devices & variables last updated:
-	# 2025-01-29 15:57:19.380787
+	# 2025-01-31 14:05:11.687134
 ####################
 #region Devices
 calibrate_imu = False
@@ -31,14 +31,14 @@ controls = {
     "DRIVE_TURN_AXIS":             con.axis1,
     "INTAKE_IN_HOLD":              con.buttonR1,
     "INTAKE_OUT_HOLD":             con.buttonR2,
-    "INTAKE_HEIGHT_TOGGLE":        con.buttonL1,
+    "INTAKE_HEIGHT_TOGGLE":        con.buttonLeft,
     # "SIDE_SCORING_TOGGLE":         con.buttonB,
     "MOGO_GRABBER_TOGGLE":         con.buttonA,
-    "CYCLE_EJECTOR_COLOR":         con.buttonLeft,
+    # "CYCLE_EJECTOR_COLOR":         con.buttonLeft,
     "DOINKER":                     con.buttonRight,
     "INTAKE_FLEX_HOLD":            con.buttonL2,
-    "SIDE_STAKE_MANUAL_UP":        con_2.buttonL1,
-    "SIDE_STAKE_MANUAL_DOWN":      con_2.buttonL2, 
+    "LB_MANUAL_UP":                con_2.buttonL1,
+    "LB_MANUAL_DOWN":              con_2.buttonL2, 
     "MANUAL_ELEVATION_PNEUMATICS": con.buttonUp,
     "LB_MACRO_INCREASE":           con.buttonB,
     "LB_MACRO_DECREASE":           con.buttonDown,
@@ -109,7 +109,7 @@ if enable_macro_lady_brown:
     wallEnc.set_position(0)
     print(wallEnc.position())
 
-while imu.is_calibrating() and calibrate_imu: 
+while imu.is_calibrating() and calibrate_imu:
     wait(5)
 
 mogo_pneu_engaged = False
@@ -140,14 +140,12 @@ Over Under Settings:
     drivetrain.set_turn_constant(0.28)
     drivetrain.set_turn_threshold(0.25)
 """
-
-# Elevation macro vars
-enable_elevation_macro = True
-if enable_elevation_macro:
-    controls["START_ELEVATE"] = con.buttonUp
-manual_elevation_controls = True
-elevating = False
-elevation_hold_duration = 20
+# elevation macro vars
+if enable_macro_lady_brown:
+    print("calibrating wall stake")
+    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
+    wallEnc.set_position(0)
+    print(wallEnc.position())
 
 class Logger:
     def __init__(self, interval: int, data: list[tuple[Callable, str]]) -> None:
@@ -444,9 +442,9 @@ controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 # controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["CYCLE_EJECTOR_COLOR"].pressed(cycle_ejector_color)
-if not enable_elevation_macro:
-    controls["MANUAL_ELEVATION_PNEUMATICS"].pressed(manual_elevation)
-    con.buttonLeft.pressed(toggle_tank)
+# if not enable_elevation_macro:
+#     controls["MANUAL_ELEVATION_PNEUMATICS"].pressed(manual_elevation)
+#     con.buttonLeft.pressed(toggle_tank)
 
 allow_intake_input = True
 queued_sort = False
