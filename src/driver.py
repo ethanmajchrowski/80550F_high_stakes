@@ -104,8 +104,10 @@ else:
     enable_macro_lady_brown = False
 
 if enable_macro_lady_brown:
+    print("calibrating wall stake")
     motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
     wallEnc.set_position(0)
+    print(wallEnc.position())
 
 while imu.is_calibrating() and calibrate_imu: 
     wait(5)
