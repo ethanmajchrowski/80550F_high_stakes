@@ -98,7 +98,7 @@ def run(main):
     controller.dynamic_vars["intake_color_sort"] = "eject_red"
 
     motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-    controller.dynamic_vars["fwd_speed"] = 10
+    controller.dynamic_vars["fwd_speed"] = 6
     print("starting path: corner")
     controller.path(paths["corner"]["points"], [], [], False, 350, 100, 75, 1000)
 
