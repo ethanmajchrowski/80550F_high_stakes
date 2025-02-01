@@ -637,7 +637,34 @@ class AutonomousHandler:
 
         print("starting sequence")
         #! !!!!!!!!!!!!!!!!!!!!!!
-        self.sequence(globals())
+        # self.sequence(globals())
+        # drivetrain.drive_for(FORWARD, 500, MM, 40, PERCENT, True)
+
+        paths = {
+            "mogo": {
+                "points": ((1500.0, -900.0), (1423.34, -922.57), (1343.92, -931.54), (1264.01, -928.72), (1185.05, -916.09), (1107.72, -895.72), (1032.28, -869.17), (958.79, -837.61), (887.22, -801.9), (817.52, -762.65), (749.65, -720.31), (683.61, -675.17), (619.44, -627.41), (580.34, -596.32)),
+            }, 
+            "final": {
+                "points": ((565.08, -586.15), (633.23, -628.0), (696.03, -677.34), (737.86, -744.18), (729.93, -822.85), (700.83, -897.35), (670.8, -971.49), (644.59, -1047.05), (623.32, -1124.15), (607.31, -1202.51), (595.96, -1281.69), (588.47, -1361.34), (586.27, -1441.15), (618.1, -1511.45), (694.74, -1523.81), (772.7, -1506.17), (849.35, -1483.26), (926.2, -1461.05), (1004.01, -1442.55), (1082.84, -1429.18), (1162.51, -1422.45), (1242.46, -1423.68), (1321.71, -1434.28), (1399.13, -1454.3), (1473.73, -1483.08), (1544.75, -1519.9), (1611.13, -1564.53), (1673.19, -1614.89), (1731.41, -1669.62), (1786.48, -1727.61), (1862.27, -1822.3)),
+            }
+        }
+
+        self.dynamic_vars["intake_color_sort"] = "eject_red"
+        self.dynamic_vars["position"] = [1501, -901]
+        imu.set_heading(270)
+
+        self.dynamic_vars["fwd_speed"] = 8
+        self.path(paths["mogo"]["points"], [], [], True)
+        mogo_pneu.set(True)
+        sleep(200, MSEC)
+        motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+        motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 65, VelocityUnits.PERCENT)
+        self.dynamic_vars["fwd_speed"] = 5
+        self.path(paths["final"]["points"], [], [], False)
+        sleep(1500, MSEC)
+        motors["misc"]["intake_flex"].stop()
+        motors["misc"]["intake_chain"].stop()
+
 
         # #?### auton goal rush
         # print("auton testing")
