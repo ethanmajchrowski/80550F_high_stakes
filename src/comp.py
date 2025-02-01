@@ -1195,7 +1195,7 @@ def driver():
 
 auton = AutonomousHandler(data["autons"]["selected"])
 
-
+data["config"]["auton_test"] = True
 
 def no_auton():
     pass

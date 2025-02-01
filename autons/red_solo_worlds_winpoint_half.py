@@ -118,8 +118,8 @@ def run(main):
     print("path: backup_for_stack_ring")
     controller.path(paths["backup_for_stack_ring"]["points"], [], [], True)
 
-    # ladder touch cause of early end
-    controller.dynamic_vars["fwd_speed"] = 6
-    controller.path(paths["pinch_for_ladder"]["points"], [], [], True)
+    # # ladder touch cause of early end
+    # controller.dynamic_vars["fwd_speed"] = 6
+    # controller.path(paths["pinch_for_ladder"]["points"], [], [], True)
 
-    controller.path(paths["ladder_touch"]["points"], [], [], False)
+    # controller.path(paths["ladder_touch"]["points"], [], [], False)
