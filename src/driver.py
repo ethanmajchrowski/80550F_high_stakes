@@ -3,7 +3,7 @@
 	# 2025-01-31 14:05:11.687134
 ####################
 #region Devices
-calibrate_imu = False
+calibrate_imu = True
 # ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
 # ██   ██ ██      ██    ██ ██ ██      ██      ██      
 # ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
@@ -11,7 +11,9 @@ calibrate_imu = False
 # ██████  ███████   ████   ██  ██████ ███████ ███████ 
 
 from vex import *
-from json import load, dump
+from json import load, dump, dumps
+from math import radians
+import sys
 
 sd_fail = False
 # load config data from SD card
@@ -37,11 +39,10 @@ controls = {
     # "CYCLE_EJECTOR_COLOR":         con.buttonLeft,
     "DOINKER":                     con.buttonRight,
     "INTAKE_FLEX_HOLD":            con.buttonL2,
-    "LB_MANUAL_UP":                con_2.buttonL1,
-    "LB_MANUAL_DOWN":              con_2.buttonL2, 
+    "LB_MANUAL_UP":                con.buttonL1,
+    "LB_MANUAL_DOWN":              con.buttonL2, 
     "MANUAL_ELEVATION_PNEUMATICS": con.buttonUp,
-    "LB_MACRO_INCREASE":           con.buttonB,
-    "LB_MACRO_DECREASE":           con.buttonDown,
+    "LB_MACRO_HOME":           con.buttonDown,
 }
 
 motors = {
@@ -140,12 +141,6 @@ Over Under Settings:
     drivetrain.set_turn_constant(0.28)
     drivetrain.set_turn_threshold(0.25)
 """
-# elevation macro vars
-if enable_macro_lady_brown:
-    print("calibrating wall stake")
-    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
-    wallEnc.set_position(0)
-    print(wallEnc.position())
 
 class Logger:
     def __init__(self, interval: int, data: list[tuple[Callable, str]]) -> None:
@@ -272,6 +267,7 @@ class MultipurposePID:
         wait(DELAY, MSEC)
         return output
 
+#region driver
 def switch_mogo_engaged():
     global mogo_pneu_engaged
     mogo_pneu_engaged = not mogo_pneu_engaged
@@ -298,17 +294,6 @@ def manual_elevation():
 def toggle_tank():
     global tank_drive
     tank_drive = not tank_drive
-
-def cycle_ejector_color():
-    global color_setting
-    # print("old: " + color_setting)
-    l = ["none", "eject_blue", "eject_red"]
-    index = l.index(color_setting)
-    if index + 1 < len(l):
-        index += 1
-    else:
-        index = 0
-    color_setting = l[index]
 
 def drivebase_command(command, speed):
     motors["left"]["A"].spin(command, speed, PERCENT)
@@ -437,11 +422,18 @@ def elevation_macro():
 
     # stop_drivebase(BrakeType.HOLD)
 
+def home_lady_brown_PID():
+    print("run home_lady_brown_PID")
+    global wall_setpoint, LB_enable_PID
+    LB_enable_PID = True
+    wall_setpoint = 1
+
 controls["DOINKER"].pressed(switch_doinker)
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 # controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
-controls["CYCLE_EJECTOR_COLOR"].pressed(cycle_ejector_color)
+controls["LB_MACRO_HOME"].pressed(home_lady_brown_PID)
+
 # if not enable_elevation_macro:
 #     controls["MANUAL_ELEVATION_PNEUMATICS"].pressed(manual_elevation)
 #     con.buttonLeft.pressed(toggle_tank)
@@ -473,33 +465,31 @@ def intake_sorter():
         eject_prep = False
 
 def lady_brown_PID():
-    pid = MultipurposePID(0.15, 0.015, 0.01, 25, None)
+    pid = MultipurposePID(0.15, 0.015, 0.02, 5, None)
 
     while True:
         if LB_enable_PID:
             output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
+            # print(wallEnc.position(), output)
 
-            motors["misc"]["wall_stake"].spin(FORWARD, output/2, VOLT)
+            motors["misc"]["wall_stake"].spin(FORWARD, output*2, VOLT)
+            # print(motors["misc"]["wall_stake"].command(VOLT))
             
         sleep(20)
 
 if enable_macro_lady_brown:
+    print("starting LB thread")
     Thread(lady_brown_PID)
 
 def driver():
-    global eject_prep, queued_sort, wall_control_cooldown, wall_setpoint, elevating
+    global eject_prep, queued_sort, wall_control_cooldown, wall_setpoint, elevating, LB_enable_PID
+    print("starting driver")
     while True:
         intakeColor.set_light_power(100, PERCENT)
         brain.screen.clear_screen()
 
-        # if not tank_drive:
-        # Movement controls
         turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
         forwardVolts = controls["DRIVE_FORWARD_AXIS"].position() * 0.12
-        # if elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() > 25:
-        #     forwardVolts = 7.5
-        # elif elevation_status == True and controls["DRIVE_FORWARD_AXIS"].position() < -25:
-        #     forwardVolts = -7.5
 
         # Spin motors and combine controller axes
         motors["left"]["A"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
@@ -509,16 +499,6 @@ def driver():
         motors["right"]["A"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
         motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
         motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
-        # else:
-        #     leftVolts = con.axis3.position() * 0.12
-        #     rightVolts = con.axis2.position() * 0.12
-        #     motors["left"]["A"].spin(FORWARD, leftVolts, VOLT)
-        #     motors["left"]["B"].spin(FORWARD, leftVolts, VOLT)
-        #     motors["left"]["C"].spin(FORWARD, leftVolts, VOLT)
-        #     # leftMotorC.spin(FORWARD, forwardVolts + turnVolts, VOLT)
-        #     motors["right"]["A"].spin(FORWARD, rightVolts, VOLT)
-        #     motors["right"]["B"].spin(FORWARD, rightVolts, VOLT)
-        #     motors["right"]["C"].spin(FORWARD, rightVolts, VOLT)
 
         if color_setting == "eject_blue" and intakeColor.hue() > 100 and not eject_prep and intakeColor.is_near_object():
             eject_prep = True
@@ -531,19 +511,11 @@ def driver():
 
             queued_sort = True
 
-        if controls["INTAKE_FLEX_HOLD"].pressing():
-            motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
-        elif (
-                (controls["INTAKE_IN_HOLD"].pressing() and not enable_macro_lady_brown) or
-                (controls["INTAKE_IN_HOLD"].pressing())): #and 
-                    # ((not controls["LADY_BROWN_MACRO_UP_A"].pressing()) and enable_macro_lady_brown))):
+        if (controls["INTAKE_IN_HOLD"].pressing()):
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
             if allow_intake_input:
                 motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
-        elif (
-                (controls["INTAKE_OUT_HOLD"].pressing() and not enable_macro_lady_brown) or
-                (controls["INTAKE_OUT_HOLD"].pressing())): #and 
-                   # ((not controls["LADY_BROWN_MACRO_DOWN_B"].pressing()) and enable_macro_lady_brown))):
+        elif (controls["INTAKE_OUT_HOLD"].pressing()):
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
             motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
         else:
@@ -551,28 +523,31 @@ def driver():
             motors["misc"]["intake_chain"].stop()
 
         # WALL STAKES MOTORS
-        # if not enable_macro_lady_brown:
-        #     if controls["SIDE_STAKE_MANUAL_UP"].pressing():
-        #         motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
-        #     elif controls["SIDE_STAKE_MANUAL_DOWN"].pressing():
-        #         motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
-        #     else:
-        #         motors["misc"]["wall_stake"].stop(BRAKE)
-        # else:
+        if controls["LB_MANUAL_UP"].pressing():
+            motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
+            LB_enable_PID = False
+        elif controls["LB_MANUAL_DOWN"].pressing():
+            motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
+            LB_enable_PID = False
+        else:
+            motors["misc"]["wall_stake"].stop(HOLD)
+        
         #     # Lady Brown controls
-        if wall_control_cooldown == 0:
-            if controls["LB_MACRO_DECREASE"].pressing():
-                wall_control_cooldown = 5
-                if wall_setpoint > 0:
-                    wall_setpoint -= 1
+        # if wall_control_cooldown == 0:
+        #     if controls["LB_MACRO_DECREASE"].pressing():
+        #         LB_enable_PID = True
+        #         wall_control_cooldown = 2
+        #         if wall_setpoint > 0:
+        #             wall_setpoint -= 1
+            
+        #     elif controls["LB_MACRO_INCREASE"].pressing():
+        #         LB_enable_PID = True
+        #         wall_control_cooldown = 2
+        #         if wall_setpoint < len(wall_positions) - 1:
+        #             wall_setpoint += 1
 
-            elif controls["LB_MACRO_INCREASE"].pressing():
-                wall_control_cooldown = 5
-                if wall_setpoint < len(wall_positions) - 1:
-                    wall_setpoint += 1
-
-        elif wall_control_cooldown > 0:
-            wall_control_cooldown -= 1
+        # elif wall_control_cooldown > 0:
+        #     wall_control_cooldown -= 1
 
         # 3levation hold button
         if con.buttonUp.pressing() and not elevating:
@@ -583,26 +558,8 @@ def driver():
         else:
             elevation_hold_duration = 10
 
-        # Screen debugging
-        scr = brain.screen
-        scr.clear_screen()
-        scr.set_cursor(1,1)
-
-        scr.print("Timer: {}".format(brain.timer.time()))
-        scr.next_row()
-        scr.print(wall_setpoint)
-        scr.next_row()
-
-        scr = con.screen
-        scr.clear_screen()
-        scr.set_cursor(1,1)
-
-        scr.print(color_setting)
-        scr.new_line()
-
-        if mogo_pneu_engaged: 
-            scr.print("MOGO ENGAGED")
-            scr.new_line()
-
         brain.screen.render()
+
+#endregion driver
+
 driver()
