@@ -44,6 +44,18 @@ controls = {
     "MANUAL_ELEVATION_PNEUMATICS": con.buttonUp,
     "LB_MACRO_HOME":           con.buttonDown,
 }
+controls2 = {
+    "ELEVATION_PRIMARY_PNEUMATICS": con_2.buttonUp,
+    "DOINKER": con_2.buttonRight,
+    "DRIVE_MODE": con_2.buttonDown,
+    "AXIS_FORWARDS": con_2.axis2,
+    "AXIS_TILT": con_2.axis4,
+    "PTO_ENGAGE": con_2.buttonB,
+    "INTAKE_IN": con_2.buttonR1,
+    "INTAKE_OUT": con_2.buttonR2,
+    "LB_MANUAL_UP": con.buttonL1,
+    "LB_MANUAL_DOWN": con.buttonL2
+}
 
 motors = {
     "left": {
@@ -344,55 +356,31 @@ def elevation_macro():
     elevation_bar_lift.set(False)
     # sleep(100, MSEC)
 
-    con.buttonA.pressed(manual_elevation)
-    con.buttonB.pressed(switch_doinker)
-
-    con.buttonL2.pressed(unbind_button)
-    con.buttonL1.pressed(unbind_button)
+    controls2["DOINKER"].pressed(switch_doinker)
 
     while True:
-        if enable_PTO:
-            # elevation control schemes
-            leftVolts = con.axis3.position() * 0.12
-            rightVolts = con.axis2.position() * 0.12
-            motors["left"]["A"].spin(FORWARD, leftVolts, VOLT)
-            motors["left"]["B"].spin(FORWARD, leftVolts, VOLT)
-            motors["left"]["C"].spin(FORWARD, leftVolts, VOLT)
-            # leftMotorC.spin(FORWARD, forwardVolts + turnVolts, VOLT)
-            motors["right"]["A"].spin(FORWARD, rightVolts, VOLT)
-            motors["right"]["B"].spin(FORWARD, rightVolts, VOLT)
-            motors["right"]["C"].spin(FORWARD, rightVolts, VOLT)
-        else:
-            turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
-            forwardVolts = controls["DRIVE_FORWARD_AXIS"].position() * 0.12
+        # DRIVE MOTORS
 
-            motors["left"]["A"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
-            motors["left"]["B"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
-            motors["left"]["C"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
-
-            motors["right"]["A"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
-            motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
-            motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
-
-        if not enable_PTO and con.buttonLeft.pressing():
+        if not enable_PTO and (con.buttonLeft.pressing() or controls2["PTO_ENGAGE"].pressing()):
+            print("enable PTO")
             enable_PTO = True
 
             PTO_left_pneu.set(True)
             PTO_right_pneu.set(True)
 
         # lady brown controls
-        if con.buttonL1.pressing():
+        if con.buttonL1.pressing() or controls2["LB_MANUAL_DOWN"].pressing():
             motors["misc"]["wall_stake"].spin(REVERSE, 100, PERCENT)
-        elif con.buttonL2.pressing():
+        elif con.buttonL2.pressing() or controls2["LB_MANUAL_UP"].pressing():
             motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
         else:
             motors["misc"]["wall_stake"].stop(BRAKE)
 
         # intake controls
-        if con.buttonR1.pressing():
+        if con.buttonR1.pressing() or controls2["INTAKE_IN"].pressing():
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
             motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
-        elif con.buttonR2.pressing():
+        elif con.buttonR2.pressing() or controls2["INTAKE_OUT"].pressing():
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
             motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
         else:
