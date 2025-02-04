@@ -57,7 +57,7 @@ motors = {
         "C": Motor(Ports.PORT15, GearSetting.RATIO_6_1, False), # front
     },
     "misc": {
-        "intake_chain": Motor(Ports.PORT14, GearSetting.RATIO_6_1, True),  
+        "intake_chain": Motor(Ports.PORT10, GearSetting.RATIO_6_1, True),  
         "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, True), # 5.5 W flexwheel hinge
         "wall_stake": Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
     }
@@ -87,13 +87,13 @@ backWallDistance = Distance(Ports.PORT13)
 elevationDistance = Distance(Ports.PORT20)
 
 # MISC SENSORS
-intakeColor = Optical(Ports.PORT10)
+intakeColor = Optical(Ports.PORT14)
 imu = Inertial(Ports.PORT11)
 
 # SENSOR VARIABLES
 wall_setpoint = 0
 wall_control_cooldown = 0
-wall_positions = [15, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
+wall_positions = [30, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
 LB_enable_PID = True
 
 if calibrate_imu:
@@ -122,6 +122,7 @@ queued_sort = False
 eject_prep = False
 
 tank_drive = False
+elevating = False
 
 lmg = MotorGroup(*motors["left"].values())
 rmg = MotorGroup(*motors["right"].values())
