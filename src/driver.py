@@ -48,13 +48,13 @@ controls2 = {
     "ELEVATION_PRIMARY_PNEUMATICS": con_2.buttonUp,
     "DOINKER": con_2.buttonRight,
     "DRIVE_MODE": con_2.buttonDown,
-    "AXIS_FORWARDS": con_2.axis2,
-    "AXIS_TILT": con_2.axis4,
-    "PTO_ENGAGE": con_2.buttonB,
+    "AXIS_FORWARDS": con_2.axis3,
+    "AXIS_TILT": con_2.axis1,
+    "PTO_TOGGLE": con_2.buttonB,
     "INTAKE_IN": con_2.buttonR1,
     "INTAKE_OUT": con_2.buttonR2,
-    "LB_MANUAL_UP": con.buttonL1,
-    "LB_MANUAL_DOWN": con.buttonL2
+    "LB_MANUAL_UP": con_2.buttonL1,
+    "LB_MANUAL_DOWN": con_2.buttonL2
 }
 
 motors = {
@@ -116,11 +116,12 @@ if not sd_fail:
 else:
     enable_macro_lady_brown = False
 
-if enable_macro_lady_brown:
-    print("calibrating wall stake")
-    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
-    wallEnc.set_position(0)
-    print(wallEnc.position())
+# if enable_macro_lady_brown:
+#     print("calibrating wall stake")
+#     motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
+#     wallEnc.set_position(0)
+#     print(wallEnc.position())
+print("WARN: Lady Brown calibration disabled!!! Line 124")
 
 while imu.is_calibrating() and calibrate_imu:
     wait(5)
@@ -297,12 +298,13 @@ def switch_intake_height():
         intake_pneu.set(not intake_pneu.value())
 
 def switch_doinker():
+    print("doinker")
     doinker_pneu.set(not doinker_pneu.value())
 
 def manual_elevation():
     print("manual elevation")
     elevation_bar_lift.set(not elevation_bar_lift.value())
-    doinker_pneu.set(elevation_bar_lift.value())
+    # doinker_pneu.set(elevation_bar_lift.value())
 
 def toggle_tank():
     global tank_drive
@@ -329,52 +331,74 @@ def stop_drivebase(BrakeType):
 def unbind_button():
     pass
 
+def toggle_PTO():
+    PTO_left_pneu.set(not PTO_left_pneu.value())
+    PTO_right_pneu.set(PTO_left_pneu.value()) # right mimics left
+
 def elevation_macro():
     global LB_enable_PID
     enable_PTO = False
     print("start elevation")
 
     LB_enable_PID = False
-    mogo_pneu.set(True)
-    motors["misc"]["wall_stake"].stop()
-    motors["misc"]["wall_stake"].spin_for(FORWARD, 400, MSEC, 100, PERCENT)
+    # mogo_pneu.set(True)
+    # motors["misc"]["wall_stake"].stop()
+    # motors["misc"]["wall_stake"].spin_for(FORWARD, 400, MSEC, 100, PERCENT)
 
     roll_pid = MultipurposePID(0.1, 0, 0, 0)
 
-    elevation_hook_release.set(True)
+    # elevation_hook_release.set(True)
     # wait and close these pistons cause leak :(
     sleep(200, MSEC)
-    intake_pneu.set(False)
-    doinker_pneu.set(True)
-    elevation_hook_release.set(False)
-    elevation_bar_lift.set(True)
+    # intake_pneu.set(False)
+    # doinker_pneu.set(True)
+    # elevation_hook_release.set(False)
+    # elevation_bar_lift.set(True)
 
     # wait for matics
     sleep(100, MSEC)
-    motors["misc"]["wall_stake"].spin_for(REVERSE, 1200, MSEC, 100, PERCENT)
+    # motors["misc"]["wall_stake"].spin_for(REVERSE, 1200, MSEC, 100, PERCENT)
     sleep(200, MSEC)
-    elevation_bar_lift.set(False)
+    # elevation_bar_lift.set(False)
     # sleep(100, MSEC)
 
     controls2["DOINKER"].pressed(switch_doinker)
+    controls2["PTO_TOGGLE"].pressed(toggle_PTO)
+    controls2["ELEVATION_PRIMARY_PNEUMATICS"].pressed(manual_elevation)
+    LB_braketype = BrakeType.COAST
 
     while True:
         # DRIVE MOTORS
+        fwd_volt = (controls2["AXIS_FORWARDS"].position() / 100) * 12
+        tilt_volt = (controls2["AXIS_TILT"].position() / 100) * 12
+        if abs(fwd_volt) > 1 or abs(tilt_volt) > 1:
+            motors["left"]["A"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
+            motors["left"]["B"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
+            motors["left"]["C"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
 
-        if not enable_PTO and (con.buttonLeft.pressing() or controls2["PTO_ENGAGE"].pressing()):
-            print("enable PTO")
-            enable_PTO = True
+            motors["right"]["A"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
+            motors["right"]["B"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
+            motors["right"]["C"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
+            print("driving")
+            LB_braketype = BrakeType.COAST
+        else:
+            motors["left"]["A"].stop(BrakeType.COAST)
+            motors["left"]["B"].stop(BrakeType.COAST)
+            motors["left"]["C"].stop(BrakeType.COAST)
 
-            PTO_left_pneu.set(True)
-            PTO_right_pneu.set(True)
+            motors["right"]["A"].stop(BrakeType.COAST)
+            motors["right"]["B"].stop(BrakeType.COAST)
+            motors["right"]["C"].stop(BrakeType.COAST)
 
         # lady brown controls
         if con.buttonL1.pressing() or controls2["LB_MANUAL_DOWN"].pressing():
             motors["misc"]["wall_stake"].spin(REVERSE, 100, PERCENT)
+            LB_braketype = BrakeType.HOLD
         elif con.buttonL2.pressing() or controls2["LB_MANUAL_UP"].pressing():
             motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
+            LB_braketype = BrakeType.HOLD
         else:
-            motors["misc"]["wall_stake"].stop(BRAKE)
+            motors["misc"]["wall_stake"].stop(LB_braketype)
 
         # intake controls
         if con.buttonR1.pressing() or controls2["INTAKE_IN"].pressing():
@@ -387,10 +411,18 @@ def elevation_macro():
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
 
+        roll = imu.orientation(OrientationType.PITCH)
+        pid_output = round(roll_pid.calculate(0, roll), 3)
+        data = {
+            "roll": round(roll, 2),
+            "output": round(pid_output, 2),
+            "height": round(elevationDistance.object_distance(), 2)
+        }
+        # payload_manager.send_data("elevation", data)
+        sleep(35, MSEC)
 
     # while True:
     #     pitch = imu.orientation(OrientationType.PITCH, RotationUnits.DEG)
-    #     pid_output = round(pitch_pid.calculate(0, pitch), 3)
 
     #     print(pid_output, elevationDistance.object_distance())
 
@@ -473,6 +505,7 @@ if enable_macro_lady_brown:
 def driver():
     global eject_prep, queued_sort, wall_control_cooldown, wall_setpoint, elevating, LB_enable_PID
     print("starting driver")
+    elevation_hold_duration = 5
     while True:
         intakeColor.set_light_power(100, PERCENT)
         brain.screen.clear_screen()
@@ -540,12 +573,13 @@ def driver():
 
         # 3levation hold button
         if con.buttonUp.pressing() and not elevating:
+            print(elevation_hold_duration)
             elevation_hold_duration -= 1
             if elevation_hold_duration <= 0:
                 elevating = True
                 elevation_macro()
         else:
-            elevation_hold_duration = 10
+            elevation_hold_duration = 5
 
         brain.screen.render()
 
@@ -565,14 +599,14 @@ class PayloadManager():
 
 payload_manager = PayloadManager()
 
-def logging_thread():
-    while True:
-        data = {
-            "roll": round(imu.orientation(OrientationType.PITCH), 2)
-        }
-        payload_manager.send_data("elevation", data)
+# def logging_thread():
+#     while True:
+#         data = {
+#             "roll": round(imu.orientation(OrientationType.PITCH), 2)
+#         }
+#         payload_manager.send_data("elevation", data)
 
-        sleep(35, MSEC)
+#         sleep(35, MSEC)
 
 # def log(msg: str):
 #     data = {
