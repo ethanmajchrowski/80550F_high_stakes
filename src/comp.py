@@ -639,14 +639,14 @@ class AutonomousHandler:
 
         print("starting sequence")
         #! !!!!!!!!!!!!!!!!!!!!!!
-        # self.sequence(globals())
+        self.sequence(globals())
         # # drivetrain.drive_for(FORWARD, 500, MM, 40, PERCENT, True)
-        # team = "blue" #"blue", "red", None
-        imu.set_heading(0)
-        self.dynamic_vars["position"] = [1500, -1500]
-        while True:
-            sleep(50)
 
+        # # use for testing data logging
+        # imu.set_heading(0)
+        # self.dynamic_vars["position"] = [1500, -1500]
+        # while True:
+        #     sleep(50)
 
         #! sequence done!!!!!!!!!!!!!!!!!!!!!!!!!
         print("sequence done at {}/15000 msec".format(brain.timer.system() - self.start_time))
