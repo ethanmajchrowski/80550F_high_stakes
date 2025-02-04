@@ -298,7 +298,7 @@ def switch_intake_height():
         intake_pneu.set(not intake_pneu.value())
 
 def switch_doinker():
-    print("doinker")
+    print("doinker to {}".format(not doinker_pneu.value()))
     doinker_pneu.set(not doinker_pneu.value())
 
 def manual_elevation():
@@ -334,6 +334,7 @@ def unbind_button():
 def toggle_PTO():
     PTO_left_pneu.set(not PTO_left_pneu.value())
     PTO_right_pneu.set(PTO_left_pneu.value()) # right mimics left
+    print("PTO L: {}, PTO R: {}".format(PTO_left_pneu.value(), PTO_left_pneu.value()))
 
 def elevation_macro():
     global LB_enable_PID
@@ -371,14 +372,21 @@ def elevation_macro():
         # DRIVE MOTORS
         fwd_volt = (controls2["AXIS_FORWARDS"].position() / 100) * 12
         tilt_volt = (controls2["AXIS_TILT"].position() / 100) * 12
-        if abs(fwd_volt) > 1 or abs(tilt_volt) > 1:
-            motors["left"]["A"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
-            motors["left"]["B"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
-            motors["left"]["C"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
+        # if abs(fwd_volt) > 1 or abs(tilt_volt) > 1:
+        if abs(con_2.axis2.position()) > 1 or abs(con_2.axis3.position()) > 1:
+            motors["left"]["A"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
+            motors["left"]["B"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
+            motors["left"]["C"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
+            # motors["left"]["A"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
+            # motors["left"]["B"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
+            # motors["left"]["C"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
 
-            motors["right"]["A"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
-            motors["right"]["B"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
-            motors["right"]["C"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
+            # motors["right"]["A"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
+            # motors["right"]["B"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
+            # motors["right"]["C"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
+            motors["right"]["A"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
+            motors["right"]["B"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
+            motors["right"]["C"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
             print("driving")
             LB_braketype = BrakeType.COAST
         else:
