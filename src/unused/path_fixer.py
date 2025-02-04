@@ -35,6 +35,7 @@ print(all_paths_segments)
 
 # # get data from line with #PATH-POINTS-START - #PATH-POINTS-START and #PATH-POINTS-START - #PATH.JERRYIO-DATA
 #* SPLIT BIG DATA INTO EACH PATH
+ap = []
 for path_number, path in enumerate(all_paths_segments):
     # print(path)
     this_path_data = data[path[0]:path[1]]
@@ -49,10 +50,12 @@ for path_number, path in enumerate(all_paths_segments):
         nd.append(tuple(nl))
 
     path = tuple(nd)
-    print("#"*20)
-    print(f"Path {path_number+1}")
-    print(path, end=",\n")
+    ap.append(path)
+    # print("#"*20)
+    # print(f"Path {path_number+1}")
+    # print(path, end=",\n")
 
+print(ap)
 # print(path)
 # pyperclip.copy(str(path))
 # print("Copied to clipboard!")
