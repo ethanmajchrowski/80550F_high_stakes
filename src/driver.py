@@ -57,9 +57,9 @@ motors = {
         "C": Motor(Ports.PORT15, GearSetting.RATIO_6_1, False), # front
     },
     "misc": {
-        "intake_chain": Motor(Ports.PORT14, GearSetting.RATIO_6_1, True),  
+        "intake_chain": Motor(Ports.PORT10, GearSetting.RATIO_6_1, True),  
         "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, True), # 5.5 W flexwheel hinge
-        "wall_stake": Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
+        "wall_stake": Motor(Ports.PORT7, GearSetting.RATIO_6_1, False)
     }
 }
 
@@ -87,13 +87,13 @@ backWallDistance = Distance(Ports.PORT13)
 elevationDistance = Distance(Ports.PORT20)
 
 # MISC SENSORS
-intakeColor = Optical(Ports.PORT10)
+intakeColor = Optical(Ports.PORT14)
 imu = Inertial(Ports.PORT11)
 
 # SENSOR VARIABLES
 wall_setpoint = 0
 wall_control_cooldown = 0
-wall_positions = [15, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
+wall_positions = [30, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
 LB_enable_PID = True
 
 if calibrate_imu:
@@ -122,6 +122,7 @@ queued_sort = False
 eject_prep = False
 
 tank_drive = False
+elevating = False
 
 lmg = MotorGroup(*motors["left"].values())
 rmg = MotorGroup(*motors["right"].values())
@@ -326,7 +327,7 @@ def elevation_macro():
     motors["misc"]["wall_stake"].stop()
     motors["misc"]["wall_stake"].spin_for(FORWARD, 400, MSEC, 100, PERCENT)
 
-    pitch_pid = MultipurposePID(0.1, 0, 0, 0)
+    roll_pid = MultipurposePID(0.1, 0, 0, 0)
 
     elevation_hook_release.set(True)
     # wait and close these pistons cause leak :(
@@ -390,10 +391,10 @@ def elevation_macro():
         # intake controls
         if con.buttonR1.pressing():
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
-            motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
+            motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
         elif con.buttonR2.pressing():
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
-            motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
+            motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
         else:
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
@@ -465,7 +466,7 @@ def intake_sorter():
         eject_prep = False
 
 def lady_brown_PID():
-    pid = MultipurposePID(0.15, 0.015, 0.02, 5, None)
+    pid = MultipurposePID(0.2, 0.015, 0.02, 5, None)
 
     while True:
         if LB_enable_PID:
@@ -514,10 +515,10 @@ def driver():
         if (controls["INTAKE_IN_HOLD"].pressing()):
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
             if allow_intake_input:
-                motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
+                motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
         elif (controls["INTAKE_OUT_HOLD"].pressing()):
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
-            motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
+            motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
         else:
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
@@ -527,7 +528,7 @@ def driver():
             motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
             LB_enable_PID = False
         elif controls["LB_MANUAL_DOWN"].pressing():
-            motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
+            motors["misc"]["wall_stake"].spin(REVERSE, 60, PERCENT)
             LB_enable_PID = False
         else:
             motors["misc"]["wall_stake"].stop(HOLD)
@@ -561,5 +562,42 @@ def driver():
         brain.screen.render()
 
 #endregion driver
+
+class PayloadManager():
+    def __init__(self) -> None:
+        pass
+
+    def send_data(self, topic, payload: dict):
+        data = {
+            "topic": topic,
+            "payload": payload
+        }
+        print(dumps(data))
+        # print(sys.__dict__)
+
+payload_manager = PayloadManager()
+
+def logging_thread():
+    while True:
+        data = {
+            "roll": round(imu.orientation(OrientationType.PITCH), 2)
+        }
+        payload_manager.send_data("elevation", data)
+
+        sleep(35, MSEC)
+
+# def log(msg: str):
+#     data = {
+#         "level": 2,
+#         "message": msg,
+#         "name": "main",
+#         "file": "main",
+#         "line": 1
+#     }
+#     payload_manager.send_data("log", data)
+
+# Thread(logging_thread)
+
+# log("starting driver")
 
 driver()
