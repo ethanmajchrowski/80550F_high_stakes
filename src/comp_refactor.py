@@ -114,7 +114,6 @@ intakeColor.set_light_power(100, PERCENT)
 #end_1301825#
 ####################
 
-do_logging = True
 def log(msg: Any):
     if do_logging:
         try:
@@ -399,7 +398,13 @@ class Autonomous():
     
     def run(self) -> None:
         """
-        Runs autonomous.
+        Runs autonomous. Do not modify.
+        """
+        pass
+
+    def test(self) -> None:
+        """
+        Run a test version of autonomous. This is NOT run in competition!
         """
         pass
 
@@ -457,14 +462,22 @@ class Robot():
     def autonomous(self):
         log("Starting autonomous")
 
-# run file
-if not sd_fail:
-    robot = Robot()
-    comp = Competition(robot.driver, robot.autonomous)
-else:
-    log("Robot object not created. (SD Load Error)")
-    brain.screen.set_fill_color(Color.RED)
+do_logging = True
 
+# run file
+def main():
+    if not sd_fail:
+        robot = Robot()
+        comp = Competition(robot.driver, robot.autonomous)
+        # when connected to the field, do everything normally
+        if comp.is_field_control() or comp.is_competition_switch():
+            log("Connected to field or comp switch.")
+    else:
+        brain.screen.set_fill_color(Color.RED)
+        log("Robot object not created. (SD Load Error)")
+        raise ImportError("Robot object not created. (SD Load Error)")
+
+main()
 # Reviewed code:
 # [ ] Autonomous Handler
 # [X] Delta Positioning
