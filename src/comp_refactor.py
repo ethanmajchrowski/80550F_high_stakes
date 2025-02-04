@@ -57,7 +57,7 @@ class MotorCollection():
         self.intakeFlex = Motor(Ports.PORT5, GearSetting.RATIO_6_1, True)
         self.ladyBrown = Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
 
-motors = MotorCollection()
+motor = MotorCollection()
 
 # PNEUMATICS
 class PneumaticCollection():
@@ -71,27 +71,32 @@ class PneumaticCollection():
         self.doinker = DigitalOut(brain.three_wire_port.g)
         self.intake = DigitalOut(brain.three_wire_port.h)
 
-pneumatics = PneumaticCollection()
+pneumatic = PneumaticCollection()
 
 #### SENSORS
 # ENCODERS
-leftEnc = Rotation(Ports.PORT2)
-rightEnc = Rotation(Ports.PORT17)
-wallEnc = Rotation(Ports.PORT1)
-# DISTANCE SENSORS
-intakeDistance = Distance(Ports.PORT9)
+class SensorCollection():
+    def __init__(self) -> None:
+        pass
+        self.leftEncoder = Rotation(Ports.PORT2)
+        self.rightEncoder = Rotation(Ports.PORT17)
+        self.wallEncoder = Rotation(Ports.PORT1)
+        # DISTANCE SENSORS
+        self.intakeDistance = Distance(Ports.PORT9)
 
-leftWallDistance = Distance(Ports.PORT6)
-backWallDistance = Distance(Ports.PORT13)
+        self.leftWallDistance = Distance(Ports.PORT6)
+        self.backWallDistance = Distance(Ports.PORT13)
 
-elevationDistance = Distance(Ports.PORT20)
+        self.elevationDistance = Distance(Ports.PORT20)
 
-# MISC SENSORS
-intakeColor = Optical(Ports.PORT10)
-imu = Inertial(Ports.PORT11)
+        # MISC SENSORS
+        self.intakeColor = Optical(Ports.PORT10)
+        self.imu = Inertial(Ports.PORT11)
 
-lmg = MotorGroup(*motors["left"].values())
-rmg = MotorGroup(*motors["right"].values())
+sensor = SensorCollection()
+
+lmg = MotorGroup(motor.leftA, motor.leftB, motor.leftC)
+rmg = MotorGroup(motor.rightA, motor.rightB, motor.rightC)
 """
 wheelTravel - The circumference of the driven wheels. The default is 300 mm.
 trackWidth - The track width of the drivetrain. The default is 320 mm. 
@@ -101,7 +106,7 @@ wheelBase - The wheel base of the Drivetrain. The default is 320 mm.
 units - A valid DistanceUnit for the units that wheelTravel, trackWidth and wheelBase are specified in. The default is MM.
 externalGearRatio - The gear ratio used to compensate drive distances if gearing is used.
 """
-drivetrain = SmartDrive(lmg, rmg, imu)
+drivetrain = SmartDrive(lmg, rmg, sensor.imu)
 """
 Over Under Settings:
     drivetrain.set_timeout(2, SECONDS)
@@ -110,7 +115,7 @@ Over Under Settings:
 """
 
 # Turn on intake color sensor LED for consistency
-intakeColor.set_light_power(100, PERCENT)
+sensor.intakeColor.set_light_power(100, PERCENT)
 #endregion Devices####################
 #DO NOT CHANGE THE FOLLOWING LINE:#
 #end_1301825#
@@ -130,16 +135,16 @@ def log(msg: Any):
 def calibrate_lady_brown():
     log("calibrating lady brown")
 
-    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
-    wallEnc.set_position(0)
+    motor.ladyBrown.spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
+    sensor.wallEncoder.set_position(0)
 
     log("lady brown calibration complete")
 
 def calibrate_imu():
     log("calibrating IMU")
 
-    imu.calibrate()
-    while imu.is_calibrating():
+    sensor.imu.calibrate()
+    while sensor.imu.is_calibrating():
         wait(5)
 
     log("IMU calibration complete")
@@ -399,7 +404,7 @@ class Autonomous():
         """
         self.robot = parent
 
-        self.positioning_algorithm = DeltaPositioning()
+        self.positioning_algorithm = DeltaPositioning(sensor.leftEncoder, sensor.rightEncoder, sensor.imu)
 
         self.fwd_speed = 8
 
