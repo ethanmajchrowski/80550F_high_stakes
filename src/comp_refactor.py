@@ -43,33 +43,35 @@ controls = {
     "LB_MACRO_HOME":           con.buttonDown,
 }
 
-motors = {
-    "left": {
-        "A": Motor( Ports.PORT3, GearSetting.RATIO_6_1, True), # stacked top
-        "B": Motor(Ports.PORT12, GearSetting.RATIO_6_1, True), # rear
-        "C": Motor( Ports.PORT4, GearSetting.RATIO_6_1, True), # front
-    },
-    "right": {
-        "A": Motor(Ports.PORT18, GearSetting.RATIO_6_1, False), # stacked top
-        "B": Motor(Ports.PORT16, GearSetting.RATIO_6_1, False), # rear
-        "C": Motor(Ports.PORT15, GearSetting.RATIO_6_1, False), # front
-    },
-    "misc": {
-        "intake_chain": Motor(Ports.PORT14, GearSetting.RATIO_6_1, True),  
-        "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, True), # 5.5 W flexwheel hinge
-        "wall_stake": Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
-    }
-}
+class MotorCollection():
+    def __init__(self) -> None:
+        self.leftA = Motor( Ports.PORT3, GearSetting.RATIO_6_1, True) # stacked top
+        self.leftB = Motor(Ports.PORT12, GearSetting.RATIO_6_1, True), # rear
+        self.leftC = Motor( Ports.PORT4, GearSetting.RATIO_6_1, True), # front
+
+        self.rightA = Motor(Ports.PORT18, GearSetting.RATIO_6_1, False), # stacked top
+        self.rightB = Motor(Ports.PORT16, GearSetting.RATIO_6_1, False), # rear
+        self.rightC = Motor(Ports.PORT15, GearSetting.RATIO_6_1, False), # front
+
+        self.intakeChain = Motor(Ports.PORT14, GearSetting.RATIO_6_1, True)
+        self.intakeFlex = Motor(Ports.PORT5, GearSetting.RATIO_6_1, True)
+        self.ladyBrown = Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
+
+motors = MotorCollection()
 
 # PNEUMATICS
-mogo_pneu = DigitalOut(brain.three_wire_port.a)
-elevation_hook_release = DigitalOut(brain.three_wire_port.b)
-elevation_bar_lift = DigitalOut(brain.three_wire_port.c)
-PTO_left_pneu = DigitalOut(brain.three_wire_port.d) #! left/right not done yet
-PTO_right_pneu = DigitalOut(brain.three_wire_port.e)
-passive_hook_release_pneu = DigitalOut(brain.three_wire_port.f)
-doinker_pneu = DigitalOut(brain.three_wire_port.g)
-intake_pneu = DigitalOut(brain.three_wire_port.h)
+class PneumaticCollection():
+    def __init__(self) -> None:
+        self.mogo = DigitalOut(brain.three_wire_port.a)
+        self.elevation_hook_release = DigitalOut(brain.three_wire_port.b)
+        self.elevation_bar_lift = DigitalOut(brain.three_wire_port.c)
+        self.PTO_left = DigitalOut(brain.three_wire_port.d) #! left/right not done yet
+        self.PTO_right = DigitalOut(brain.three_wire_port.e)
+        self.passive_hook_release = DigitalOut(brain.three_wire_port.f)
+        self.doinker = DigitalOut(brain.three_wire_port.g)
+        self.intake = DigitalOut(brain.three_wire_port.h)
+
+pneumatics = PneumaticCollection()
 
 #### SENSORS
 # ENCODERS
@@ -120,6 +122,9 @@ def log(msg: Any):
             print(str(msg))
         except:
             print("LogError: Could not convert message to string.")
+
+# organizational functions
+
 
 # global functions (no I/O)
 def calibrate_lady_brown():
@@ -394,19 +399,29 @@ class Autonomous():
         """
         self.robot = parent
 
-        log("Autonomous setup")
+        self.positioning_algorithm = DeltaPositioning()
+
+        self.fwd_speed = 8
+
+        log("Autonomous object setup")
     
+    def autonomous_setup(self) -> None:
+        """
+        Call at start of auton. Sets up the coordinates n stuff for the loaded path.
+        """
+        pass
+
     def run(self) -> None:
         """
         Runs autonomous. Do not modify.
         """
-        pass
+        self.autonomous_setup()
 
     def test(self) -> None:
         """
         Run a test version of autonomous. This is NOT run in competition!
         """
-        pass
+        self.autonomous_setup()
 
 class Driver():
     def __init__(self, parent) -> None:
@@ -415,11 +430,26 @@ class Driver():
         """
         self.robot = parent
 
-        log("Autonomous setup")
+        log("Driver object setup")
     
+    def driver_setup(self) -> None:
+        """
+        Setup driver runtime things
+        """
+        pass
+
     def run(self) -> None:
         """
         Runs driver control loop.
+        """
+        self.driver_setup()
+        
+        while True:
+            self.loop()
+            
+    def loop(self) -> None:
+        """
+        Runs every loop cycle
         """
         pass
 
@@ -456,11 +486,17 @@ class Robot():
         self.autonomous_controller = Autonomous(parent=self)
         self.driver_controller = Driver(parent=self)
 
+        # Autonomous - related variables
+        self.pos = [0, 0]
+        self.heading = 0
+
     def driver(self):
         log("Starting driver")
+        self.driver_controller.run()
     
     def autonomous(self):
         log("Starting autonomous")
+        self.autonomous_controller.run()
 
 do_logging = True
 
