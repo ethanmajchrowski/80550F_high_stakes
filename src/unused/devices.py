@@ -40,6 +40,19 @@ controls = {
     "LB_MACRO_HOME":           con.buttonDown,
 }
 
+controls2 = {
+    "ELEVATION_PRIMARY_PNEUMATICS": con_2.buttonUp,
+    "DOINKER": con_2.buttonRight,
+    "DRIVE_MODE": con_2.buttonDown,
+    "AXIS_FORWARDS": con_2.axis3,
+    "AXIS_TILT": con_2.axis1,
+    "PTO_TOGGLE": con_2.buttonB,
+    "INTAKE_IN": con_2.buttonR1,
+    "INTAKE_OUT": con_2.buttonR2,
+    "LB_MANUAL_UP": con_2.buttonL1,
+    "LB_MANUAL_DOWN": con_2.buttonL2
+}
+
 motors = {
     "left": {
         "A": Motor( Ports.PORT3, GearSetting.RATIO_6_1, True), # stacked top

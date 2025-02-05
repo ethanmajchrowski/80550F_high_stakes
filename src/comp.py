@@ -1,6 +1,6 @@
 # Filename: comp.py
 # Devices & variables last updated:
-	# 2025-01-31 14:05:11.676754
+	# 2025-02-05 11:56:14.751639
 ####################
 #region Devices
 calibrate_imu = True
@@ -43,6 +43,19 @@ controls = {
     "LB_MANUAL_DOWN":              con.buttonL2, 
     "MANUAL_ELEVATION_PNEUMATICS": con.buttonUp,
     "LB_MACRO_HOME":           con.buttonDown,
+}
+
+controls2 = {
+    "ELEVATION_PRIMARY_PNEUMATICS": con_2.buttonUp,
+    "DOINKER": con_2.buttonRight,
+    "DRIVE_MODE": con_2.buttonDown,
+    "AXIS_FORWARDS": con_2.axis3,
+    "AXIS_TILT": con_2.axis1,
+    "PTO_TOGGLE": con_2.buttonB,
+    "INTAKE_IN": con_2.buttonR1,
+    "INTAKE_OUT": con_2.buttonR2,
+    "LB_MANUAL_UP": con_2.buttonL1,
+    "LB_MANUAL_DOWN": con_2.buttonL2
 }
 
 motors = {
@@ -106,7 +119,8 @@ else:
 
 if enable_macro_lady_brown:
     print("calibrating wall stake")
-    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
+    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 20, PERCENT)
+    sleep(100, MSEC) # sleep to allow motor to spin to idle
     wallEnc.set_position(0)
     print(wallEnc.position())
 
@@ -142,62 +156,6 @@ Over Under Settings:
     drivetrain.set_turn_constant(0.28)
     drivetrain.set_turn_threshold(0.25)
 """
-
-class Logger:
-    def __init__(self, interval: int, data: list[tuple[Callable, str]]) -> None:
-        """
-        Initializes the logger. The "data" list contains functions that return the data,
-        and a string to label the data. You do not need to pass time into data.
-        Interval is the mS interval between logging operations.
-        """
-        self.data = data
-        self.interval = interval
-
-        self.functions = [brain.timer.system]
-        self.labels = ["time"]
-        
-        for d in self.data:
-            self.functions.append(d[0])
-            self.labels.append(d[1])
-    
-    def setup(self):
-        # get number of existing files from info.txt
-        info_file = open("data/info.txt", "r")
-        num_files = int(info_file.read())
-        info_file.close()
-
-        # open info and increment number of files
-        f = open("data/info.txt", "w")
-        f.write(str(num_files + 1))
-        f.close()
-
-        # get latest.txt and the new file for archiving
-        recent_file = open("data/latest.txt", "r")
-        new_file = open("data/" + str(num_files) + ".txt", "w")
-
-        # open new_file to write to it
-        new_file.write(recent_file.read())
-        recent_file.close()
-        new_file.close()
-
-        # clear latest.txt
-        f = open("data/latest.txt", "w")
-        f.write(", ".join(self.labels))
-        f.close()
-
-    def log(self):
-        file = open("data/latest.txt", "a")
-        # file.write("\n" + data)
-        data = []
-        for i in self.functions:
-            data.append(i())
-        file.write("\n" + ", ".join(data))
-        file.close()
-
-        brain.timer.event(self.log, self.interval)
-
-    def start(self):
-        Thread(self.log)
 
 # Set initial color sort from SD card
 if not sd_fail:
