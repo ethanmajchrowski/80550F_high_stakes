@@ -16,13 +16,14 @@ files = {
     }
 }
 
-options = list(files.keys())
-option, index = pick.pick(options, "Title", indicator='=>', default_index=0)
 
 def main():
     # Makes it easy to modify the vex_project_settings.json file for easier downloading to the brain
     with open(r".vscode\vex_project_settings.json") as f:
         data = load(f)
+    
+    options = list(files.keys())
+    option, index = pick.pick(options, f"Select program. Currently {data["project"]["name"]}", indicator='=>', default_index=0)
 
     try:
         selected = str(option)
