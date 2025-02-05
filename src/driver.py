@@ -504,7 +504,7 @@ def driver():
         elif controls["LB_MANUAL_DOWN"].pressing():
             motors["misc"]["wall_stake"].spin(REVERSE, 60, PERCENT)
             LB_enable_PID = False
-        else:
+        elif not LB_enable_PID:
             motors["misc"]["wall_stake"].stop(HOLD)
         
         #     # Lady Brown controls

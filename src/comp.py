@@ -1030,17 +1030,30 @@ def intake_sorter():
         eject_prep = False
 
 def lady_brown_PID():
-    pid = MultipurposePID(0.15, 0.015, 0.02, 5, None)
+    # pid = MultipurposePID(0.15, 0.015, 0.02, 5, None)
+    pid = MultipurposePID(0.3, 0, 0.01, 5, None)
+    # previous_output = 0
 
     while True:
         if LB_enable_PID:
-            output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
-            # print(wallEnc.position(), output)
+            pos = wallEnc.position()
+            error = wall_positions[wall_setpoint] - pos
+            output = pid.calculate(error, 0)
+            # output = 0.95 * previous_output + 0.05 * output
+            output_mod = output*2
 
-            motors["misc"]["wall_stake"].spin(FORWARD, output*2, VOLT)
+            motors["misc"]["wall_stake"].spin(FORWARD, output_mod, VOLT)
+
+            data = {
+                "error": round(error, 2),
+                "output_raw": round(output, 2),
+                "output_mod": round(output_mod, 2)
+            }
+            payload_manager.send_data("values", data)
+
             # print(motors["misc"]["wall_stake"].command(VOLT))
             
-        sleep(20)
+        sleep(35)
 
 if enable_macro_lady_brown:
     print("starting LB thread")
@@ -1094,7 +1107,7 @@ def driver():
         elif controls["LB_MANUAL_DOWN"].pressing():
             motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
             LB_enable_PID = False
-        else:
+        elif not LB_enable_PID:
             motors["misc"]["wall_stake"].stop(HOLD)
         
         #     # Lady Brown controls
@@ -1161,12 +1174,13 @@ def odom_logging_thread():
             "y": round(pos[1] / 25.4, 2),
             "theta": round(radians(imu.heading()), 2)
         }
+
         payload_manager.send_data("odometry", data)
 
         sleep(35, MSEC)
 
-Thread(odom_logging_thread)
-data["config"]["auton_test"] = True
+# Thread(odom_logging_thread)
+# data["config"]["auton_test"] = True
 
 def no_auton():
     pass
