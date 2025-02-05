@@ -12,88 +12,91 @@
 from vex import *
 from json import load, dump
 
-sd_fail = False
-# load config data from SD card
-try:
-    with open("cfg/config.json", 'r') as f:
-        data = load(f)
-    print("SUCCESS LOADING SD CARD")
-except:
-    sd_fail = True
-    print("ERROR LOADING SD CARD DATA")
+class ImmutableMeta(type):
+    def __setattr__(self, key, value):
+        raise AttributeError("Cannot modify constant '{}'".format(key))
+
+class LogLevel(metaclass=ImmutableMeta):
+    # LogLevel constants for better ID
+    FATAL = 5
+    ERROR = 4
+    WARNING = 3
+    INFO = 2
+    DEBUG = 1
+    UNKNOWN = 0
+
+def log(msg: Any, level = LogLevel.INFO):
+    if do_logging:
+        tag = str()
+        try:
+            if level == 0: tag = "[UNKNOWN] "
+            if level == 1: tag = "[DEBUG] "
+            if level == 2: tag = "[INFO] "
+            if level == 3: tag = "[WARNING] "
+            if level == 4: tag = "[FATAL] "
+            print(tag + str(msg))
+        except:
+            print("LogError: Could not convert message to string.")
 
 brain = Brain()
 con = Controller(PRIMARY)
 con_2 = Controller(PARTNER)
 
-controls = {
-    "DRIVE_FORWARD_AXIS":          con.axis3,
-    "DRIVE_TURN_AXIS":             con.axis1,
-    "INTAKE_IN_HOLD":              con.buttonR1,
-    "INTAKE_OUT_HOLD":             con.buttonR2,
-    "INTAKE_HEIGHT_TOGGLE":        con.buttonLeft,
-    # "SIDE_SCORING_TOGGLE":         con.buttonB,
-    "MOGO_GRABBER_TOGGLE":         con.buttonA,
-    # "CYCLE_EJECTOR_COLOR":         con.buttonLeft,
-    "DOINKER":                     con.buttonRight,
-    "INTAKE_FLEX_HOLD":            con.buttonL2,
-    "LB_MANUAL_UP":                con.buttonL1,
-    "LB_MANUAL_DOWN":              con.buttonL2, 
-    "MANUAL_ELEVATION_PNEUMATICS": con.buttonUp,
-    "LB_MACRO_HOME":           con.buttonDown,
-}
+class control():
+    DRIVE_FORWARD_AXIS =           con.axis3
+    DRIVE_TURN_AXIS =              con.axis1
+    INTAKE_IN_HOLD =               con.buttonR1
+    INTAKE_OUT_HOLD =              con.buttonR2
+    INTAKE_HEIGHT_TOGGLE =         con.buttonLeft
+    MOGO_GRABBER_TOGGLE =          con.buttonA
+    DOINKER =                      con.buttonRight
+    INTAKE_FLEX_HOLD =             con.buttonL2
+    LB_MANUAL_UP =                 con.buttonL1
+    LB_MANUAL_DOWN =               con.buttonL2,
+    MANUAL_ELEVATION_PNEUMATICS =  con.buttonUp
+    LB_MACRO_HOME =                con.buttonDown
 
-class MotorCollection():
-    def __init__(self) -> None:
-        self.leftA = Motor( Ports.PORT3, GearSetting.RATIO_6_1, True) # stacked top
-        self.leftB = Motor(Ports.PORT12, GearSetting.RATIO_6_1, True), # rear
-        self.leftC = Motor( Ports.PORT4, GearSetting.RATIO_6_1, True), # front
+class motor():
+    leftA = Motor( Ports.PORT3, GearSetting.RATIO_6_1, True) # stacked top
+    leftB = Motor(Ports.PORT12, GearSetting.RATIO_6_1, True) # rear
+    leftC = Motor( Ports.PORT4, GearSetting.RATIO_6_1, True) # front
 
-        self.rightA = Motor(Ports.PORT18, GearSetting.RATIO_6_1, False), # stacked top
-        self.rightB = Motor(Ports.PORT16, GearSetting.RATIO_6_1, False), # rear
-        self.rightC = Motor(Ports.PORT15, GearSetting.RATIO_6_1, False), # front
+    rightA = Motor(Ports.PORT18, GearSetting.RATIO_6_1, False) # stacked top
+    rightB = Motor(Ports.PORT16, GearSetting.RATIO_6_1, False) # rear
+    rightC = Motor(Ports.PORT15, GearSetting.RATIO_6_1, False) # front
 
-        self.intakeChain = Motor(Ports.PORT14, GearSetting.RATIO_6_1, True)
-        self.intakeFlex = Motor(Ports.PORT5, GearSetting.RATIO_6_1, True)
-        self.ladyBrown = Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
-
-motor = MotorCollection()
+    intakeChain = Motor(Ports.PORT14, GearSetting.RATIO_6_1, True)
+    intakeFlex = Motor(Ports.PORT5, GearSetting.RATIO_6_1, True)
+    ladyBrown = Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
 
 # PNEUMATICS
-class PneumaticCollection():
-    def __init__(self) -> None:
-        self.mogo = DigitalOut(brain.three_wire_port.a)
-        self.elevation_hook_release = DigitalOut(brain.three_wire_port.b)
-        self.elevation_bar_lift = DigitalOut(brain.three_wire_port.c)
-        self.PTO_left = DigitalOut(brain.three_wire_port.d) #! left/right not done yet
-        self.PTO_right = DigitalOut(brain.three_wire_port.e)
-        self.passive_hook_release = DigitalOut(brain.three_wire_port.f)
-        self.doinker = DigitalOut(brain.three_wire_port.g)
-        self.intake = DigitalOut(brain.three_wire_port.h)
-
-pneumatic = PneumaticCollection()
+class pneumatic():
+    mogo = DigitalOut(brain.three_wire_port.a)
+    elevation_hook_release = DigitalOut(brain.three_wire_port.b)
+    elevation_bar_lift = DigitalOut(brain.three_wire_port.c)
+    PTO_left = DigitalOut(brain.three_wire_port.d) #! left/right not done yet
+    PTO_right = DigitalOut(brain.three_wire_port.e)
+    passive_hook_release = DigitalOut(brain.three_wire_port.f)
+    doinker = DigitalOut(brain.three_wire_port.g)
+    intake = DigitalOut(brain.three_wire_port.h)
 
 #### SENSORS
 # ENCODERS
-class SensorCollection():
-    def __init__(self) -> None:
-        pass
-        self.leftEncoder = Rotation(Ports.PORT2)
-        self.rightEncoder = Rotation(Ports.PORT17)
-        self.wallEncoder = Rotation(Ports.PORT1)
-        # DISTANCE SENSORS
-        self.intakeDistance = Distance(Ports.PORT9)
+class sensor():
+    leftEncoder = Rotation(Ports.PORT2)
+    rightEncoder = Rotation(Ports.PORT17)
+    wallEncoder = Rotation(Ports.PORT1)
+    # DISTANCE SENSORS
+    intakeDistance = Distance(Ports.PORT9)
 
-        self.leftWallDistance = Distance(Ports.PORT6)
-        self.backWallDistance = Distance(Ports.PORT13)
+    leftWallDistance = Distance(Ports.PORT6)
+    backWallDistance = Distance(Ports.PORT13)
 
-        self.elevationDistance = Distance(Ports.PORT20)
+    elevationDistance = Distance(Ports.PORT20)
 
-        # MISC SENSORS
-        self.intakeColor = Optical(Ports.PORT10)
-        self.imu = Inertial(Ports.PORT11)
-
-sensor = SensorCollection()
+    # MISC SENSORS
+    intakeColor = Optical(Ports.PORT10)
+    imu = Inertial(Ports.PORT11)
 
 lmg = MotorGroup(motor.leftA, motor.leftB, motor.leftC)
 rmg = MotorGroup(motor.rightA, motor.rightB, motor.rightC)
@@ -118,18 +121,8 @@ Over Under Settings:
 sensor.intakeColor.set_light_power(100, PERCENT)
 #endregion Devices####################
 #DO NOT CHANGE THE FOLLOWING LINE:#
-#end_1301825#
+#nada you dont get to mess up my refactor#
 ####################
-
-def log(msg: Any):
-    if do_logging:
-        try:
-            print(str(msg))
-        except:
-            print("LogError: Could not convert message to string.")
-
-# organizational functions
-
 
 # global functions (no I/O)
 def calibrate_lady_brown():
@@ -396,6 +389,26 @@ class MultipurposePID:
         
         return output
 
+class Robot():
+    def __init__(self) -> None:
+        self.lady_brown_controller = LadyBrown(parent=self)
+        self.color_sort_controller = ColorSort(parent=self)
+
+        self.autonomous_controller = Autonomous(parent=self)
+        self.driver_controller = Driver(parent=self)
+
+        # Autonomous - related variables
+        self.pos = [0, 0]
+        self.heading = 0
+
+    def driver(self):
+        log("Starting driver")
+        self.driver_controller.run()
+    
+    def autonomous(self):
+        log("Starting autonomous")
+        self.autonomous_controller.run()
+    
 # robot states
 class Autonomous():
     def __init__(self, parent) -> None:
@@ -429,7 +442,7 @@ class Autonomous():
         self.autonomous_setup()
 
 class Driver():
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: Robot) -> None:
         """
         Setup driver. Runs at start of program!
         """
@@ -441,7 +454,8 @@ class Driver():
         """
         Setup driver runtime things
         """
-        pass
+        sensor.intakeColor.set_light_power(100, PERCENT)
+        brain.screen.clear_screen()
 
     def run(self) -> None:
         """
@@ -451,59 +465,174 @@ class Driver():
         
         while True:
             self.loop()
-            
+
+    def drive_controls(self):
+        turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
+        forwardVolts = controls["DRIVE_FORWARD_AXIS"].position() * 0.12
+
+        # Spin motors and combine controller axes
+        motor.leftA.spin(FORWARD, forwardVolts + turnVolts, VOLT)
+        motor.leftB.spin(FORWARD, forwardVolts + turnVolts, VOLT)
+        motor.leftC.spin(FORWARD, forwardVolts + turnVolts, VOLT)
+        
+        motor.rightA.spin(FORWARD, forwardVolts - turnVolts, VOLT)
+        motor.rightB.spin(FORWARD, forwardVolts - turnVolts, VOLT)
+        motor.rightC.spin(FORWARD, forwardVolts - turnVolts, VOLT)
+    
+    def intake_controls(self):
+        if (controls["INTAKE_IN_HOLD"].pressing()):
+            motor.intakeFlex.spin(FORWARD, 100, PERCENT)
+            if flags.allow_intake_input:
+                motor.intakeChain.spin(FORWARD, 100, PERCENT)
+        elif (controls["INTAKE_OUT_HOLD"].pressing()):
+            motor.intakeFlex.spin(REVERSE, 100, PERCENT)
+            motor.intakeChain.spin(REVERSE, 100, PERCENT)
+        else:
+            motor.intakeFlex.stop()
+            motor.intakeChain.stop()
+    
+    def lady_brown_controls(self):
+        # WALL STAKES MOTORS
+        if controls["LB_MANUAL_UP"].pressing():
+            motor.ladyBrown.spin(FORWARD, 100, PERCENT)
+            flags.LB_enable_PID = False
+        elif controls["LB_MANUAL_DOWN"].pressing():
+            motor.ladyBrown.spin(REVERSE, 30, PERCENT)
+            flags.LB_enable_PID = False
+        else:
+            motor.ladyBrown.stop(HOLD)
+
     def loop(self) -> None:
         """
         Runs every loop cycle
         """
-        pass
+
+        self.drive_controls()
+        self.intake_controls()
+
+        self.robot.color_sort_controller.sense()
+
+        #     # Lady Brown controls
+        # if wall_control_cooldown == 0:
+        #     if controls["LB_MACRO_DECREASE"].pressing():
+        #         LB_enable_PID = True
+        #         wall_control_cooldown = 2
+        #         if wall_setpoint > 0:
+        #             wall_setpoint -= 1
+            
+        #     elif controls["LB_MACRO_INCREASE"].pressing():
+        #         LB_enable_PID = True
+        #         wall_control_cooldown = 2
+        #         if wall_setpoint < len(wall_positions) - 1:
+        #             wall_setpoint += 1
+
+        # elif wall_control_cooldown > 0:
+        #     wall_control_cooldown -= 1
+
+        # 3levation hold button
+        if con.buttonUp.pressing() and not elevating:
+            elevation_hold_duration -= 1
+            if elevation_hold_duration <= 0:
+                elevating = True
+                elevation_macro()
+        else:
+            elevation_hold_duration = 10
 
 # control objects
 class LadyBrown():
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: Robot) -> None:
         self.robot = parent
         # SENSOR VARIABLES
         self.wall_setpoint = 0
         self.wall_positions = [15, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
-        self.LB_enable_PID = True
 
 class ColorSort():
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: Robot) -> None:
         self.robot = parent
-        # Intake ejector related booleans
-        self.allow_intake_input = True
+        
         self.queued_sort = False
-        self.eject_prep = False
+        self.eject_next_ring = False
 
-        self.tank_drive = False
+        self.blue_hue = 100
 
-        # Set initial color sort from SD card
-        self.color_setting = data["config"]["initial_color_sorting"]["selected"]
-
-class Robot():
-    def __init__(self) -> None:
-        self.mogo_pneu_engaged = False
-        self.mogo_pneu_status = False
-
-        self.lady_brown_controller = LadyBrown(parent=self)
-        self.color_sort_controller = ColorSort(parent=self)
-
-        self.autonomous_controller = Autonomous(parent=self)
-        self.driver_controller = Driver(parent=self)
-
-        # Autonomous - related variables
-        self.pos = [0, 0]
-        self.heading = 0
-
-    def driver(self):
-        log("Starting driver")
-        self.driver_controller.run()
+        self.wait_time_ms = 210
+        self.hold_time_ms = 150
     
-    def autonomous(self):
-        log("Starting autonomous")
-        self.autonomous_controller.run()
+    def sense(self):
+        """
+        Run to detect if we have an incorrectly colored disk.
+        If so, queue an eject of the next dist to the top of the intake.
+        """
+        # If we eject blue, 
+        if ((flags.color_setting == "eject_blue") and
+        sensor.intakeColor.hue() > self.blue_hue and 
+        sensor.intakeColor.is_near_object() and 
+        not self.eject_next_ring):
+
+            self.eject_next_ring = True
+            log("Found [blue] ring to eject.")
+        
+        if (flags.color_setting == "eject_red" and 
+        sensor.intakeColor.hue() < 18 and 
+        sensor.intakeColor.is_near_object()and 
+        not self.eject_next_ring):
+            
+            self.eject_next_ring = True
+            log("Found [red] ring to eject.")
+
+        if ((sensor.intakeDistance.object_distance() < 70) and 
+        (not self.queued_sort) and 
+        (self.eject_next_ring)):
+
+            self.allow_intake_input = False
+            motor.intakeChain.spin(FORWARD, 100, PERCENT)
+
+            brain.timer.event(self.intake_sorter, self.wait_time_ms)
+
+            self.queued_sort = True
+    
+    def intake_sorter(self):
+        # check if we are moving from manual --> auto or auto --> manual
+        if flags.allow_intake_input:
+            motor.intakeChain.stop(BRAKE)
+            # stop chain and don't let driver loop re-enable it until we're done with it
+            flags.allow_intake_input = False
+
+            # At this point, allow_intake_input will be false
+            # so the current code won't run in a loop
+            # schedule this again to re-enable to intake in ms
+            brain.timer.event(self.intake_sorter, self.hold_time_ms)
+            log("Ejecting ring.")
+        else:
+            # Re-enable intake
+            flags.allow_intake_input = True
+            # reset timing flags
+            self.queued_sort = False
+            self.eject_next_ring = False
+
+class flags():
+    """
+    'global' booleans for various states.
+    """
+    LB_enable_PID = False
+    mogo_pneu_engaged = False
+    mogo_pneu_status = False
+    color_setting = "none" # "none", "eject_blue", "eject_red"
+    allow_intake_input = True
 
 do_logging = True
+
+# load SD card
+sd_fail = False
+
+try:
+    with open("cfg/config.json", 'r') as f:
+        data = load(f)
+    log("SUCCESS LOADING SD CARD")
+except:
+    sd_fail = True
+    log("ERROR LOADING SD CARD DATA")
+
 
 # run file
 def main():
