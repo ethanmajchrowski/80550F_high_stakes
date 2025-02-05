@@ -65,7 +65,7 @@ motors = {
         "C": Motor(Ports.PORT15, GearSetting.RATIO_6_1, False), # front
     },
     "misc": {
-        "intake_chain": Motor(Ports.PORT10, GearSetting.RATIO_6_1, True),  
+        "intake_chain": Motor(Ports.PORT10, GearSetting.RATIO_6_1, False),  
         "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, True), # 5.5 W flexwheel hinge
         "wall_stake": Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
     }
