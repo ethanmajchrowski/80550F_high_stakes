@@ -29,32 +29,55 @@ def log(msg: Any, level = LogLevel.INFO):
     if do_logging:
         tag = str()
         try:
-            if level == 0: tag = "[UNKNOWN] "
-            if level == 1: tag = "[DEBUG] "
-            if level == 2: tag = "[INFO] "
-            if level == 3: tag = "[WARNING] "
-            if level == 4: tag = "[FATAL] "
-            print(tag + str(msg))
+            str(msg)
         except:
-            print("LogError: Could not convert message to string.")
+            print("Log Error: couldn't convert msg to str")
+            return
+        
+        time_ms = brain.timer.system()
+        time_s = time_ms % 60000 // 1000
+        time_min = time_ms // 60000
+
+        time_str = "{minutes:02}:{seconds:02}.{milliseconds:03} ".format(
+                    minutes=time_min, seconds=time_s, milliseconds=time_ms) # MM:SS.mS
+
+        if level == 0: tag = "[UNKNOWN] "
+        if level == 1: tag = "[DEBUG] "
+        if level == 2: tag = "[INFO] "
+        if level == 3: tag = "[WARNING] "
+        if level == 4: tag = "[FATAL] "
+        # MM:SS.0000 [WARNING] Unable to load SD card!
+        print(time_str + tag + str(msg))
 
 brain = Brain()
 con = Controller(PRIMARY)
 con_2 = Controller(PARTNER)
 
 class control():
-    DRIVE_FORWARD_AXIS =           con.axis3
-    DRIVE_TURN_AXIS =              con.axis1
-    INTAKE_IN_HOLD =               con.buttonR1
-    INTAKE_OUT_HOLD =              con.buttonR2
-    INTAKE_HEIGHT_TOGGLE =         con.buttonLeft
-    MOGO_GRABBER_TOGGLE =          con.buttonA
-    DOINKER =                      con.buttonRight
-    INTAKE_FLEX_HOLD =             con.buttonL2
-    LB_MANUAL_UP =                 con.buttonL1
-    LB_MANUAL_DOWN =               con.buttonL2
-    MANUAL_ELEVATION_PNEUMATICS =  con.buttonUp
-    LB_MACRO_HOME =                con.buttonDown
+    DRIVE_FORWARD_AXIS =            con.axis3
+    DRIVE_TURN_AXIS =               con.axis1
+    INTAKE_IN_HOLD =                con.buttonR1
+    INTAKE_OUT_HOLD =               con.buttonR2
+    INTAKE_HEIGHT_TOGGLE =          con.buttonLeft
+    MOGO_GRABBER_TOGGLE =           con.buttonA
+    DOINKER =                       con.buttonRight
+    INTAKE_FLEX_HOLD =              con.buttonL2
+    LB_MANUAL_UP =                  con.buttonL1
+    LB_MANUAL_DOWN =                con.buttonL2
+    MANUAL_ELEVATION_PNEUMATICS =   con.buttonUp
+    LB_MACRO_HOME =                 con.buttonDown
+
+class control_2():
+    ELEVATION_PRIMARY_PNEUMATICS =  con_2.buttonUp
+    DOINKER =                       con_2.buttonRight
+    DRIVE_MODE =                    con_2.buttonDown
+    AXIS_FORWARDS =                 con_2.axis3
+    AXIS_TILT =                     con_2.axis1
+    PTO_TOGGLE =                    con_2.buttonB
+    INTAKE_IN =                     con_2.buttonR1
+    INTAKE_OUT =                    con_2.buttonR2
+    LB_MANUAL_UP =                  con_2.buttonL1
+    LB_MANUAL_DOWN =                con_2.buttonL2
 
 class motor():
     leftA = Motor( Ports.PORT3, GearSetting.RATIO_6_1, True) # stacked top
@@ -293,25 +316,19 @@ class DeltaPositioning():
         wheel_diameter = 2 # inches
         self.circumference = (wheel_diameter * 3.14159) * 25.4 * external_gear_ratio
 
-    def update(self):
+    def update(self) -> list[float]:
         # Call constantly to update position.
 
         # change in left & right encoders (degrees)
         dl = self.leftEnc.position() - self.last_left_encoder
         dr = self.rightEnc.position() - self.last_right_encoder
-        # dHeadingTheta = self.imu.rotation() - self.last_heading
 
-        # proportion
-        # (dTheta / 360) = (x mm / Circumference mm)
-        # x mm = (dTheta / 360) * Circumference
         dl = (dl / 360) * self.circumference
         dr = (dr / 360) * self.circumference
 
         # average the position of left & right to get the center of the robot
         dNet = (dl + dr) / 2 
 
-        # x = cos
-        # y = sin
         dx = dNet * math.sin(math.radians(self.imu.heading()))
         dy = dNet * math.cos(math.radians(self.imu.heading()))
 
@@ -325,7 +342,7 @@ class LaserPositioning():
     def __init__(self) -> None:
         pass
 
-    def update(self):
+    def update(self) -> list[float]:
         dx, dy = 0, 0
 
         return [dx, dy]
@@ -401,11 +418,11 @@ class Robot():
         self.pos = [0, 0]
         self.heading = 0
 
-    def driver(self):
+    def driver(self) -> None:
         log("Starting driver")
         self.driver_controller.run()
     
-    def autonomous(self):
+    def autonomous(self) -> None:
         log("Starting autonomous")
         self.autonomous_controller.run()
     
@@ -441,12 +458,57 @@ class Autonomous():
         """
         self.autonomous_setup()
 
+class ControllerFunctions():
+    @staticmethod
+    def switch_mogo_engaged():
+        flags.mogo_pneu_engaged = not flags.mogo_pneu_engaged
+
+    @staticmethod
+    def switch_mogo():
+        if pneumatic.mogo.value() == 0 and flags.mogo_pneu_engaged:
+            flags.mogo_pneu_engaged = False
+
+        pneumatic.mogo.set(not pneumatic.mogo.value())
+
+    @staticmethod
+    def switch_intake_height():
+        if not flags.elevating:
+            log("Switched intake height")
+            pneumatic.intake.set(not pneumatic.intake.value())
+
+    @staticmethod
+    def switch_doinker():
+        log("Switched doinker")
+        pneumatic.doinker.set(not pneumatic.doinker.value())
+
+    @staticmethod
+    def manual_elevation():
+        log("Manual elevation pneumatics")
+        pneumatic.elevation_bar_lift.set(not pneumatic.elevation_bar_lift.value())
+    
+    @staticmethod
+    def home_lady_brown_PID():
+        log("Home lady brown PID")
+        flags.LB_enable_PID = True
+        flags.wall_setpoint = 1
+    
+    @staticmethod
+    def toggle_PTO():
+        log("Toggled PTO pneumatics")
+        pneumatic.PTO_left.set(not pneumatic.PTO_left.value())
+        pneumatic.PTO_right.set(pneumatic.PTO_left.value()) # right mimics left
+
+
 class Driver():
     def __init__(self, parent: Robot) -> None:
         """
         Setup driver. Runs at start of program!
         """
         self.robot = parent
+        self.elevation_hold_duration = 0
+        self.elevation_hold_duration_reset = 7
+
+        self.LB_braketype = BrakeType.HOLD
 
         log("Driver object setup")
     
@@ -457,6 +519,9 @@ class Driver():
         sensor.intakeColor.set_light_power(100, PERCENT)
         brain.screen.clear_screen()
 
+        # bind controller functions
+        control.DOINKER.pressed(ControllerFunctions.switch_doinker)
+
     def run(self) -> None:
         """
         Runs driver control loop.
@@ -466,7 +531,16 @@ class Driver():
         while True:
             self.loop()
 
-    def drive_controls(self):
+    def loop(self) -> None:
+        """
+        Runs every loop cycle
+        """
+        if flags.elevating:
+            self.elevation_loop()
+        else:
+            self.driver_loop()
+
+    def drive_controls(self) -> None:
         turnVolts = (control.DRIVE_TURN_AXIS.position() * 0.12) * 0.9
         forwardVolts = control.DRIVE_FORWARD_AXIS.position() * 0.12
 
@@ -479,7 +553,7 @@ class Driver():
         motor.rightB.spin(FORWARD, forwardVolts - turnVolts, VOLT)
         motor.rightC.spin(FORWARD, forwardVolts - turnVolts, VOLT)
     
-    def intake_controls(self):
+    def intake_controls(self) -> None:
         if (control.INTAKE_IN_HOLD.pressing()):
             motor.intakeFlex.spin(FORWARD, 100, PERCENT)
             if flags.allow_intake_input:
@@ -491,7 +565,7 @@ class Driver():
             motor.intakeFlex.stop()
             motor.intakeChain.stop()
     
-    def lady_brown_controls(self):
+    def lady_brown_controls(self) -> None:
         # WALL STAKES MOTORS
         if control.LB_MANUAL_UP.pressing():
             motor.ladyBrown.spin(FORWARD, 100, PERCENT)
@@ -502,49 +576,74 @@ class Driver():
         else:
             motor.ladyBrown.stop(HOLD)
 
-    def loop(self) -> None:
-        """
-        Runs every loop cycle
-        """
-
+    def driver_loop(self) -> None:
         self.drive_controls()
         self.intake_controls()
 
         self.robot.color_sort_controller.sense()
 
-        #     # Lady Brown controls
-        # if wall_control_cooldown == 0:
-        #     if controls["LB_MACRO_DECREASE"].pressing():
-        #         LB_enable_PID = True
-        #         wall_control_cooldown = 2
-        #         if wall_setpoint > 0:
-        #             wall_setpoint -= 1
-            
-        #     elif controls["LB_MACRO_INCREASE"].pressing():
-        #         LB_enable_PID = True
-        #         wall_control_cooldown = 2
-        #         if wall_setpoint < len(wall_positions) - 1:
-        #             wall_setpoint += 1
-
-        # elif wall_control_cooldown > 0:
-        #     wall_control_cooldown -= 1
-
-        # 3levation hold button
-        if con.buttonUp.pressing() and not elevating:
-            elevation_hold_duration -= 1
-            if elevation_hold_duration <= 0:
-                elevating = True
-                elevation_macro()
+        # elevation hold button
+        if con.buttonUp.pressing() and not flags.elevating:
+            self.elevation_hold_duration -= 1
+            if self.elevation_hold_duration <= 0:
+                self.start_elevation()
         else:
-            elevation_hold_duration = 10
+            self.elevation_hold_duration = self.elevation_hold_duration_reset
+    
+    def elevation_drive_controls(self) -> None:
+        pass
+
+    def start_elevation(self) -> None:
+        log("Starting elevation")
+        flags.LB_enable_PID = False
+        
+        pneumatic.mogo.set(True)
+
+        roll_pid = MultipurposePID(0.1, 0, 0, 0)
+
+        pneumatic.elevation_hook_release.set(True)
+        # wait and close these pistons cause leak :(
+        sleep(200, MSEC)
+        pneumatic.elevation_hook_release.set(False)
+
+        # wait for matics
+        sleep(100, MSEC)
+        # motors["misc"]["wall_stake"].spin_for(REVERSE, 1200, MSEC, 100, PERCENT)
+        sleep(200, MSEC)
+        # elevation_bar_lift.set(False)
+        # sleep(100, MSEC)
+
+        control_2.DOINKER.pressed(ControllerFunctions.switch_doinker)
+        control_2.PTO_TOGGLE.pressed(ControllerFunctions.toggle_PTO)
+        control_2.ELEVATION_PRIMARY_PNEUMATICS.pressed(ControllerFunctions.manual_elevation)
+        self.LB_braketype = BrakeType.COAST
+
+        self.elevation_loop()
+
+    def elevation_loop(self) -> None:
+        while True:
+            self.elevation_drive_controls()
 
 # control objects
 class LadyBrown():
     def __init__(self, parent: Robot) -> None:
         self.robot = parent
+        self.pid = MultipurposePID(0.15, 0.015, 0.02, 5, None)
         # SENSOR VARIABLES
-        self.wall_setpoint = 0
+        # use flags.wall_setpoint for index
         self.wall_positions = [15, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
+    
+    def use_PID(self) -> None:
+        while True:
+            if flags.LB_enable_PID:
+                target = self.wall_positions[flags.wall_setpoint]
+                output = self.pid.calculate(target, sensor.wallEncoder.position())
+
+                motor.ladyBrown.spin(FORWARD, output*2, VOLT)
+
+                sleep(20, TimeUnits.MSEC)
+            else:
+                sleep(75, TimeUnits.MSEC)
 
 class ColorSort():
     def __init__(self, parent: Robot) -> None:
@@ -558,7 +657,7 @@ class ColorSort():
         self.wait_time_ms = 210
         self.hold_time_ms = 150
     
-    def sense(self):
+    def sense(self) -> None:
         """
         Run to detect if we have an incorrectly colored disk.
         If so, queue an eject of the next dist to the top of the intake.
@@ -591,7 +690,7 @@ class ColorSort():
 
             self.queued_sort = True
     
-    def intake_sorter(self):
+    def intake_sorter(self) -> None:
         # check if we are moving from manual --> auto or auto --> manual
         if flags.allow_intake_input:
             motor.intakeChain.stop(BRAKE)
@@ -619,6 +718,8 @@ class flags():
     mogo_pneu_status = False
     color_setting = "none" # "none", "eject_blue", "eject_red"
     allow_intake_input = True
+    elevating = False
+    wall_setpoint = 1
 
 do_logging = True
 
@@ -632,7 +733,6 @@ try:
 except:
     sd_fail = True
     log("ERROR LOADING SD CARD DATA")
-
 
 # run file
 def main():
