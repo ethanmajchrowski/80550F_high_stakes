@@ -52,7 +52,7 @@ class control():
     DOINKER =                      con.buttonRight
     INTAKE_FLEX_HOLD =             con.buttonL2
     LB_MANUAL_UP =                 con.buttonL1
-    LB_MANUAL_DOWN =               con.buttonL2,
+    LB_MANUAL_DOWN =               con.buttonL2
     MANUAL_ELEVATION_PNEUMATICS =  con.buttonUp
     LB_MACRO_HOME =                con.buttonDown
 
@@ -467,8 +467,8 @@ class Driver():
             self.loop()
 
     def drive_controls(self):
-        turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
-        forwardVolts = controls["DRIVE_FORWARD_AXIS"].position() * 0.12
+        turnVolts = (control.DRIVE_TURN_AXIS.position() * 0.12) * 0.9
+        forwardVolts = control.DRIVE_FORWARD_AXIS.position() * 0.12
 
         # Spin motors and combine controller axes
         motor.leftA.spin(FORWARD, forwardVolts + turnVolts, VOLT)
@@ -480,11 +480,11 @@ class Driver():
         motor.rightC.spin(FORWARD, forwardVolts - turnVolts, VOLT)
     
     def intake_controls(self):
-        if (controls["INTAKE_IN_HOLD"].pressing()):
+        if (control.INTAKE_IN_HOLD.pressing()):
             motor.intakeFlex.spin(FORWARD, 100, PERCENT)
             if flags.allow_intake_input:
                 motor.intakeChain.spin(FORWARD, 100, PERCENT)
-        elif (controls["INTAKE_OUT_HOLD"].pressing()):
+        elif (control.INTAKE_OUT_HOLD.pressing()):
             motor.intakeFlex.spin(REVERSE, 100, PERCENT)
             motor.intakeChain.spin(REVERSE, 100, PERCENT)
         else:
@@ -493,10 +493,10 @@ class Driver():
     
     def lady_brown_controls(self):
         # WALL STAKES MOTORS
-        if controls["LB_MANUAL_UP"].pressing():
+        if control.LB_MANUAL_UP.pressing():
             motor.ladyBrown.spin(FORWARD, 100, PERCENT)
             flags.LB_enable_PID = False
-        elif controls["LB_MANUAL_DOWN"].pressing():
+        elif control.LB_MANUAL_DOWN.pressing():
             motor.ladyBrown.spin(REVERSE, 30, PERCENT)
             flags.LB_enable_PID = False
         else:
