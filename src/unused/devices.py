@@ -6,7 +6,9 @@ calibrate_imu = True
 # ██████  ███████   ████   ██  ██████ ███████ ███████ 
 
 from vex import *
-from json import load, dump
+from json import load, dump, dumps
+from math import radians
+import sys
 
 sd_fail = False
 # load config data from SD card
@@ -32,11 +34,10 @@ controls = {
     # "CYCLE_EJECTOR_COLOR":         con.buttonLeft,
     "DOINKER":                     con.buttonRight,
     "INTAKE_FLEX_HOLD":            con.buttonL2,
-    "LB_MANUAL_UP":                con_2.buttonL1,
-    "LB_MANUAL_DOWN":              con_2.buttonL2, 
+    "LB_MANUAL_UP":                con.buttonL1,
+    "LB_MANUAL_DOWN":              con.buttonL2, 
     "MANUAL_ELEVATION_PNEUMATICS": con.buttonUp,
-    "LB_MACRO_INCREASE":           con.buttonB,
-    "LB_MACRO_DECREASE":           con.buttonDown,
+    "LB_MACRO_HOME":           con.buttonDown,
 }
 
 motors = {
@@ -51,7 +52,7 @@ motors = {
         "C": Motor(Ports.PORT15, GearSetting.RATIO_6_1, False), # front
     },
     "misc": {
-        "intake_chain": Motor(Ports.PORT14, GearSetting.RATIO_6_1, True),  
+        "intake_chain": Motor(Ports.PORT10, GearSetting.RATIO_6_1, True),  
         "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, True), # 5.5 W flexwheel hinge
         "wall_stake": Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
     }
@@ -81,13 +82,13 @@ backWallDistance = Distance(Ports.PORT13)
 elevationDistance = Distance(Ports.PORT20)
 
 # MISC SENSORS
-intakeColor = Optical(Ports.PORT10)
+intakeColor = Optical(Ports.PORT14)
 imu = Inertial(Ports.PORT11)
 
 # SENSOR VARIABLES
 wall_setpoint = 0
 wall_control_cooldown = 0
-wall_positions = [15, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
+wall_positions = [30, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
 LB_enable_PID = True
 
 if calibrate_imu:
@@ -100,7 +101,8 @@ else:
 
 if enable_macro_lady_brown:
     print("calibrating wall stake")
-    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
+    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 20, PERCENT)
+    sleep(100, MSEC) # sleep to allow motor to spin to idle
     wallEnc.set_position(0)
     print(wallEnc.position())
 
@@ -116,6 +118,7 @@ queued_sort = False
 eject_prep = False
 
 tank_drive = False
+elevating = False
 
 lmg = MotorGroup(*motors["left"].values())
 rmg = MotorGroup(*motors["right"].values())
@@ -135,68 +138,6 @@ Over Under Settings:
     drivetrain.set_turn_constant(0.28)
     drivetrain.set_turn_threshold(0.25)
 """
-# elevation macro vars
-if enable_macro_lady_brown:
-    print("calibrating wall stake")
-    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
-    wallEnc.set_position(0)
-    print(wallEnc.position())
-
-class Logger:
-    def __init__(self, interval: int, data: list[tuple[Callable, str]]) -> None:
-        """
-        Initializes the logger. The "data" list contains functions that return the data,
-        and a string to label the data. You do not need to pass time into data.
-        Interval is the mS interval between logging operations.
-        """
-        self.data = data
-        self.interval = interval
-
-        self.functions = [brain.timer.system]
-        self.labels = ["time"]
-        
-        for d in self.data:
-            self.functions.append(d[0])
-            self.labels.append(d[1])
-    
-    def setup(self):
-        # get number of existing files from info.txt
-        info_file = open("data/info.txt", "r")
-        num_files = int(info_file.read())
-        info_file.close()
-
-        # open info and increment number of files
-        f = open("data/info.txt", "w")
-        f.write(str(num_files + 1))
-        f.close()
-
-        # get latest.txt and the new file for archiving
-        recent_file = open("data/latest.txt", "r")
-        new_file = open("data/" + str(num_files) + ".txt", "w")
-
-        # open new_file to write to it
-        new_file.write(recent_file.read())
-        recent_file.close()
-        new_file.close()
-
-        # clear latest.txt
-        f = open("data/latest.txt", "w")
-        f.write(", ".join(self.labels))
-        f.close()
-
-    def log(self):
-        file = open("data/latest.txt", "a")
-        # file.write("\n" + data)
-        data = []
-        for i in self.functions:
-            data.append(i())
-        file.write("\n" + ", ".join(data))
-        file.close()
-
-        brain.timer.event(self.log, self.interval)
-
-    def start(self):
-        Thread(self.log)
 
 # Set initial color sort from SD card
 if not sd_fail:
