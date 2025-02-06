@@ -49,8 +49,8 @@ def run(main):
     main["mogo_pneu"].set(True)
     main["sleep"](150, TimeUnits.MSEC)
 
-    motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-    brain.timer.event(motors["misc"]["intake_flex"].spin, 200, (DirectionType.FORWARD, 100, VelocityUnits.PERCENT))
+    motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    brain.timer.event(motors["misc"]["intake_chain"].spin, 200, (DirectionType.FORWARD, 100, VelocityUnits.PERCENT))
 
     controller.path(paths[3], backwards=False, finish_margin=170)
     main["sleep"](1000, TimeUnits.MSEC)
