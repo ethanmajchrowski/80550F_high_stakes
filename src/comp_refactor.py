@@ -12,11 +12,7 @@
 from vex import *
 from json import load, dump
 
-class ImmutableMeta(type):
-    def __setattr__(self, key, value):
-        raise AttributeError("Cannot modify constant '{}'".format(key))
-
-class LogLevel(metaclass=ImmutableMeta):
+class LogLevel():
     # LogLevel constants for better ID
     FATAL = 5
     ERROR = 4
@@ -25,29 +21,33 @@ class LogLevel(metaclass=ImmutableMeta):
     DEBUG = 1
     UNKNOWN = 0
 
+def threaded_log(msg: Any, level):
+    tag = str()
+    try:
+        str(msg)
+    except:
+        print("Log Error: couldn't convert msg to str")
+        return
+    
+    time_ms = brain.timer.system()
+    time_s = time_ms % 60000 // 1000
+    time_min = time_ms // 60000
+
+    time_str = "{minutes:02}:{seconds:02}.{milliseconds:03} ".format(
+                minutes=time_min, seconds=time_s, milliseconds=time_ms) # MM:SS.mS
+
+    if level == 0: tag = "[UNKNOWN] "
+    if level == 1: tag = "[DEBUG] "
+    if level == 2: tag = "[INFO] "
+    if level == 3: tag = "[WARNING] "
+    if level == 4: tag = "[ERROR] "
+    if level == 5: tag = "[FATAL] "
+    # MM:SS.0000 [WARNING] Unable to load SD card!
+    print(time_str + tag + str(msg))
+
 def log(msg: Any, level = LogLevel.INFO):
     if do_logging:
-        tag = str()
-        try:
-            str(msg)
-        except:
-            print("Log Error: couldn't convert msg to str")
-            return
-        
-        time_ms = brain.timer.system()
-        time_s = time_ms % 60000 // 1000
-        time_min = time_ms // 60000
-
-        time_str = "{minutes:02}:{seconds:02}.{milliseconds:03} ".format(
-                    minutes=time_min, seconds=time_s, milliseconds=time_ms) # MM:SS.mS
-
-        if level == 0: tag = "[UNKNOWN] "
-        if level == 1: tag = "[DEBUG] "
-        if level == 2: tag = "[INFO] "
-        if level == 3: tag = "[WARNING] "
-        if level == 4: tag = "[FATAL] "
-        # MM:SS.0000 [WARNING] Unable to load SD card!
-        print(time_str + tag + str(msg))
+        Thread(threaded_log, (msg, level))
 
 brain = Brain()
 con = Controller(PRIMARY)
@@ -425,16 +425,154 @@ class Robot():
     def autonomous(self) -> None:
         log("Starting autonomous")
         self.autonomous_controller.run()
+
+class AutonomousCommands():
+    @staticmethod
     
+    def path(controller, path, events=[], checkpoints=[], backwards = False,
+             look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
+             heading_authority=1.0, max_turn_volts = 8,
+             hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
+             turn_speed_weight = 0.0) -> None:
+
+        if timeout is not None:
+            time_end = brain.timer.system() + timeout
+
+        path_handler = controller.path_controller(look_ahead_dist, finish_margin, path, checkpoints)
+        heading_pid = MultipurposePID(hPID_KP, hPID_KD, hPID_KI, hPID_KI_MAX, hPID_MIN_OUT)
+        robot = controller.robot
+
+        done = path_handler.path_complete
+        waiting = False
+        wait_stop = 0
+
+        while not done:
+            target_point = path_handler.goal_search(robot.pos)
+            dx, dy = target_point[0] - robot.pos[0], target_point[1] - robot.pos[1] # type: ignore
+            heading_to_target = math.degrees(math.atan2(dx, dy))
+
+            if dx < 0:
+                heading_to_target = 360 + heading_to_target
+
+            # logic to handle the edge case of the target heading rolling over
+            heading_error = controller.heading - heading_to_target
+            rollover = False
+
+            if backwards:
+                if heading_error > 180:
+                    heading_error -= 180
+                else:
+                    heading_error += 180
+
+            if heading_error > 180:
+                heading_error = 360 - heading_error
+                rollover = True
+            if heading_error < -180:
+                heading_error = -360 - heading_error
+                rollover = True
+
+            heading_output = heading_pid.calculate(0, heading_error)
+
+            # dynamic forwards speed
+            dynamic_forwards_speed = abs(heading_output) * turn_speed_weight
+            unclamped = dynamic_forwards_speed
+            # clamp speed
+            if dynamic_forwards_speed < -4:
+                dynamic_forwards_speed = -4
+            elif dynamic_forwards_speed > 4:
+                dynamic_forwards_speed = 4
+
+            forwards_speed = controller.fwd_speed
+
+            if backwards:
+                forwards_speed *= -1
+
+            # Do some stuff that lowers the authority of turning, no idea if this is reasonable
+            heading_output *= heading_authority
+            if heading_output > max_turn_volts: heading_output = max_turn_volts
+            if heading_output < -max_turn_volts: heading_output = -max_turn_volts
+            # if we rollover, fix it
+            if rollover:
+                heading_output *= -1
+            if not waiting:
+                left_speed = forwards_speed - dynamic_forwards_speed + heading_output
+                right_speed = forwards_speed - dynamic_forwards_speed - heading_output
+    
+                motor.leftA.spin(FORWARD, left_speed, VOLT)
+                motor.leftB.spin(FORWARD, left_speed, VOLT)
+                motor.leftC.spin(FORWARD, left_speed, VOLT)
+
+                motor.rightA.spin(FORWARD, right_speed, VOLT)
+                motor.rightB.spin(FORWARD, right_speed, VOLT)
+                motor.rightC.spin(FORWARD, right_speed, VOLT)
+            else:
+                if brain.timer.system() >= wait_stop:
+                    waiting = False
+
+            for event in events:
+                if dist(robot.pos, event[1]) < event_look_ahead_dist:
+                    print(event)
+                    if type(event[2]) == str:
+                        if event[2] == "wait_function":
+                            if not event[4]:
+                                # This tells us to wait
+                                # format: ["description", (x, y), EventWaitType(), duration, completed]
+                                waiting = True
+                                wait_stop = brain.timer.system() + event[3]
+
+                                # make sure we dont get stuck in a waiting loop
+                                event[4] = True
+
+                                AutonomousCommands.kill_motors()
+                        else:
+                            # this is a variable change
+                            # format: ["speed down", (0, 1130), "speed", 3.5]
+                            if hasattr(controller, event[2]):
+                                controller.event[2] = event[3]
+                            else:
+                                raise AttributeError("No attribute found {}".format(event[2]))
+                    elif callable(event[2]):
+                        # Call the function (at index 2) with the unpacked (*) args (at index 3)
+                        try:
+                            event[2](*event[3])
+                        except:
+                            raise NameError("Function not defined")
+
+            done = path_handler.path_complete
+            if done:
+                print("path complete")
+
+            if timeout is not None:
+                if brain.timer.system() > time_end:
+                    done = True
+                    print("path timed out")
+
+            if not done:
+                sleep(20, MSEC)
+            else:
+                AutonomousCommands.kill_motors(BRAKE)
+    
+    @staticmethod
+    def kill_motors(brake = BrakeType.COAST):
+        motor.leftA.stop(brake)
+        motor.leftB.stop(brake)
+        motor.leftC.stop(brake)
+
+        motor.rightA.stop(brake)
+        motor.rightB.stop(brake)
+        motor.rightC.stop(brake)
+
+
 # robot states
 class Autonomous():
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: Robot) -> None:
         """
         Setup autonomous. Runs at start of program!
         """
         self.robot = parent
 
         self.positioning_algorithm = DeltaPositioning(sensor.leftEncoder, sensor.rightEncoder, sensor.imu)
+        self.path_controller = PurePursuit
 
         self.fwd_speed = 8
 
@@ -444,18 +582,50 @@ class Autonomous():
         """
         Call at start of auton. Sets up the coordinates n stuff for the loaded path.
         """
-        pass
+        drivetrain.set_timeout(1.5, TimeUnits.SECONDS)
+        drivetrain.set_turn_threshold(5)
+        drivetrain.set_turn_constant(0.6)
+
+    def load_path(self, module_filename: str) -> None:
+        """
+        Loads autonomous data into object variables for later use.
+
+        Args:
+            module_filename: The filename of the imported auton, without any file extensions.
+        """
+        log("Loading module {}".format(module_filename))
+        try:
+            log("Importing module...")
+            auton_module = __import__("module.{}".format(module_filename), None, None, ["run"])
+
+            log("Importing sequence...")
+            self.sequence = getattr(auton_module, "run")
+            
+            log("Importing data...")
+            gen_data = getattr(auton_module, "gen_data")
+            self.autonomous_data = gen_data()
+
+            log("Loaded data into {} autonomous object".format(self))
+        except:
+            log("Auton not recognized!", LogLevel.ERROR)
+            raise ImportError("Can't find auton file")
 
     def run(self) -> None:
         """
         Runs autonomous. Do not modify.
         """
+        log("Running autonomous")
         self.autonomous_setup()
+        self.sequence()
+    
+    def path(self):
+        raise DeprecationWarning("Moved to AutonomousCommands.path()")
 
     def test(self) -> None:
         """
         Run a test version of autonomous. This is NOT run in competition!
         """
+        log("Running autonomous TEST")
         self.autonomous_setup()
 
 class ControllerFunctions():
@@ -497,7 +667,6 @@ class ControllerFunctions():
         log("Toggled PTO pneumatics")
         pneumatic.PTO_left.set(not pneumatic.PTO_left.value())
         pneumatic.PTO_right.set(pneumatic.PTO_left.value()) # right mimics left
-
 
 class Driver():
     def __init__(self, parent: Robot) -> None:
@@ -711,7 +880,7 @@ class ColorSort():
 
 class flags():
     """
-    'global' booleans for various states.
+    'global' booleans enum for various states.
     """
     LB_enable_PID = False
     mogo_pneu_engaged = False
@@ -721,36 +890,53 @@ class flags():
     elevating = False
     wall_setpoint = 1
 
+def pull_data(data: dict, robot: Robot):
+    """
+    Assigns data variables to different objects.
+    """
+    pass
+
 do_logging = True
-
-# load SD card
-sd_fail = False
-
-try:
-    with open("cfg/config.json", 'r') as f:
-        data = load(f)
-    log("SUCCESS LOADING SD CARD")
-except:
-    sd_fail = True
-    log("ERROR LOADING SD CARD DATA")
 
 # run file
 def main():
+    sd_fail = False
+    try:
+        with open("cfg/config.json", 'r') as f:
+            data = load(f)
+        log("SUCCESS LOADING SD CARD")
+    except:
+        sd_fail = True
+        log("ERROR LOADING SD CARD DATA", LogLevel.FATAL)
+    
     if not sd_fail:
         robot = Robot()
         comp = Competition(robot.driver, robot.autonomous)
+
+        pull_data(data, robot)
         # when connected to the field, do everything normally
         if comp.is_field_control() or comp.is_competition_switch():
             log("Connected to field or comp switch.")
+
+            calibrate_imu()
+            calibrate_lady_brown()
+
+            # Load autonomous into robot
+            robot.autonomous_controller.load_path(data["autons"]["selected"])
+        elif data["config"]["auton_test"]:
+            calibrate_imu()
+            log("Not auto-calibrating LB (auton test)", LogLevel.WARNING)
+            robot.autonomous_controller.test()
+        else:
+            log("Default to driver (no auton test, no field control)", LogLevel.WARNING)
+
+            calibrate_imu()
+            calibrate_lady_brown()
+
+            robot.driver_controller.run()
+
     else:
-        brain.screen.set_fill_color(Color.RED)
         log("Robot object not created. (SD Load Error)")
-        raise ImportError("Robot object not created. (SD Load Error)")
+        raise ImportError("SD Card not inserted")
 
 main()
-# Reviewed code:
-# [ ] Autonomous Handler
-# [X] Delta Positioning
-# [ ] Driver
-# [ ] Pure Pursuit
-# [ ] Path Loading
