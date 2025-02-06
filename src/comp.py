@@ -665,6 +665,9 @@ class AutonomousHandler:
         self.path(paths[7], timeout=700)
         drivetrain.turn_for(TurnType.LEFT, 180, RotationUnits.DEG, 100, VelocityUnits.PERCENT)
 
+        # TODO with doinker, turn RIGHT and drop to be in more favorable position next to wall
+        doinker_pneu.set(False)
+
 
         # # ladder touch
         # drivetrain.turn_for(TurnType.RIGHT, 180, RotationUnits.DEG, 100, VelocityUnits.PERCENT)
