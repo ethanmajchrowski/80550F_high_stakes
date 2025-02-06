@@ -428,7 +428,6 @@ class Robot():
 
 class AutonomousCommands():
     @staticmethod
-    
     def path(controller, path, events=[], checkpoints=[], backwards = False,
              look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
              heading_authority=1.0, max_turn_volts = 8,
@@ -562,7 +561,6 @@ class AutonomousCommands():
         motor.rightB.stop(brake)
         motor.rightC.stop(brake)
 
-
 # robot states
 class Autonomous():
     def __init__(self, parent: Robot) -> None:
@@ -585,6 +583,8 @@ class Autonomous():
         drivetrain.set_timeout(1.5, TimeUnits.SECONDS)
         drivetrain.set_turn_threshold(5)
         drivetrain.set_turn_constant(0.6)
+
+        self.start_time = brain.timer.system()
 
     def load_path(self, module_filename: str) -> None:
         """
@@ -617,9 +617,19 @@ class Autonomous():
         log("Running autonomous")
         self.autonomous_setup()
         self.sequence()
+        
+        self.autonomous_cleanup()
+    
+    def autonomous_cleanup(self):
+        """
+        Runs at end of autonomous. Do not modify.
+        """
+        self.end_time = brain.timer.system()
+        elapsed_time = self.end_time - self.start_time
+        log("Time taken: {}".format(elapsed_time), LogLevel.INFO)
     
     def path(self):
-        raise DeprecationWarning("Moved to AutonomousCommands.path()")
+        raise DeprecationWarning("Moved to AutonomousCommands.path(controller, args...)")
 
     def test(self) -> None:
         """
@@ -627,6 +637,22 @@ class Autonomous():
         """
         log("Running autonomous TEST")
         self.autonomous_setup()
+
+class AutonomousListener():
+    def __init__(self, parent) -> None:
+        self.color_sort_controller = ColorSort(parent.robot)
+
+    def thread(self) -> None:
+        """
+        This function runs in the background of autonomous to handle flag events n stuff
+        """
+        while True:
+            
+            sleep(30, TimeUnits.MSEC)
+    
+    # def color_sort(self):
+    #     if flags.color_setting != "none":
+
 
 class ControllerFunctions():
     @staticmethod
@@ -878,6 +904,13 @@ class ColorSort():
             self.queued_sort = False
             self.eject_next_ring = False
 
+class PayloadManager():
+    def __init__(self) -> None:
+        self.queue = []
+    
+    def add_packet(self, topic, payload):
+        pass
+
 class flags():
     """
     'global' booleans enum for various states.
@@ -936,7 +969,7 @@ def main():
             robot.driver_controller.run()
 
     else:
-        log("Robot object not created. (SD Load Error)")
+        log("Robot object not created. (SD Load Error)", LogLevel.FATAL)
         raise ImportError("SD Card not inserted")
 
 main()
