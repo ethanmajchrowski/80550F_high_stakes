@@ -38,6 +38,7 @@ def run(main):
     motors["misc"]["wall_stake"].set_velocity(35, VelocityUnits.PERCENT)
 
     controller.fwd_speed = 7.5
+    # drag goal back
     controller.path(paths[1], backwards=True, finish_margin=200, look_ahead_dist=200)
 
     main["doinker_pneu"].set(False)
@@ -60,6 +61,7 @@ def run(main):
 
     controller.path(paths[4], backwards=True, heading_authority=1.5)
     main["mogo_pneu"].set(True)
+    main["sleep"](150)
 
     controller.fwd_speed = 9
     motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)

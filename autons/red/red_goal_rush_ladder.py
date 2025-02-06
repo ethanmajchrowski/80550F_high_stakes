@@ -62,6 +62,7 @@ def run(main):
 
     controller.path(paths[4], backwards=True, heading_authority=1.5)
     main["mogo_pneu"].set(True)
+    main["sleep"](150)
 
     controller.fwd_speed = 9
     motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
