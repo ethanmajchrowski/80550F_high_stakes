@@ -287,18 +287,18 @@ def elevation_macro():
     print("start elevation")
 
     LB_enable_PID = False
-    # mogo_pneu.set(True)
+    mogo_pneu.set(True)
     # motors["misc"]["wall_stake"].stop()
     # motors["misc"]["wall_stake"].spin_for(FORWARD, 400, MSEC, 100, PERCENT)
 
     roll_pid = MultipurposePID(0.1, 0, 0, 0)
 
-    # elevation_hook_release.set(True)
+    elevation_hook_release.set(True)
     # wait and close these pistons cause leak :(
     sleep(200, MSEC)
     # intake_pneu.set(False)
     # doinker_pneu.set(True)
-    # elevation_hook_release.set(False)
+    elevation_hook_release.set(False)
     # elevation_bar_lift.set(True)
 
     # wait for matics
@@ -319,9 +319,9 @@ def elevation_macro():
         tilt_volt = (controls2["AXIS_TILT"].position() / 100) * 12
         # if abs(fwd_volt) > 1 or abs(tilt_volt) > 1:
         if abs(con_2.axis2.position()) > 1 or abs(con_2.axis3.position()) > 1:
-            motors["left"]["A"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
-            motors["left"]["B"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
-            motors["left"]["C"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
+            motors["left"]["A"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
+            motors["left"]["B"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
+            motors["left"]["C"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
             # motors["left"]["A"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
             # motors["left"]["B"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
             # motors["left"]["C"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
@@ -329,9 +329,9 @@ def elevation_macro():
             # motors["right"]["A"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
             # motors["right"]["B"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
             # motors["right"]["C"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
-            motors["right"]["A"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
-            motors["right"]["B"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
-            motors["right"]["C"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
+            motors["right"]["A"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
+            motors["right"]["B"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
+            motors["right"]["C"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
             print("driving")
             LB_braketype = BrakeType.COAST
         else:
@@ -372,6 +372,14 @@ def elevation_macro():
             "height": round(elevationDistance.object_distance(), 2)
         }
         # payload_manager.send_data("elevation", data)
+
+        scr = con_2.screen
+        scr.set_cursor(1,1)
+        if elevation_bar_lift.value():
+            scr.print("UP__")
+        else:
+            scr.print("DOWN")
+
         sleep(35, MSEC)
 
     # while True:
@@ -525,7 +533,7 @@ def driver():
         #     wall_control_cooldown -= 1
 
         # 3levation hold button
-        if con.buttonUp.pressing() and not elevating:
+        if (con.buttonUp.pressing() or con_2.buttonUp.pressing()) and not elevating:
             print(elevation_hold_duration)
             elevation_hold_duration -= 1
             if elevation_hold_duration <= 0:
