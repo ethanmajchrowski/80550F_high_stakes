@@ -1,6 +1,6 @@
 # Filename: config.py
 # Devices & variables last updated:
-	# 2025-02-05 11:56:14.786124
+	# 2025-02-07 14:09:26.459256
 ####################
 #region Devices
 calibrate_imu = True
@@ -55,7 +55,8 @@ controls2 = {
     "INTAKE_IN": con_2.buttonR1,
     "INTAKE_OUT": con_2.buttonR2,
     "LB_MANUAL_UP": con_2.buttonL1,
-    "LB_MANUAL_DOWN": con_2.buttonL2
+    "LB_MANUAL_DOWN": con_2.buttonL2,
+    "LB_RAISE_MACRO": con_2.buttonA
 }
 
 motors = {
@@ -70,7 +71,7 @@ motors = {
         "C": Motor(Ports.PORT15, GearSetting.RATIO_6_1, False), # front
     },
     "misc": {
-        "intake_chain": Motor(Ports.PORT10, GearSetting.RATIO_6_1, True),  
+        "intake_chain": Motor(Ports.PORT10, GearSetting.RATIO_6_1, False),  
         "intake_flex": Motor(Ports.PORT5, GearSetting.RATIO_6_1, True), # 5.5 W flexwheel hinge
         "wall_stake": Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
     }
@@ -106,8 +107,8 @@ imu = Inertial(Ports.PORT11)
 # SENSOR VARIABLES
 wall_setpoint = 0
 wall_control_cooldown = 0
-wall_positions = [30, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
-LB_enable_PID = True
+wall_positions = [30, 130, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
+LB_enable_PID = False
 
 if calibrate_imu:
     imu.calibrate()

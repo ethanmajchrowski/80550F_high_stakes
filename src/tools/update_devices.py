@@ -2,7 +2,7 @@ import os, datetime
 
 print("")
 
-with open(r"C:\Users\ethan\Documents\vex-vscode-projects\80550F_high_stakes\src\unused\devices.py", "r") as f:
+with open(r"C:\Users\ethan\Documents\vex-vscode-projects\80550F_high_stakes\src\tools\devices.py", "r") as f:
     edited_devices = []
     for line in f.readlines():
         line = line.strip("\n")
