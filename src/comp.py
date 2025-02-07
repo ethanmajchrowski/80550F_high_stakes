@@ -107,7 +107,7 @@ imu = Inertial(Ports.PORT11)
 # SENSOR VARIABLES
 wall_setpoint = 0
 wall_control_cooldown = 0
-wall_positions = [30, 130, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
+wall_positions = [30, 150, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
 LB_enable_PID = False
 LB_PID_autostop = False
 
@@ -997,7 +997,7 @@ def intake_sorter():
 
 def lady_brown_PID():
     global LB_enable_PID, LB_PID_autostop
-    pid = MultipurposePID(0.2, 0.015, 0.02, 5, None)
+    pid = MultipurposePID(0.1, 0.015, 0.02, 5, None)
 
     while True:
         if LB_enable_PID:
@@ -1179,7 +1179,7 @@ else:
             brain.screen.set_font(FontType.PROP60)
             brain.screen.print("     NO SD CARD")
             brain.screen.new_line()
-
+        brain.screen.render()
         wait(400)
 
         brain.screen.clear_screen()
