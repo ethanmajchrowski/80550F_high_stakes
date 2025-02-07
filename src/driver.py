@@ -55,7 +55,8 @@ controls2 = {
     "INTAKE_IN": con_2.buttonR1,
     "INTAKE_OUT": con_2.buttonR2,
     "LB_MANUAL_UP": con_2.buttonL1,
-    "LB_MANUAL_DOWN": con_2.buttonL2
+    "LB_MANUAL_DOWN": con_2.buttonL2,
+    "LB_RAISE_MACRO": con_2.buttonA
 }
 
 motors = {
@@ -106,8 +107,8 @@ imu = Inertial(Ports.PORT11)
 # SENSOR VARIABLES
 wall_setpoint = 0
 wall_control_cooldown = 0
-wall_positions = [30, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
-LB_enable_PID = True
+wall_positions = [30, 130, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
+LB_enable_PID = False
 
 if calibrate_imu:
     imu.calibrate()
@@ -281,6 +282,11 @@ def toggle_PTO():
     PTO_right_pneu.set(PTO_left_pneu.value()) # right mimics left
     print("PTO L: {}, PTO R: {}".format(PTO_left_pneu.value(), PTO_left_pneu.value()))
 
+def elevation_raise_LB():
+    global LB_enable_PID, wall_setpoint
+    wall_setpoint = 2
+    LB_enable_PID = True
+
 def elevation_macro():
     global LB_enable_PID
     enable_PTO = False
@@ -311,6 +317,7 @@ def elevation_macro():
     controls2["DOINKER"].pressed(switch_doinker)
     controls2["PTO_TOGGLE"].pressed(toggle_PTO)
     controls2["ELEVATION_PRIMARY_PNEUMATICS"].pressed(manual_elevation)
+    controls2["LB_RAISE_MACRO"].pressed(elevation_raise_LB)
     LB_braketype = BrakeType.COAST
 
     while True:
@@ -346,9 +353,11 @@ def elevation_macro():
         # lady brown controls
         if con.buttonL1.pressing() or controls2["LB_MANUAL_DOWN"].pressing():
             motors["misc"]["wall_stake"].spin(REVERSE, 100, PERCENT)
+            LB_enable_PID = False
             LB_braketype = BrakeType.HOLD
         elif con.buttonL2.pressing() or controls2["LB_MANUAL_UP"].pressing():
             motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
+            LB_enable_PID = False
             LB_braketype = BrakeType.HOLD
         else:
             motors["misc"]["wall_stake"].stop(LB_braketype)
@@ -541,6 +550,8 @@ def driver():
                 elevation_macro()
         else:
             elevation_hold_duration = 5
+
+        print(wallEnc.position())
 
         brain.screen.render()
 
