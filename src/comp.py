@@ -1137,8 +1137,6 @@ class PayloadManager():
 # print(sys.__dict__)
 payload_manager = PayloadManager()
 
-auton = AutonomousHandler(data["autons"]["selected"])
-
 def odom_logging_thread():
     while True:
         pos = auton.dynamic_vars["position"]
@@ -1159,7 +1157,14 @@ def no_auton():
     pass
 
 if brain.sdcard.is_inserted():
-    if data["config"]["auton_test"]:
+    auton = AutonomousHandler(data["autons"]["selected"])
+    comp = Competition(driver, auton.run)
+    if comp.is_competition_switch() or comp.is_field_control():
+        print("competition")
+        print("field control: " + str(comp.is_field_control()))
+        print("autonomous: " + str(comp.is_autonomous()))
+        print("driver: " + str(comp.is_driver_control()))
+    elif data["config"]["auton_test"]:
         sleep(1000, MSEC)
         print("run auton")
         auton.run()
@@ -1172,11 +1177,7 @@ if brain.sdcard.is_inserted():
         motors["right"]["B"].stop(COAST)
         motors["right"]["C"].stop(COAST)
     else:
-        print("competition")
-        comp = Competition(driver, auton.run)
-        print("field control: " + str(comp.is_field_control()))
-        print("autonomous: " + str(comp.is_autonomous()))
-        print("driver: " + str(comp.is_driver_control()))
+        pass
 else:
     comp = Competition(driver, no_auton)
 
