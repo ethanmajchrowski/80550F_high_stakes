@@ -614,7 +614,10 @@ class AutonomousHandler:
         self.end_time = brain.timer.system()
 
         sleep(2000, MSEC)
-        log_thread.stop()
+        try:
+            log_thread.stop() # type: ignore
+        except:
+            pass
         scr = brain.screen
         scr.clear_screen()
         scr.set_cursor(1,1)
@@ -1148,8 +1151,8 @@ def odom_logging_thread():
 
         sleep(35, MSEC)
 
-log_thread = Thread(odom_logging_thread)
-data["config"]["auton_test"] = True
+# log_thread = Thread(odom_logging_thread)
+# data["config"]["auton_test"] = True
 
 def no_auton():
     pass

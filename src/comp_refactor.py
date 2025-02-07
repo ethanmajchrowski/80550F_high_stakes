@@ -616,6 +616,7 @@ class Autonomous():
         """
         log("Running autonomous")
         self.autonomous_setup()
+
         self.sequence()
         
         self.autonomous_cleanup()
@@ -626,7 +627,7 @@ class Autonomous():
         """
         self.end_time = brain.timer.system()
         elapsed_time = self.end_time - self.start_time
-        log("Time taken: {}".format(elapsed_time), LogLevel.INFO)
+        log("Auton complete. Time taken: {}".format(elapsed_time), LogLevel.INFO)
     
     def path(self):
         raise DeprecationWarning("Moved to AutonomousCommands.path(controller, args...)")
@@ -635,8 +636,12 @@ class Autonomous():
         """
         Run a test version of autonomous. This is NOT run in competition!
         """
-        log("Running autonomous TEST")
+        log("Running autonomous TEST", LogLevel.WARNING)
         self.autonomous_setup()
+
+        # place temporary / testing code here
+
+        self.autonomous_cleanup()
 
 class AutonomousListener():
     def __init__(self, parent) -> None:
