@@ -391,28 +391,6 @@ def elevation_macro():
 
         sleep(35, MSEC)
 
-    # while True:
-    #     pitch = imu.orientation(OrientationType.PITCH, RotationUnits.DEG)
-
-    #     print(pid_output, elevationDistance.object_distance())
-
-    #     motors["left"]["A"].spin(REVERSE, 6 - pid_output, VOLT)
-    #     motors["left"]["B"].spin(REVERSE, 6 - pid_output, VOLT)
-    #     motors["left"]["C"].spin(REVERSE, 6 - pid_output, VOLT)
-
-    #     motors["right"]["A"].spin(REVERSE, 6 + pid_output, VOLT)
-    #     motors["right"]["B"].spin(REVERSE, 6 + pid_output, VOLT)
-    #     motors["right"]["C"].spin(REVERSE, 6 + pid_output, VOLT)
-
-    #     if elevationDistance.object_distance() > 115:
-    #         sleep(50, MSEC)
-    #         print("height reached")
-    #         break
-
-    #     sleep(10)
-
-    # stop_drivebase(BrakeType.HOLD)
-
 def home_lady_brown_PID():
     print("run home_lady_brown_PID")
     global wall_setpoint, LB_enable_PID
