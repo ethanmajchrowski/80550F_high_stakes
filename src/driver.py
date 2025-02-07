@@ -109,6 +109,7 @@ wall_setpoint = 0
 wall_control_cooldown = 0
 wall_positions = [30, 130, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
 LB_enable_PID = False
+LB_PID_autostop = False
 
 if calibrate_imu:
     imu.calibrate()
@@ -283,9 +284,10 @@ def toggle_PTO():
     print("PTO L: {}, PTO R: {}".format(PTO_left_pneu.value(), PTO_left_pneu.value()))
 
 def elevation_raise_LB():
-    global LB_enable_PID, wall_setpoint
+    global LB_enable_PID, wall_setpoint, LB_PID_autostop
     wall_setpoint = 2
     LB_enable_PID = True
+    LB_PID_autostop = True
 
 def elevation_macro():
     global LB_enable_PID
@@ -306,11 +308,8 @@ def elevation_macro():
     # doinker_pneu.set(True)
     elevation_hook_release.set(False)
     # elevation_bar_lift.set(True)
+    elevation_raise_LB()
 
-    # wait for matics
-    sleep(100, MSEC)
-    # motors["misc"]["wall_stake"].spin_for(REVERSE, 1200, MSEC, 100, PERCENT)
-    sleep(200, MSEC)
     # elevation_bar_lift.set(False)
     # sleep(100, MSEC)
 
@@ -322,20 +321,11 @@ def elevation_macro():
 
     while True:
         # DRIVE MOTORS
-        fwd_volt = (controls2["AXIS_FORWARDS"].position() / 100) * 12
-        tilt_volt = (controls2["AXIS_TILT"].position() / 100) * 12
-        # if abs(fwd_volt) > 1 or abs(tilt_volt) > 1:
         if abs(con_2.axis2.position()) > 1 or abs(con_2.axis3.position()) > 1:
             motors["left"]["A"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
             motors["left"]["B"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
             motors["left"]["C"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
-            # motors["left"]["A"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
-            # motors["left"]["B"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
-            # motors["left"]["C"].spin(FORWARD, fwd_volt + tilt_volt, VOLT)
 
-            # motors["right"]["A"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
-            # motors["right"]["B"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
-            # motors["right"]["C"].spin(FORWARD, fwd_volt - tilt_volt, VOLT)
             motors["right"]["A"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
             motors["right"]["B"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
             motors["right"]["C"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
@@ -375,11 +365,11 @@ def elevation_macro():
 
         roll = imu.orientation(OrientationType.PITCH)
         pid_output = round(roll_pid.calculate(0, roll), 3)
-        data = {
-            "roll": round(roll, 2),
-            "output": round(pid_output, 2),
-            "height": round(elevationDistance.object_distance(), 2)
-        }
+        # data = {
+        #     "roll": round(roll, 2),
+        #     "output": round(pid_output, 2),
+        #     "height": round(elevationDistance.object_distance(), 2)
+        # }
         # payload_manager.send_data("elevation", data)
 
         scr = con_2.screen
@@ -399,17 +389,11 @@ def home_lady_brown_PID():
 
 controls["DOINKER"].pressed(switch_doinker)
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
-# controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["LB_MACRO_HOME"].pressed(home_lady_brown_PID)
 
-# if not enable_elevation_macro:
-#     controls["MANUAL_ELEVATION_PNEUMATICS"].pressed(manual_elevation)
-#     con.buttonLeft.pressed(toggle_tank)
-
 allow_intake_input = True
 queued_sort = False
-# This will let us look lower in the intake and allow the ejector to work
 eject_prep = False
 
 def intake_sorter():
@@ -434,15 +418,20 @@ def intake_sorter():
         eject_prep = False
 
 def lady_brown_PID():
+    global LB_enable_PID, LB_PID_autostop
     pid = MultipurposePID(0.2, 0.015, 0.02, 5, None)
 
     while True:
         if LB_enable_PID:
             output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
-            # print(wallEnc.position(), output)
 
             motors["misc"]["wall_stake"].spin(FORWARD, output*2, VOLT)
-            # print(motors["misc"]["wall_stake"].command(VOLT))
+
+            if abs(pid.error) < 5 and LB_PID_autostop:
+                LB_PID_autostop = False
+                LB_enable_PID = False
+                motors["misc"]["wall_stake"].stop(BrakeType.HOLD)
+                print("autostop of LB PID")
             
         sleep(20)
 

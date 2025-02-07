@@ -104,6 +104,7 @@ wall_setpoint = 0
 wall_control_cooldown = 0
 wall_positions = [30, 130, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
 LB_enable_PID = False
+LB_PID_autostop = False
 
 if calibrate_imu:
     imu.calibrate()

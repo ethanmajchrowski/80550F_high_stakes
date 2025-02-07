@@ -109,6 +109,7 @@ wall_setpoint = 0
 wall_control_cooldown = 0
 wall_positions = [30, 130, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
 LB_enable_PID = False
+LB_PID_autostop = False
 
 if calibrate_imu:
     imu.calibrate()
@@ -861,9 +862,10 @@ def toggle_PTO():
     print("PTO L: {}, PTO R: {}".format(PTO_left_pneu.value(), PTO_left_pneu.value()))
 
 def elevation_raise_LB():
-    global LB_enable_PID, wall_setpoint
+    global LB_enable_PID, wall_setpoint, LB_PID_autostop
     wall_setpoint = 2
     LB_enable_PID = True
+    LB_PID_autostop = True
 
 def elevation_macro():
     global LB_enable_PID
@@ -884,6 +886,7 @@ def elevation_macro():
     # doinker_pneu.set(True)
     elevation_hook_release.set(False)
     # elevation_bar_lift.set(True)
+    elevation_raise_LB()
 
     # elevation_bar_lift.set(False)
     # sleep(100, MSEC)
@@ -993,15 +996,20 @@ def intake_sorter():
         eject_prep = False
 
 def lady_brown_PID():
+    global LB_enable_PID, LB_PID_autostop
     pid = MultipurposePID(0.2, 0.015, 0.02, 5, None)
 
     while True:
         if LB_enable_PID:
             output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
-            # print(wallEnc.position(), output)
 
             motors["misc"]["wall_stake"].spin(FORWARD, output*2, VOLT)
-            # print(motors["misc"]["wall_stake"].command(VOLT))
+
+            if abs(pid.error) < 5 and LB_PID_autostop:
+                LB_PID_autostop = False
+                LB_enable_PID = False
+                motors["misc"]["wall_stake"].stop(BrakeType.HOLD)
+                print("autostop of LB PID")
             
         sleep(20)
 
