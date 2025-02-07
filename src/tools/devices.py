@@ -50,7 +50,8 @@ controls2 = {
     "INTAKE_IN": con_2.buttonR1,
     "INTAKE_OUT": con_2.buttonR2,
     "LB_MANUAL_UP": con_2.buttonL1,
-    "LB_MANUAL_DOWN": con_2.buttonL2
+    "LB_MANUAL_DOWN": con_2.buttonL2,
+    "LB_RAISE_MACRO": con_2.buttonA
 }
 
 motors = {
@@ -101,8 +102,8 @@ imu = Inertial(Ports.PORT11)
 # SENSOR VARIABLES
 wall_setpoint = 0
 wall_control_cooldown = 0
-wall_positions = [30, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
-LB_enable_PID = True
+wall_positions = [30, 130, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
+LB_enable_PID = False
 
 if calibrate_imu:
     imu.calibrate()
