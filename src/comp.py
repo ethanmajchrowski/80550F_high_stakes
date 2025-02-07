@@ -822,12 +822,13 @@ def switch_intake_height():
         intake_pneu.set(not intake_pneu.value())
 
 def switch_doinker():
+    print("doinker to {}".format(not doinker_pneu.value()))
     doinker_pneu.set(not doinker_pneu.value())
 
 def manual_elevation():
     print("manual elevation")
     elevation_bar_lift.set(not elevation_bar_lift.value())
-    doinker_pneu.set(elevation_bar_lift.value())
+    # doinker_pneu.set(elevation_bar_lift.value())
 
 def toggle_tank():
     global tank_drive
@@ -854,6 +855,16 @@ def stop_drivebase(BrakeType):
 def unbind_button():
     pass
 
+def toggle_PTO():
+    PTO_left_pneu.set(not PTO_left_pneu.value())
+    PTO_right_pneu.set(PTO_left_pneu.value()) # right mimics left
+    print("PTO L: {}, PTO R: {}".format(PTO_left_pneu.value(), PTO_left_pneu.value()))
+
+def elevation_raise_LB():
+    global LB_enable_PID, wall_setpoint
+    wall_setpoint = 2
+    LB_enable_PID = True
+
 def elevation_macro():
     global LB_enable_PID
     enable_PTO = False
@@ -861,104 +872,89 @@ def elevation_macro():
 
     LB_enable_PID = False
     mogo_pneu.set(True)
-    motors["misc"]["wall_stake"].stop()
-    motors["misc"]["wall_stake"].spin_for(FORWARD, 400, MSEC, 100, PERCENT)
+    # motors["misc"]["wall_stake"].stop()
+    # motors["misc"]["wall_stake"].spin_for(FORWARD, 400, MSEC, 100, PERCENT)
 
-    pitch_pid = MultipurposePID(0.1, 0, 0, 0)
+    roll_pid = MultipurposePID(0.1, 0, 0, 0)
 
     elevation_hook_release.set(True)
     # wait and close these pistons cause leak :(
     sleep(200, MSEC)
-    intake_pneu.set(False)
-    doinker_pneu.set(True)
+    # intake_pneu.set(False)
+    # doinker_pneu.set(True)
     elevation_hook_release.set(False)
-    elevation_bar_lift.set(True)
+    # elevation_bar_lift.set(True)
 
-    # wait for matics
-    sleep(100, MSEC)
-    motors["misc"]["wall_stake"].spin_for(REVERSE, 1200, MSEC, 100, PERCENT)
-    sleep(200, MSEC)
-    elevation_bar_lift.set(False)
+    # elevation_bar_lift.set(False)
     # sleep(100, MSEC)
 
-    con.buttonA.pressed(manual_elevation)
-    con.buttonB.pressed(switch_doinker)
-
-    con.buttonL2.pressed(unbind_button)
-    con.buttonL1.pressed(unbind_button)
+    controls2["DOINKER"].pressed(switch_doinker)
+    controls2["PTO_TOGGLE"].pressed(toggle_PTO)
+    controls2["ELEVATION_PRIMARY_PNEUMATICS"].pressed(manual_elevation)
+    controls2["LB_RAISE_MACRO"].pressed(elevation_raise_LB)
+    LB_braketype = BrakeType.COAST
 
     while True:
-        if enable_PTO:
-            # elevation control schemes
-            leftVolts = con.axis3.position() * 0.12
-            rightVolts = con.axis2.position() * 0.12
-            motors["left"]["A"].spin(FORWARD, leftVolts, VOLT)
-            motors["left"]["B"].spin(FORWARD, leftVolts, VOLT)
-            motors["left"]["C"].spin(FORWARD, leftVolts, VOLT)
-            # leftMotorC.spin(FORWARD, forwardVolts + turnVolts, VOLT)
-            motors["right"]["A"].spin(FORWARD, rightVolts, VOLT)
-            motors["right"]["B"].spin(FORWARD, rightVolts, VOLT)
-            motors["right"]["C"].spin(FORWARD, rightVolts, VOLT)
+        # DRIVE MOTORS
+        if abs(con_2.axis2.position()) > 1 or abs(con_2.axis3.position()) > 1:
+            motors["left"]["A"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
+            motors["left"]["B"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
+            motors["left"]["C"].spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
+
+            motors["right"]["A"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
+            motors["right"]["B"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
+            motors["right"]["C"].spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
+            print("driving")
+            LB_braketype = BrakeType.COAST
         else:
-            turnVolts = (controls["DRIVE_TURN_AXIS"].position() * 0.12) * 0.9
-            forwardVolts = controls["DRIVE_FORWARD_AXIS"].position() * 0.12
+            motors["left"]["A"].stop(BrakeType.COAST)
+            motors["left"]["B"].stop(BrakeType.COAST)
+            motors["left"]["C"].stop(BrakeType.COAST)
 
-            motors["left"]["A"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
-            motors["left"]["B"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
-            motors["left"]["C"].spin(FORWARD, forwardVolts + turnVolts, VOLT)
-
-            motors["right"]["A"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
-            motors["right"]["B"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
-            motors["right"]["C"].spin(FORWARD, forwardVolts - turnVolts, VOLT)
-
-        if not enable_PTO and con.buttonLeft.pressing():
-            enable_PTO = True
-
-            PTO_left_pneu.set(True)
-            PTO_right_pneu.set(True)
+            motors["right"]["A"].stop(BrakeType.COAST)
+            motors["right"]["B"].stop(BrakeType.COAST)
+            motors["right"]["C"].stop(BrakeType.COAST)
 
         # lady brown controls
-        if con.buttonL1.pressing():
+        if con.buttonL1.pressing() or controls2["LB_MANUAL_DOWN"].pressing():
             motors["misc"]["wall_stake"].spin(REVERSE, 100, PERCENT)
-        elif con.buttonL2.pressing():
+            LB_enable_PID = False
+            LB_braketype = BrakeType.HOLD
+        elif con.buttonL2.pressing() or controls2["LB_MANUAL_UP"].pressing():
             motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
+            LB_enable_PID = False
+            LB_braketype = BrakeType.HOLD
         else:
-            motors["misc"]["wall_stake"].stop(BRAKE)
+            motors["misc"]["wall_stake"].stop(LB_braketype)
 
         # intake controls
-        if con.buttonR1.pressing():
+        if con.buttonR1.pressing() or controls2["INTAKE_IN"].pressing():
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
-            motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
-        elif con.buttonR2.pressing():
+            motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
+        elif con.buttonR2.pressing() or controls2["INTAKE_OUT"].pressing():
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
-            motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
+            motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
         else:
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
 
+        roll = imu.orientation(OrientationType.PITCH)
+        pid_output = round(roll_pid.calculate(0, roll), 3)
+        # data = {
+        #     "roll": round(roll, 2),
+        #     "output": round(pid_output, 2),
+        #     "height": round(elevationDistance.object_distance(), 2)
+        # }
+        # payload_manager.send_data("elevation", data)
 
-    # while True:
-    #     pitch = imu.orientation(OrientationType.PITCH, RotationUnits.DEG)
-    #     pid_output = round(pitch_pid.calculate(0, pitch), 3)
+        scr = con_2.screen
+        scr.set_cursor(1,1)
+        if elevation_bar_lift.value():
+            scr.print("UP__")
+        else:
+            scr.print("DOWN")
 
-    #     print(pid_output, elevationDistance.object_distance())
-
-    #     motors["left"]["A"].spin(REVERSE, 6 - pid_output, VOLT)
-    #     motors["left"]["B"].spin(REVERSE, 6 - pid_output, VOLT)
-    #     motors["left"]["C"].spin(REVERSE, 6 - pid_output, VOLT)
-
-    #     motors["right"]["A"].spin(REVERSE, 6 + pid_output, VOLT)
-    #     motors["right"]["B"].spin(REVERSE, 6 + pid_output, VOLT)
-    #     motors["right"]["C"].spin(REVERSE, 6 + pid_output, VOLT)
-
-    #     if elevationDistance.object_distance() > 115:
-    #         sleep(50, MSEC)
-    #         print("height reached")
-    #         break
-
-    #     sleep(10)
-
-    # stop_drivebase(BrakeType.HOLD)
+        sleep(35, MSEC)
 
 def home_lady_brown_PID():
     print("run home_lady_brown_PID")
@@ -968,17 +964,11 @@ def home_lady_brown_PID():
 
 controls["DOINKER"].pressed(switch_doinker)
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
-# controls["AUTO_MOGO_ENGAGE_TOGGLE"].pressed(switch_mogo_engaged)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["LB_MACRO_HOME"].pressed(home_lady_brown_PID)
 
-# if not enable_elevation_macro:
-#     controls["MANUAL_ELEVATION_PNEUMATICS"].pressed(manual_elevation)
-#     con.buttonLeft.pressed(toggle_tank)
-
 allow_intake_input = True
 queued_sort = False
-# This will let us look lower in the intake and allow the ejector to work
 eject_prep = False
 
 def intake_sorter():
@@ -1003,30 +993,17 @@ def intake_sorter():
         eject_prep = False
 
 def lady_brown_PID():
-    # pid = MultipurposePID(0.15, 0.015, 0.02, 5, None)
-    pid = MultipurposePID(0.3, 0, 0.01, 5, None)
-    # previous_output = 0
+    pid = MultipurposePID(0.2, 0.015, 0.02, 5, None)
 
     while True:
         if LB_enable_PID:
-            pos = wallEnc.position()
-            error = wall_positions[wall_setpoint] - pos
-            output = pid.calculate(error, 0)
-            # output = 0.95 * previous_output + 0.05 * output
-            output_mod = output*2
+            output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
+            # print(wallEnc.position(), output)
 
-            motors["misc"]["wall_stake"].spin(FORWARD, output_mod, VOLT)
-
-            data = {
-                "error": round(error, 2),
-                "output_raw": round(output, 2),
-                "output_mod": round(output_mod, 2)
-            }
-            payload_manager.send_data("values", data)
-
+            motors["misc"]["wall_stake"].spin(FORWARD, output*2, VOLT)
             # print(motors["misc"]["wall_stake"].command(VOLT))
             
-        sleep(35)
+        sleep(20)
 
 if enable_macro_lady_brown:
     print("starting LB thread")
@@ -1035,6 +1012,7 @@ if enable_macro_lady_brown:
 def driver():
     global eject_prep, queued_sort, wall_control_cooldown, wall_setpoint, elevating, LB_enable_PID
     print("starting driver")
+    elevation_hold_duration = 5
     while True:
         intakeColor.set_light_power(100, PERCENT)
         brain.screen.clear_screen()
@@ -1065,10 +1043,10 @@ def driver():
         if (controls["INTAKE_IN_HOLD"].pressing()):
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
             if allow_intake_input:
-                motors["misc"]["intake_chain"].spin(FORWARD, 65, PERCENT)
+                motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
         elif (controls["INTAKE_OUT_HOLD"].pressing()):
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
-            motors["misc"]["intake_chain"].spin(REVERSE, 65, PERCENT)
+            motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
         else:
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
@@ -1078,7 +1056,7 @@ def driver():
             motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
             LB_enable_PID = False
         elif controls["LB_MANUAL_DOWN"].pressing():
-            motors["misc"]["wall_stake"].spin(REVERSE, 30, PERCENT)
+            motors["misc"]["wall_stake"].spin(REVERSE, 60, PERCENT)
             LB_enable_PID = False
         elif not LB_enable_PID:
             motors["misc"]["wall_stake"].stop(HOLD)
@@ -1101,13 +1079,16 @@ def driver():
         #     wall_control_cooldown -= 1
 
         # 3levation hold button
-        if con.buttonUp.pressing() and not elevating:
+        if (con.buttonUp.pressing() or con_2.buttonUp.pressing()) and not elevating:
+            print(elevation_hold_duration)
             elevation_hold_duration -= 1
             if elevation_hold_duration <= 0:
                 elevating = True
                 elevation_macro()
         else:
-            elevation_hold_duration = 10
+            elevation_hold_duration = 5
+
+        print(wallEnc.position())
 
         brain.screen.render()
 
