@@ -104,41 +104,23 @@ elevationDistance = Distance(Ports.PORT20)
 intakeColor = Optical(Ports.PORT14)
 imu = Inertial(Ports.PORT11)
 
-# SENSOR VARIABLES
-wall_setpoint = 0
-wall_control_cooldown = 0
-wall_positions = [30, 100, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
-LB_enable_PID = False
-LB_PID_autostop = False
-LB_threshold = 5
-
 if calibrate_imu:
     imu.calibrate()
 
-if not sd_fail:
-    enable_macro_lady_brown = data["config"]["enable_macro_lady_brown"]
-else:
-    enable_macro_lady_brown = False
-
-if enable_macro_lady_brown:
+def calibrate_lady_brown():
     print("calibrating wall stake")
-    # motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 20, PERCENT)
-    sleep(100, MSEC) # sleep to allow motor to spin to idle
     wallEnc.set_position(0)
-    print(wallEnc.position())
+
+calibrate_lady_brown()
 
 while imu.is_calibrating() and calibrate_imu:
     wait(5)
-
-mogo_pneu_engaged = False
-mogo_pneu_status = False
 
 # Intake ejector related booleans
 allow_intake_input = True
 queued_sort = False
 eject_prep = False
 
-tank_drive = False
 elevating = False
 
 lmg = MotorGroup(*motors["left"].values())
@@ -172,9 +154,6 @@ intakeColor.set_light_power(100, PERCENT)
 #DO NOT CHANGE THE FOLLOWING LINE:#
 #end_1301825#
 ####################
-
-def log(data):
-    print("=" + ", ".join(data) + "*")
 
 #region Helpers
 # ██   ██ ███████ ██      ██████  ███████ ██████  ███████ 
@@ -596,7 +575,7 @@ class AutonomousHandler:
         self.heading = self.autonomous_data["start_heading"]
 
         # disable LB PID unless turned on in auton
-        LB_enable_PID = False
+        LB_PID.enabled = False
         motors["misc"]["wall_stake"].stop(COAST)
         print("disabled LB PID! will auto re-enable after auton")
 
@@ -783,22 +762,6 @@ class AutonomousHandler:
                     done = True
                     print("path timed out")
 
-            data = [
-                str(brain.timer.system() - self.start_time), 
-                # str(left_speed), 
-                # str(right_speed), 
-                # str(dynamic_forwards_speed),
-                # str(unclamped),
-                # str(heading_output),
-                # str(target_point[0]),
-                # str(target_point[1]),
-                # str(path_handler.last_found_point),
-                # # str(abs(dynamic_speed_heading_error)),
-                # str(heading_error),
-                str(round(self.heading)),
-                str(round(self.dynamic_vars["position"][0])),
-                str(round(self.dynamic_vars["position"][1])),
-            ]
             # Thread(log, (data,))
 
             if not done:
@@ -808,15 +771,7 @@ class AutonomousHandler:
 #endregion auton
 
 #region driver
-def switch_mogo_engaged():
-    global mogo_pneu_engaged
-    mogo_pneu_engaged = not mogo_pneu_engaged
-
 def switch_mogo():
-    global mogo_pneu_engaged
-    if mogo_pneu.value() == 0 and mogo_pneu_engaged:
-        mogo_pneu_engaged = False
-
     mogo_pneu.set(not mogo_pneu.value())
 
 def switch_intake_height():
@@ -830,29 +785,6 @@ def switch_doinker():
 def manual_elevation():
     print("manual elevation")
     elevation_bar_lift.set(not elevation_bar_lift.value())
-    # doinker_pneu.set(elevation_bar_lift.value())
-
-def toggle_tank():
-    global tank_drive
-    tank_drive = not tank_drive
-
-def drivebase_command(command, speed):
-    motors["left"]["A"].spin(command, speed, PERCENT)
-    motors["left"]["B"].spin(command, speed, PERCENT)
-    motors["left"]["C"].spin(command, speed, PERCENT)
-
-    motors["right"]["A"].spin(command, speed, PERCENT)
-    motors["right"]["B"].spin(command, speed, PERCENT)
-    motors["right"]["C"].spin(command, speed, PERCENT)
-
-def stop_drivebase(BrakeType):
-    motors["left"]["A"].stop(BrakeType)
-    motors["left"]["B"].stop(BrakeType)
-    motors["left"]["C"].stop(BrakeType)
-
-    motors["right"]["A"].stop(BrakeType)
-    motors["right"]["B"].stop(BrakeType)
-    motors["right"]["C"].stop(BrakeType)
 
 def unbind_button():
     pass
@@ -862,23 +794,16 @@ def toggle_PTO():
     PTO_right_pneu.set(PTO_left_pneu.value()) # right mimics left
     print("PTO L: {}, PTO R: {}".format(PTO_left_pneu.value(), PTO_left_pneu.value()))
 
-def elevation_raise_LB():
-    global LB_enable_PID, wall_setpoint, LB_PID_autostop
-    wall_setpoint = 2
-    LB_enable_PID = True
-    LB_PID_autostop = True
-
 def elevation_macro():
-    global LB_enable_PID
     enable_PTO = False
     print("start elevation")
 
-    LB_enable_PID = False
+    LB_PID.enabled = False
     mogo_pneu.set(True)
 
     roll_pid = MultipurposePID(0.1, 0, 0, 0)
 
-    elevation_raise_LB()
+    LB_PID.elevation()
     while LB_PID_autostop:
         sleep(20)
 
@@ -895,7 +820,7 @@ def elevation_macro():
     controls2["DOINKER"].pressed(switch_doinker)
     controls2["PTO_TOGGLE"].pressed(toggle_PTO)
     controls2["ELEVATION_PRIMARY_PNEUMATICS"].pressed(manual_elevation)
-    controls2["LB_RAISE_MACRO"].pressed(elevation_raise_LB)
+    controls2["LB_RAISE_MACRO"].pressed(LB_PID.elevation)
 
     while True:
         # DRIVE MOTORS
@@ -1001,14 +926,33 @@ class RotationType:
     ABSOLUTE = 1
     RELATIVE = 2
 
-class LB_PID_controller():
+class LadyBrown():
+    POS_LOAD = 100
+    POS_ELEVATION_UNWIND = 300
     def __init__(self) -> None:
         self.pid = MultipurposePID(0.1, 0.015, 0.8, 5, None)
-        self.sensor_type = RotationType.ABSOLUTE
+        self.sensor_type = RotationType.RELATIVE
         self.enabled = False
         self.autostop = False
         self.threshold = 5
         self.motor = motors["misc"]["wall_stake"]
+        self.target_rotation = 0
+    
+    def home(self):
+        """
+        Homes PID to ready to load position
+        """
+        self.target_rotation = LadyBrown.POS_LOAD
+        self.sensor_type = RotationType.ABSOLUTE
+        self.enabled = True
+    
+    def elevation(self):
+        """
+        Run PID to try and unwinch the winches and prep for next ladder
+        """
+        self.target_rotation = LadyBrown.POS_ELEVATION_UNWIND
+        self.sensor_type = RotationType.RELATIVE
+        self.enabled = True
 
     def run(self):
         """
@@ -1023,7 +967,12 @@ class LB_PID_controller():
         """
         Runs once every loop.
         """
-        output = self.pid.calculate(wall_positions[wall_setpoint], wallEnc.angle())
+        if self.sensor_type == RotationType.ABSOLUTE:
+            sensor = wallEnc.angle()
+        elif self.sensor_type == RotationType.RELATIVE:
+            sensor = wallEnc.position()
+        
+        output = self.pid.calculate(self.target_rotation, sensor)
 
         self.motor.spin(FORWARD, output*2, VOLT)
 
@@ -1035,7 +984,7 @@ class LB_PID_controller():
             self.threshold = 5
 
 def driver():
-    global eject_prep, queued_sort, wall_control_cooldown, wall_setpoint, elevating, LB_enable_PID
+    global eject_prep, queued_sort, elevating
     print("starting driver")
     elevation_hold_duration = 5
     while True:
@@ -1142,7 +1091,7 @@ class PayloadManager():
 # driver_thread = None
 # print(sys.__dict__)
 payload_manager = PayloadManager()
-LB_PID = LB_PID_controller()
+LB_PID = LadyBrown()
 
 def odom_logging_thread():
     while True:
@@ -1173,7 +1122,7 @@ if brain.sdcard.is_inserted():
         print("run auton")
         auton.run()
         sleep(1, SECONDS)
-        
+
         motors["left"]["A"].stop(COAST)
         motors["left"]["B"].stop(COAST)
         motors["left"]["C"].stop(COAST)
