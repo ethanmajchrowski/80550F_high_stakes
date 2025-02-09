@@ -166,6 +166,11 @@ def dist(p1, p2):
     x1, y1 = p1
     x2, y2 = p2
     return math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
+
+def sign(num):
+    if num == 0: return 0
+    if num < 0: return -1
+    else: return 1
 #endregion Helpers
 
 #region auton
@@ -373,6 +378,7 @@ class MultipurposePID:
         self.kI_max = KI_MAX
         self.error = 0
         self.integral = 0
+        self.integral_processed = 0
         self.derivative = 0
         self.last_error = 0
         self.minimum = MIN
@@ -389,17 +395,24 @@ class MultipurposePID:
             PID outpit (int)
         '''
         self.error = TARGET - INPUT
-        if self.kI != 0:
-            if abs(self.error) < self.kI_max:
-                self.integral += self.error
-            else:
-                self.integral = 0
-        else:
-            self.integral = 0
 
-        self.derivative = self.error - self.last_error
+        if self.kI != 0:
+            self.integral += self.error
+            if self.integral > 0:
+                self.integral = min(self.integral, 5 / self.kI)
+            else:
+                self.integral = max(self.integral, 5 / self.kI * -1)
+            self.integral_processed = self.integral * self.kI
+
+            if self.kI_max is not None:
+                if self.integral_processed > 0:
+                    self.integral_processed = min(self.integral_processed, self.kI_max)
+                else:
+                    self.integral_processed = max(self.integral_processed, self.kI_max * -1)
+
+        self.derivative = (self.error - self.last_error) * self.kD
         
-        output = (self.error * self.kP) + (self.integral * self.kI) + (self.derivative * self.kD)
+        output = (self.error * self.kP) + self.integral_processed + self.derivative
         if self.minimum is not None:
             if abs(output) < self.minimum:
                 if self.error < 0: output = -self.minimum
@@ -411,7 +424,6 @@ class MultipurposePID:
 
 class AutonomousHandler:
     def __init__(self, selected_filename) -> None:
-        global LB_enable_PID
         ### Load paths
         # DO NOT turn the brain off when this is running! This may corrupt the files :)
         # Import auton module
@@ -564,7 +576,6 @@ class AutonomousHandler:
             wait(20, MSEC)
 
     def run(self):
-        global driver_thread, LB_enable_PID, wall_setpoint
         """
         Call once at start of auton. This is where all the sequential commands are located.
         """
@@ -610,7 +621,7 @@ class AutonomousHandler:
         
         motors["misc"]["intake_chain"].stop()
         motors["misc"]["intake_flex"].stop()
-        # LB_enable_PID = True
+        # LB_PID.enabled = True
         # print("re-enabled LB PID")
 
         t1.stop()
@@ -795,16 +806,15 @@ def toggle_PTO():
     print("PTO L: {}, PTO R: {}".format(PTO_left_pneu.value(), PTO_left_pneu.value()))
 
 def elevation_macro():
-    enable_PTO = False
     print("start elevation")
 
     LB_PID.enabled = False
     mogo_pneu.set(True)
 
-    roll_pid = MultipurposePID(0.1, 0, 0, 0)
+    # roll_pid = MultipurposePID(0.1, 0, 0, 0)
 
     LB_PID.elevation()
-    while LB_PID_autostop:
+    while LB_PID.autostop:
         sleep(20)
 
     doinker_pneu.set(True)
@@ -846,11 +856,11 @@ def elevation_macro():
         # lady brown controls
         if con.buttonL1.pressing() or controls2["LB_MANUAL_DOWN"].pressing():
             motors["misc"]["wall_stake"].spin(REVERSE, 100, PERCENT)
-            LB_enable_PID = False
+            LB_PID.enabled = False
             LB_braketype = BrakeType.HOLD
         elif con.buttonL2.pressing() or controls2["LB_MANUAL_UP"].pressing():
             motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
-            LB_enable_PID = False
+            LB_PID.enabled = False
             LB_braketype = BrakeType.HOLD
         else:
             motors["misc"]["wall_stake"].stop(LB_braketype)
@@ -866,8 +876,8 @@ def elevation_macro():
             motors["misc"]["intake_flex"].stop()
             motors["misc"]["intake_chain"].stop()
 
-        roll = imu.orientation(OrientationType.PITCH)
-        pid_output = round(roll_pid.calculate(0, roll), 3)
+        # roll = imu.orientation(OrientationType.PITCH)
+        # pid_output = round(roll_pid.calculate(0, roll), 3)
         # data = {
         #     "roll": round(roll, 2),
         #     "output": round(pid_output, 2),
@@ -883,19 +893,6 @@ def elevation_macro():
             scr.print("DOWN")
 
         sleep(35, MSEC)
-
-def home_lady_brown_PID():
-    print("run home_lady_brown_PID")
-    global wall_setpoint, LB_enable_PID, LB_threshold, LB_PID_autostop
-    LB_enable_PID = True
-    LB_threshold = 2
-    LB_PID_autostop = True
-    wall_setpoint = 1
-
-controls["DOINKER"].pressed(switch_doinker)
-controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
-controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
-controls["LB_MACRO_HOME"].pressed(home_lady_brown_PID)
 
 allow_intake_input = True
 queued_sort = False
@@ -927,16 +924,18 @@ class RotationType:
     RELATIVE = 2
 
 class LadyBrown():
-    POS_LOAD = 100
+    POS_LOAD = 95
     POS_ELEVATION_UNWIND = 300
     def __init__(self) -> None:
-        self.pid = MultipurposePID(0.1, 0.015, 0.8, 5, None)
+        self.pid = MultipurposePID(0.03, 0, 0.01, 3, None)
         self.sensor_type = RotationType.RELATIVE
         self.enabled = False
         self.autostop = False
         self.threshold = 5
         self.motor = motors["misc"]["wall_stake"]
         self.target_rotation = 0
+
+        self.sensor = 0
     
     def home(self):
         """
@@ -952,6 +951,7 @@ class LadyBrown():
         """
         self.target_rotation = LadyBrown.POS_ELEVATION_UNWIND
         self.sensor_type = RotationType.RELATIVE
+        self.autostop = True
         self.enabled = True
 
     def run(self):
@@ -968,11 +968,19 @@ class LadyBrown():
         Runs once every loop.
         """
         if self.sensor_type == RotationType.ABSOLUTE:
-            sensor = wallEnc.angle()
+            self.sensor = wallEnc.angle()
+
+            if wallEnc.position() < 90:
+                if wallEnc.angle() > 180:
+                    self.sensor = (360 - self.sensor) * -1
+            elif wallEnc.position() > 300:
+                if wallEnc.angle() < 180:
+                    self.sensor += 360
+            
         elif self.sensor_type == RotationType.RELATIVE:
-            sensor = wallEnc.position()
+            self.sensor = wallEnc.position()
         
-        output = self.pid.calculate(self.target_rotation, sensor)
+        output = self.pid.calculate(self.target_rotation, self.sensor)
 
         self.motor.spin(FORWARD, output*2, VOLT)
 
@@ -1028,23 +1036,23 @@ def driver():
         # WALL STAKES MOTORS
         if controls["LB_MANUAL_UP"].pressing():
             motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
-            LB_enable_PID = False
+            LB_PID.enabled = False
         elif controls["LB_MANUAL_DOWN"].pressing():
             motors["misc"]["wall_stake"].spin(REVERSE, 60, PERCENT)
-            LB_enable_PID = False
-        elif not LB_enable_PID:
+            LB_PID.enabled = False
+        elif not LB_PID.enabled:
             motors["misc"]["wall_stake"].stop(HOLD)
         
         #     # Lady Brown controls
         # if wall_control_cooldown == 0:
         #     if controls["LB_MACRO_DECREASE"].pressing():
-        #         LB_enable_PID = True
+        #         LB_PID.enabled = True
         #         wall_control_cooldown = 2
         #         if wall_setpoint > 0:
         #             wall_setpoint -= 1
             
         #     elif controls["LB_MACRO_INCREASE"].pressing():
-        #         LB_enable_PID = True
+        #         LB_PID.enabled = True
         #         wall_control_cooldown = 2
         #         if wall_setpoint < len(wall_positions) - 1:
         #             wall_setpoint += 1
@@ -1062,7 +1070,17 @@ def driver():
         else:
             elevation_hold_duration = 5
 
-        print(wallEnc.angle(), wallEnc.position())
+        data = {
+            "integral": round(LB_PID.pid.integral * LB_PID.pid.kI, 3),
+            "integral_p": round(LB_PID.pid.integral_processed, 3),
+            "target": round(LB_PID.target_rotation, 3),
+            "sensor": round(LB_PID.sensor, 3),
+            "derivative": round(LB_PID.pid.derivative),
+            "proportional": round(LB_PID.pid.error * LB_PID.pid.kP)
+        }
+        payload_manager.send_data("LB", data)
+
+        # print(wallEnc.angle(), wallEnc.position(), LB_PID.sensor, LB_PID.target_rotation, LB_PID.pid.integral)
 
         brain.screen.render()
 
@@ -1092,6 +1110,12 @@ class PayloadManager():
 # print(sys.__dict__)
 payload_manager = PayloadManager()
 LB_PID = LadyBrown()
+Thread(LB_PID.run)
+
+controls["DOINKER"].pressed(switch_doinker)
+controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
+controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
+controls["LB_MACRO_HOME"].pressed(LB_PID.home)
 
 def odom_logging_thread():
     while True:
