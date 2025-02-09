@@ -107,9 +107,10 @@ imu = Inertial(Ports.PORT11)
 # SENSOR VARIABLES
 wall_setpoint = 0
 wall_control_cooldown = 0
-wall_positions = [30, 150, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
+wall_positions = [30, 100, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
 LB_enable_PID = False
 LB_PID_autostop = False
+LB_threshold = 5
 
 if calibrate_imu:
     imu.calibrate()
@@ -121,7 +122,7 @@ else:
 
 if enable_macro_lady_brown:
     print("calibrating wall stake")
-    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 20, PERCENT)
+    # motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 20, PERCENT)
     sleep(100, MSEC) # sleep to allow motor to spin to idle
     wallEnc.set_position(0)
     print(wallEnc.position())
@@ -467,8 +468,8 @@ class AutonomousHandler:
         self.fwd_speed = None
         self.dynamic_vars = {
             "fwd_speed": 10,
-            # "position": list(self.autonomous_data["start_pos"]),
-            "position": [-1244.6, -1533.906],
+            "position": list(self.autonomous_data["start_pos"]),
+            # "position": [-1244.6, -1533.906],
             #### Thread flags
             # Mogo
             "mogo_listen": False,
@@ -874,28 +875,27 @@ def elevation_macro():
 
     LB_enable_PID = False
     mogo_pneu.set(True)
-    # motors["misc"]["wall_stake"].stop()
-    # motors["misc"]["wall_stake"].spin_for(FORWARD, 400, MSEC, 100, PERCENT)
 
     roll_pid = MultipurposePID(0.1, 0, 0, 0)
 
-    elevation_hook_release.set(True)
-    # wait and close these pistons cause leak :(
-    sleep(200, MSEC)
-    # intake_pneu.set(False)
-    # doinker_pneu.set(True)
-    elevation_hook_release.set(False)
-    # elevation_bar_lift.set(True)
     elevation_raise_LB()
+    while LB_PID_autostop:
+        sleep(20)
 
-    # elevation_bar_lift.set(False)
-    # sleep(100, MSEC)
+    doinker_pneu.set(True)
+
+    elevation_hook_release.set(True)
+    sleep(150, MSEC)
+    elevation_hook_release.set(False)
+
+    elevation_bar_lift.set(True)
+
+    LB_braketype = BrakeType.HOLD
 
     controls2["DOINKER"].pressed(switch_doinker)
     controls2["PTO_TOGGLE"].pressed(toggle_PTO)
     controls2["ELEVATION_PRIMARY_PNEUMATICS"].pressed(manual_elevation)
     controls2["LB_RAISE_MACRO"].pressed(elevation_raise_LB)
-    LB_braketype = BrakeType.COAST
 
     while True:
         # DRIVE MOTORS
@@ -961,8 +961,10 @@ def elevation_macro():
 
 def home_lady_brown_PID():
     print("run home_lady_brown_PID")
-    global wall_setpoint, LB_enable_PID
+    global wall_setpoint, LB_enable_PID, LB_threshold, LB_PID_autostop
     LB_enable_PID = True
+    LB_threshold = 2
+    LB_PID_autostop = True
     wall_setpoint = 1
 
 controls["DOINKER"].pressed(switch_doinker)
@@ -996,20 +998,21 @@ def intake_sorter():
         eject_prep = False
 
 def lady_brown_PID():
-    global LB_enable_PID, LB_PID_autostop
-    pid = MultipurposePID(0.1, 0.015, 0.02, 5, None)
+    global LB_enable_PID, LB_PID_autostop, LB_threshold
+    LB_pid = MultipurposePID(0.1, 0.015, 0.8, 5, None)
 
     while True:
         if LB_enable_PID:
-            output = pid.calculate(wall_positions[wall_setpoint], wallEnc.position())
+            output = LB_pid.calculate(wall_positions[wall_setpoint], wallEnc.angle())
 
             motors["misc"]["wall_stake"].spin(FORWARD, output*2, VOLT)
 
-            if abs(pid.error) < 5 and LB_PID_autostop:
+            if abs(LB_pid.error) < LB_threshold and LB_PID_autostop:
                 LB_PID_autostop = False
                 LB_enable_PID = False
                 motors["misc"]["wall_stake"].stop(BrakeType.HOLD)
                 print("autostop of LB PID")
+                LB_threshold = 5
             
         sleep(20)
 
@@ -1056,8 +1059,8 @@ def driver():
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
             motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
         else:
-            motors["misc"]["intake_flex"].stop()
-            motors["misc"]["intake_chain"].stop()
+            motors["misc"]["intake_flex"].stop(BrakeType.COAST)
+            motors["misc"]["intake_chain"].stop(BrakeType.COAST)
 
         # WALL STAKES MOTORS
         if controls["LB_MANUAL_UP"].pressing():
@@ -1096,7 +1099,7 @@ def driver():
         else:
             elevation_hold_duration = 5
 
-        print(wallEnc.position())
+        print(wallEnc.angle(), wallEnc.position())
 
         brain.screen.render()
 
@@ -1169,7 +1172,8 @@ if brain.sdcard.is_inserted():
         pass
 else:
     comp = Competition(driver, no_auton)
-
+    driver()
+ 
     for i in range(5):
         brain.screen.set_cursor(0, 0)
         # warn the user that there is no SD card inserted

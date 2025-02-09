@@ -32,7 +32,7 @@ def run(main):
     motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
 
     controller.dynamic_vars["intake_color_sort"] = "eject_red"
-    controller.fwd_speed = 11
+    controller.fwd_speed = 12
     controller.path(paths[0])
     main["doinker_pneu"].set(True)
 

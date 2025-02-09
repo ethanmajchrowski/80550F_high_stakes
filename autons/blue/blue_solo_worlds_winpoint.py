@@ -101,7 +101,7 @@ def run(main):
     # stop LB mech
     motors["misc"]["wall_stake"].stop(BrakeType.COAST)
     # path to grab mogo @ 8V
-    controller.dynamic_vars["fwd_speed"] = 7
+    controller.dynamic_vars["fwd_speed"] = 7 * 1.15
     brain.timer.event(motors["misc"]["wall_stake"].spin, 200, (DirectionType.REVERSE, 100, VelocityUnits.PERCENT))
     controller.path(paths["grab_mogo_1"]["points"], [], [], True, 200, 100, 75, None, 1.25, 8, 0.1, 0.01, 0, 0, None, 0)
     motors["misc"]["wall_stake"].stop(BrakeType.COAST)
@@ -109,7 +109,7 @@ def run(main):
     # grab mobile goal
     main["mogo_pneu"].set(True)
     # start intaking rings
-    motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 65, VelocityUnits.PERCENT)
+    motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     # wait for mogo grabber to engage
     main["sleep"](200, TimeUnits.MSEC)
@@ -128,7 +128,7 @@ def run(main):
 
     main["intake_pneu"].set(False)
     main["sleep"](250, TimeUnits.MSEC)
-    controller.dynamic_vars["fwd_speed"] = 3
+    controller.dynamic_vars["fwd_speed"] = 3 * 1.15
     print("path: backup_for_stack_ring")
     controller.path(paths["backup_for_stack_ring"]["points"], [], [], True)
     # main["sleep"](200, MSEC)
@@ -137,13 +137,13 @@ def run(main):
 
     controller.dynamic_vars["fwd_speed"] = 9
     print("path: bottom_blue_ring")
-    controller.path(paths["bottom_blue_ring"]["points"], [["drop goal", (951, -1162), main["mogo_pneu"].set, [False]]], [], False, 300, 100, 200)
+    controller.path(paths["bottom_blue_ring"]["points"], [["drop goal", (951, -1162), main["mogo_pneu"].set, [False]]], [], False, 250, 150, 200, None, 2.0)
 
     motors["misc"]["intake_chain"].stop()
     main["mogo_pneu"].set(False)
 
     print("path: last_mogo")
-    controller.dynamic_vars["fwd_speed"] = 6
+    controller.dynamic_vars["fwd_speed"] = 6 * 1.15
     controller.path(paths["last_mogo"]["points"], [], [], True, 300, 175, 75)
     main["mogo_pneu"].set(True)
     motors["misc"]["intake_flex"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
@@ -151,7 +151,7 @@ def run(main):
     controller.dynamic_vars["intake_color_sort"] = "none"
     
     drivetrain.turn_for(TurnType.LEFT, 150, RotationUnits.DEG, 100, VelocityUnits.PERCENT)
-    motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 65, VelocityUnits.PERCENT)
-    controller.dynamic_vars["fwd_speed"] = 8
+    motors["misc"]["intake_chain"].spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+    controller.dynamic_vars["fwd_speed"] = 9.5
     print("path: ladder_hit")
     controller.path(paths["ladder_hit"]["points"], [], [], False, 300, 70, 75, 2000)
