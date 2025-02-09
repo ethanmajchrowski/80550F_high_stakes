@@ -107,7 +107,7 @@ imu = Inertial(Ports.PORT11)
 # SENSOR VARIABLES
 wall_setpoint = 0
 wall_control_cooldown = 0
-wall_positions = [30, 150, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
+wall_positions = [30, 155, 400] # wall_setpoint is an INDEX used to grab from THIS LIST
 LB_enable_PID = False
 LB_PID_autostop = False
 
