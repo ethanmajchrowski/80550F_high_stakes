@@ -997,28 +997,42 @@ def intake_sorter():
         queued_sort = False
         eject_prep = False
 
-def lady_brown_PID():
-    global LB_enable_PID, LB_PID_autostop, LB_threshold
-    LB_pid = MultipurposePID(0.1, 0.015, 0.8, 5, None)
+class RotationType:
+    ABSOLUTE = 1
+    RELATIVE = 2
 
-    while True:
-        if LB_enable_PID:
-            output = LB_pid.calculate(wall_positions[wall_setpoint], wallEnc.angle())
+class LB_PID_controller():
+    def __init__(self) -> None:
+        self.pid = MultipurposePID(0.1, 0.015, 0.8, 5, None)
+        self.sensor_type = RotationType.ABSOLUTE
+        self.enabled = False
+        self.autostop = False
+        self.threshold = 5
+        self.motor = motors["misc"]["wall_stake"]
 
-            motors["misc"]["wall_stake"].spin(FORWARD, output*2, VOLT)
+    def run(self):
+        """
+        Run once to start PID thread.
+        """
+        while True:
+            if self.enabled:
+                self.loop()
+            sleep(20, MSEC)
 
-            if abs(LB_pid.error) < LB_threshold and LB_PID_autostop:
-                LB_PID_autostop = False
-                LB_enable_PID = False
-                motors["misc"]["wall_stake"].stop(BrakeType.HOLD)
-                print("autostop of LB PID")
-                LB_threshold = 5
-            
-        sleep(20)
+    def loop(self):
+        """
+        Runs once every loop.
+        """
+        output = self.pid.calculate(wall_positions[wall_setpoint], wallEnc.angle())
 
-if enable_macro_lady_brown:
-    print("starting LB thread")
-    Thread(lady_brown_PID)
+        self.motor.spin(FORWARD, output*2, VOLT)
+
+        if abs(self.pid.error) < self.threshold and self.autostop:
+            self.autostop = False
+            self.enabled = False
+            self.motor.stop(BrakeType.HOLD)
+            print("LB PID Autostop")
+            self.threshold = 5
 
 def driver():
     global eject_prep, queued_sort, wall_control_cooldown, wall_setpoint, elevating, LB_enable_PID
@@ -1128,6 +1142,7 @@ class PayloadManager():
 # driver_thread = None
 # print(sys.__dict__)
 payload_manager = PayloadManager()
+LB_PID = LB_PID_controller()
 
 def odom_logging_thread():
     while True:
@@ -1153,14 +1168,12 @@ if brain.sdcard.is_inserted():
     comp = Competition(driver, auton.run)
     if comp.is_competition_switch() or comp.is_field_control():
         print("competition")
-        print("field control: " + str(comp.is_field_control()))
-        print("autonomous: " + str(comp.is_autonomous()))
-        print("driver: " + str(comp.is_driver_control()))
     elif data["config"]["auton_test"]:
         sleep(1000, MSEC)
         print("run auton")
         auton.run()
         sleep(1, SECONDS)
+        
         motors["left"]["A"].stop(COAST)
         motors["left"]["B"].stop(COAST)
         motors["left"]["C"].stop(COAST)
