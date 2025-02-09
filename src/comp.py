@@ -455,6 +455,9 @@ class AutonomousHandler:
         ## Position controller
         self.position_controller = DeltaPositioning(leftEnc, rightEnc, imu)
 
+        self.pos_thread = None
+        self.listen_thread = None
+
         ### Variables
         self.fwd_speed = None
         self.dynamic_vars = {
@@ -559,6 +562,35 @@ class AutonomousHandler:
             self.dynamic_vars["queued_sort"] = False
             self.dynamic_vars["eject_prep"] = False
 
+    def test(self):
+        """
+        Run test autons. Does NOT! run in competition
+        """
+        self.setup_autonomous()
+    
+    def setup_autonomous(self):
+        """
+        Sets up autonomous and starts threads.
+        """
+        self.start_time = brain.timer.system()
+        ## Position data
+        imu.set_heading(self.autonomous_data["start_heading"])
+        self.heading = self.autonomous_data["start_heading"]
+
+        # disable LB PID unless turned on in auton
+        LB_PID.enabled = False
+        motors["misc"]["wall_stake"].stop(COAST)
+        print("disabled LB PID! will auto re-enable after auton")
+
+        print("start pos thread")
+        self.pos_thread = Thread(self.position_thread)
+        print("started pos thread")
+        print("start listener thread")
+        self.listen_thread = Thread(self.misc_listeners)
+        print("started listener thread")
+
+        print("auton setup complete")
+
     # decent settings: 
     """
     speed: 65%
@@ -579,25 +611,7 @@ class AutonomousHandler:
         """
         Call once at start of auton. This is where all the sequential commands are located.
         """
-        self.start_time = brain.timer.system()
-        
-        ## Position data
-        imu.set_heading(self.autonomous_data["start_heading"])
-        self.heading = self.autonomous_data["start_heading"]
-
-        # disable LB PID unless turned on in auton
-        LB_PID.enabled = False
-        motors["misc"]["wall_stake"].stop(COAST)
-        print("disabled LB PID! will auto re-enable after auton")
-
-        print("start pos thread")
-        t1 = Thread(self.position_thread)
-        print("started pos thread")
-        print("start listener thread")
-        t2 = Thread(self.misc_listeners)
-        print("started listener thread")
-
-        print("starting sequence")
+        self.setup_autonomous()
 
         #! !!!!!!!!!!!!!!!!!!!!!!
         self.sequence(globals())        
@@ -624,10 +638,12 @@ class AutonomousHandler:
         # LB_PID.enabled = True
         # print("re-enabled LB PID")
 
-        t1.stop()
-        t1 = None
-        t2.stop()
-        t2 = None
+        if self.pos_thread is not None:
+            self.pos_thread.stop()
+            self.pos_thread = None
+        if self.listen_thread is not None:
+            self.listen_thread.stop()
+            self.listen_thread = None
 
     def kill_motors(self, brake_type=BrakeType.BRAKE):
         motors["left"]["A"].stop(brake_type)
@@ -638,25 +654,25 @@ class AutonomousHandler:
         motors["right"]["B"].stop(brake_type)
         motors["right"]["C"].stop(brake_type)
 
-    def turn_to_heading(self, target, threshold = 5, speed_constant = 1.0):
-        pid = MultipurposePID(0.1, 0.01, 0, 0)
-        # use absolute heading
-        heading = imu.rotation()
+    # def turn_to_heading(self, target, threshold = 5, speed_constant = 1.0):
+    #     pid = MultipurposePID(0.1, 0.01, 0, 0)
+    #     # use absolute heading
+    #     heading = imu.rotation()
 
-        error = heading - target
-        while abs(error) > threshold:
-            heading = imu.rotation()
-            error = heading - target
-            output = pid.calculate(0, error) * speed_constant
+    #     error = heading - target
+    #     while abs(error) > threshold:
+    #         heading = imu.rotation()
+    #         error = heading - target
+    #         output = pid.calculate(0, error) * speed_constant
 
-            motors["left"]["A"].spin(FORWARD, output, VOLT)
-            motors["left"]["B"].spin(FORWARD, output, VOLT)
-            motors["left"]["C"].spin(FORWARD, output, VOLT)
+    #         motors["left"]["A"].spin(FORWARD, output, VOLT)
+    #         motors["left"]["B"].spin(FORWARD, output, VOLT)
+    #         motors["left"]["C"].spin(FORWARD, output, VOLT)
 
-            motors["right"]["A"].spin(REVERSE, output, VOLT)
-            motors["right"]["B"].spin(REVERSE, output, VOLT)
-            motors["right"]["C"].spin(REVERSE, output, VOLT)
-        self.kill_motors()
+    #         motors["right"]["A"].spin(REVERSE, output, VOLT)
+    #         motors["right"]["B"].spin(REVERSE, output, VOLT)
+    #         motors["right"]["C"].spin(REVERSE, output, VOLT)
+    #     self.kill_motors()
 
     def path(self, path, events=[], checkpoints=[], backwards = False,
              look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
@@ -737,6 +753,8 @@ class AutonomousHandler:
                 motors["right"]["A"].spin(FORWARD, right_speed, VOLT)
                 motors["right"]["B"].spin(FORWARD, right_speed, VOLT)
                 motors["right"]["C"].spin(FORWARD, right_speed, VOLT)
+                print(left_speed, right_speed)
+                print(motors["left"]["A"].command())
             else:
                 if brain.timer.system() >= wait_stop:
                     waiting = False
@@ -772,8 +790,6 @@ class AutonomousHandler:
                 if brain.timer.system() > time_end:
                     done = True
                     print("path timed out")
-
-            # Thread(log, (data,))
 
             if not done:
                 sleep(20, MSEC)
@@ -869,12 +885,12 @@ def elevation_macro():
         if con.buttonR1.pressing() or controls2["INTAKE_IN"].pressing():
             motors["misc"]["intake_flex"].spin(FORWARD, 100, PERCENT)
             motors["misc"]["intake_chain"].spin(FORWARD, 100, PERCENT)
-        elif con.buttonR2.pressing() or controls2["INTAKE_OUT"].pressing():
+        elif con.buttonR2.pressing():# or controls2["INTAKE_OUT"].pressing():
             motors["misc"]["intake_flex"].spin(REVERSE, 100, PERCENT)
             motors["misc"]["intake_chain"].spin(REVERSE, 100, PERCENT)
         else:
             motors["misc"]["intake_flex"].stop()
-            motors["misc"]["intake_chain"].stop()
+            motors["misc"]["intake_chain"].stop(BrakeType.BRAKE)
 
         # roll = imu.orientation(OrientationType.PITCH)
         # pid_output = round(roll_pid.calculate(0, roll), 3)
@@ -924,10 +940,11 @@ class RotationType:
     RELATIVE = 2
 
 class LadyBrown():
-    POS_LOAD = 95
+    POS_LOAD = 85
     POS_ELEVATION_UNWIND = 300
     def __init__(self) -> None:
-        self.pid = MultipurposePID(0.03, 0, 0.01, 3, None)
+        # self.pid = MultipurposePID(0.03, 0, 0.005, 3, None)
+        self.pid = MultipurposePID(0.03, 0.08, 0.005, 3, None)
         self.sensor_type = RotationType.RELATIVE
         self.enabled = False
         self.autostop = False
@@ -936,6 +953,7 @@ class LadyBrown():
         self.target_rotation = 0
 
         self.sensor = 0
+        self.last_enabled = self.enabled
     
     def home(self):
         """
@@ -944,6 +962,7 @@ class LadyBrown():
         self.target_rotation = LadyBrown.POS_LOAD
         self.sensor_type = RotationType.ABSOLUTE
         self.enabled = True
+        print("homing lady brown")
     
     def elevation(self):
         """
@@ -958,9 +977,16 @@ class LadyBrown():
         """
         Run once to start PID thread.
         """
+        print("starting LB")
         while True:
             if self.enabled:
                 self.loop()
+
+            if (not self.enabled) and self.last_enabled:
+                self.pid.integral = 0
+            
+            self.last_enabled = self.enabled
+            
             sleep(20, MSEC)
 
     def loop(self):
@@ -982,15 +1008,16 @@ class LadyBrown():
         
         output = self.pid.calculate(self.target_rotation, self.sensor)
 
-        self.motor.spin(FORWARD, output*2, VOLT)
+        self.motor.spin(FORWARD, output, VOLT)
 
         if abs(self.pid.error) < self.threshold and self.autostop:
             self.autostop = False
             self.enabled = False
             self.motor.stop(BrakeType.HOLD)
             print("LB PID Autostop")
+            self.pid.integral = 0
             self.threshold = 5
-
+        
 def driver():
     global eject_prep, queued_sort, elevating
     print("starting driver")
@@ -1036,12 +1063,12 @@ def driver():
         # WALL STAKES MOTORS
         if controls["LB_MANUAL_UP"].pressing():
             motors["misc"]["wall_stake"].spin(FORWARD, 100, PERCENT)
-            LB_PID.enabled = False
+            LB_PID.enabled = False        
         elif controls["LB_MANUAL_DOWN"].pressing():
-            motors["misc"]["wall_stake"].spin(REVERSE, 60, PERCENT)
+            motors["misc"]["wall_stake"].spin(REVERSE, 100, PERCENT)
             LB_PID.enabled = False
         elif not LB_PID.enabled:
-            motors["misc"]["wall_stake"].stop(HOLD)
+            motors["misc"]["wall_stake"].stop(BrakeType.HOLD)
         
         #     # Lady Brown controls
         # if wall_control_cooldown == 0:
@@ -1075,10 +1102,10 @@ def driver():
             "integral_p": round(LB_PID.pid.integral_processed, 3),
             "target": round(LB_PID.target_rotation, 3),
             "sensor": round(LB_PID.sensor, 3),
-            "derivative": round(LB_PID.pid.derivative),
-            "proportional": round(LB_PID.pid.error * LB_PID.pid.kP)
+            "derivative": round(LB_PID.pid.derivative, 3),
+            "proportional": round(LB_PID.pid.error * LB_PID.pid.kP, 3)
         }
-        payload_manager.send_data("LB", data)
+        # payload_manager.send_data("LB", data)
 
         # print(wallEnc.angle(), wallEnc.position(), LB_PID.sensor, LB_PID.target_rotation, LB_PID.pid.integral)
 
@@ -1133,17 +1160,24 @@ def odom_logging_thread():
 # log_thread = Thread(odom_logging_thread)
 # data["config"]["auton_test"] = True
 
-def no_auton():
+def none():
     pass
 
 if brain.sdcard.is_inserted():
+    print("SD card inserted...")
     auton = AutonomousHandler(data["autons"]["selected"])
-    comp = Competition(driver, auton.run)
+    comp = Competition(none, none)
+    print(comp.is_competition_switch())
+    print(comp.is_field_control())
+    print(comp.is_driver_control())
+    # print(comp.__dict__)
+
     if comp.is_competition_switch() or comp.is_field_control():
-        print("competition")
+        print("competition...")
+        comp = Competition(driver, auton.run)
     elif data["config"]["auton_test"]:
+        print("autonomous...")
         sleep(1000, MSEC)
-        print("run auton")
         auton.run()
         sleep(1, SECONDS)
 
@@ -1155,10 +1189,13 @@ if brain.sdcard.is_inserted():
         motors["right"]["B"].stop(COAST)
         motors["right"]["C"].stop(COAST)
     else:
+        # driver()
+        print("auton test is false")
         pass
 else:
-    comp = Competition(driver, no_auton)
-    driver()
+    comp = Competition(driver, none)
+    print("no SD card")
+    # driver()
  
     for i in range(5):
         brain.screen.set_cursor(0, 0)
