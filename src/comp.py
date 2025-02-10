@@ -114,6 +114,7 @@ def calibrate_lady_brown():
 calibrate_lady_brown()
 
 while imu.is_calibrating() and calibrate_imu:
+    print("calibrating IMU")
     wait(5)
 
 # Intake ejector related booleans
@@ -949,11 +950,12 @@ class RotationType:
     RELATIVE = 2
 
 class LadyBrown():
-    POS_LOAD = 85
+    POS_LOAD = 130
     POS_ELEVATION_UNWIND = 300
     def __init__(self) -> None:
         # self.pid = MultipurposePID(0.03, 0, 0.005, 3, None)
-        self.pid = MultipurposePID(0.03, 0.08, 0.005, 3, None)
+        # self.pid = MultipurposePID(0.03, 0.08, 0.005, 3, None)
+        self.pid = MultipurposePID(0.1, 0.015, 0.02, 5, None)
         self.sensor_type = RotationType.RELATIVE
         self.enabled = False
         self.autostop = False
@@ -969,7 +971,7 @@ class LadyBrown():
         Homes PID to ready to load position
         """
         self.target_rotation = LadyBrown.POS_LOAD
-        self.sensor_type = RotationType.ABSOLUTE
+        self.sensor_type = RotationType.RELATIVE
         self.enabled = True
         print("homing lady brown")
     
@@ -1169,6 +1171,9 @@ def odom_logging_thread():
 # log_thread = Thread(odom_logging_thread)
 # data["config"]["auton_test"] = True
 
+brain.screen.clear_screen(Color.GREEN)
+brain.screen.render()
+
 def none():
     pass
 
@@ -1199,9 +1204,8 @@ if brain.sdcard.is_inserted():
         motors["right"]["B"].stop(COAST)
         motors["right"]["C"].stop(COAST)
     else:
-        # driver()
         print("auton test is false")
-        pass
+        driver()
 else:
     comp = Competition(driver, none)
     print("no SD card")
