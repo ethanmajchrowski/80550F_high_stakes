@@ -121,6 +121,10 @@ class sensor():
     intakeColor = Optical(Ports.PORT10)
     imu = Inertial(Ports.PORT11)
 
+class RotationSensorType:
+    ABSOLUTE = 1
+    RELATIVE = 2
+
 lmg = MotorGroup(motor.leftA, motor.leftB, motor.leftC)
 rmg = MotorGroup(motor.rightA, motor.rightB, motor.rightC)
 """
@@ -338,15 +342,6 @@ class DeltaPositioning():
         self.last_left_encoder = self.leftEnc.position()
         return [dx, dy]
 
-class LaserPositioning():
-    def __init__(self) -> None:
-        pass
-
-    def update(self) -> list[float]:
-        dx, dy = 0, 0
-
-        return [dx, dy]
-
 class MultipurposePID:
     def __init__(self, KP, KD, KI, KI_MAX, MIN = None) -> None:
         '''
@@ -408,13 +403,12 @@ class MultipurposePID:
 
 class Robot():
     def __init__(self) -> None:
-        self.lady_brown_controller = LadyBrown(parent=self)
         self.color_sort_controller = ColorSort(parent=self)
 
         self.autonomous_controller = Autonomous(parent=self)
         self.driver_controller = Driver(parent=self)
 
-        # Autonomous - related variables
+        # Autonomous variables
         self.pos = [0, 0]
         self.heading = 0
 
@@ -426,131 +420,7 @@ class Robot():
         log("Starting autonomous")
         self.autonomous_controller.run()
 
-class AutonomousCommands():
-    @staticmethod
-    def path(controller, path, events=[], checkpoints=[], backwards = False,
-             look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
-             heading_authority=1.0, max_turn_volts = 8,
-             hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
-             turn_speed_weight = 0.0) -> None:
-
-        if timeout is not None:
-            time_end = brain.timer.system() + timeout
-
-        path_handler = controller.path_controller(look_ahead_dist, finish_margin, path, checkpoints)
-        heading_pid = MultipurposePID(hPID_KP, hPID_KD, hPID_KI, hPID_KI_MAX, hPID_MIN_OUT)
-        robot = controller.robot
-
-        done = path_handler.path_complete
-        waiting = False
-        wait_stop = 0
-
-        while not done:
-            target_point = path_handler.goal_search(robot.pos)
-            dx, dy = target_point[0] - robot.pos[0], target_point[1] - robot.pos[1] # type: ignore
-            heading_to_target = math.degrees(math.atan2(dx, dy))
-
-            if dx < 0:
-                heading_to_target = 360 + heading_to_target
-
-            # logic to handle the edge case of the target heading rolling over
-            heading_error = controller.heading - heading_to_target
-            rollover = False
-
-            if backwards:
-                if heading_error > 180:
-                    heading_error -= 180
-                else:
-                    heading_error += 180
-
-            if heading_error > 180:
-                heading_error = 360 - heading_error
-                rollover = True
-            if heading_error < -180:
-                heading_error = -360 - heading_error
-                rollover = True
-
-            heading_output = heading_pid.calculate(0, heading_error)
-
-            # dynamic forwards speed
-            dynamic_forwards_speed = abs(heading_output) * turn_speed_weight
-            unclamped = dynamic_forwards_speed
-            # clamp speed
-            if dynamic_forwards_speed < -4:
-                dynamic_forwards_speed = -4
-            elif dynamic_forwards_speed > 4:
-                dynamic_forwards_speed = 4
-
-            forwards_speed = controller.fwd_speed
-
-            if backwards:
-                forwards_speed *= -1
-
-            # Do some stuff that lowers the authority of turning, no idea if this is reasonable
-            heading_output *= heading_authority
-            if heading_output > max_turn_volts: heading_output = max_turn_volts
-            if heading_output < -max_turn_volts: heading_output = -max_turn_volts
-            # if we rollover, fix it
-            if rollover:
-                heading_output *= -1
-            if not waiting:
-                left_speed = forwards_speed - dynamic_forwards_speed + heading_output
-                right_speed = forwards_speed - dynamic_forwards_speed - heading_output
-    
-                motor.leftA.spin(FORWARD, left_speed, VOLT)
-                motor.leftB.spin(FORWARD, left_speed, VOLT)
-                motor.leftC.spin(FORWARD, left_speed, VOLT)
-
-                motor.rightA.spin(FORWARD, right_speed, VOLT)
-                motor.rightB.spin(FORWARD, right_speed, VOLT)
-                motor.rightC.spin(FORWARD, right_speed, VOLT)
-            else:
-                if brain.timer.system() >= wait_stop:
-                    waiting = False
-
-            for event in events:
-                if dist(robot.pos, event[1]) < event_look_ahead_dist:
-                    print(event)
-                    if type(event[2]) == str:
-                        if event[2] == "wait_function":
-                            if not event[4]:
-                                # This tells us to wait
-                                # format: ["description", (x, y), EventWaitType(), duration, completed]
-                                waiting = True
-                                wait_stop = brain.timer.system() + event[3]
-
-                                # make sure we dont get stuck in a waiting loop
-                                event[4] = True
-
-                                AutonomousCommands.kill_motors()
-                        else:
-                            # this is a variable change
-                            # format: ["speed down", (0, 1130), "speed", 3.5]
-                            if hasattr(controller, event[2]):
-                                controller.event[2] = event[3]
-                            else:
-                                raise AttributeError("No attribute found {}".format(event[2]))
-                    elif callable(event[2]):
-                        # Call the function (at index 2) with the unpacked (*) args (at index 3)
-                        try:
-                            event[2](*event[3])
-                        except:
-                            raise NameError("Function not defined")
-
-            done = path_handler.path_complete
-            if done:
-                print("path complete")
-
-            if timeout is not None:
-                if brain.timer.system() > time_end:
-                    done = True
-                    print("path timed out")
-
-            if not done:
-                sleep(20, MSEC)
-            else:
-                AutonomousCommands.kill_motors(BRAKE)
-    
+class AutonomousCommands:
     @staticmethod
     def kill_motors(brake = BrakeType.COAST):
         motor.leftA.stop(brake)
@@ -621,7 +491,7 @@ class Autonomous():
         
         self.autonomous_cleanup()
     
-    def autonomous_cleanup(self):
+    def autonomous_cleanup(self) -> None:
         """
         Runs at end of autonomous. Do not modify.
         """
@@ -629,9 +499,6 @@ class Autonomous():
         elapsed_time = self.end_time - self.start_time
         log("Auton complete. Time taken: {}".format(elapsed_time), LogLevel.INFO)
     
-    def path(self):
-        raise DeprecationWarning("Moved to AutonomousCommands.path(controller, args...)")
-
     def test(self) -> None:
         """
         Run a test version of autonomous. This is NOT run in competition!
@@ -642,6 +509,131 @@ class Autonomous():
         # place temporary / testing code here
 
         self.autonomous_cleanup()
+    
+    def path(self, path, events=[], checkpoints=[], backwards = False,
+             look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
+             heading_authority=1.0, max_turn_volts = 8,
+             hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
+             turn_speed_weight = 0.0) -> None:
+
+        if timeout is not None:
+            time_end = brain.timer.system() + timeout
+
+        path_handler = self.path_controller(look_ahead_dist, finish_margin, path, checkpoints)
+        heading_pid = MultipurposePID(hPID_KP, hPID_KD, hPID_KI, hPID_KI_MAX, hPID_MIN_OUT)
+        robot = self.robot
+
+        done = path_handler.path_complete
+        waiting = False
+        wait_stop = 0
+
+        while not done:
+            target_point = path_handler.goal_search(robot.pos)
+            dx, dy = target_point[0] - robot.pos[0], target_point[1] - robot.pos[1] # type: ignore
+            heading_to_target = math.degrees(math.atan2(dx, dy))
+
+            if dx < 0:
+                heading_to_target = 360 + heading_to_target
+
+            # logic to handle the edge case of the target heading rolling over
+            heading_error = self.robot.heading - heading_to_target
+            rollover = False
+
+            if backwards:
+                if heading_error > 180:
+                    heading_error -= 180
+                else:
+                    heading_error += 180
+
+            if heading_error > 180:
+                heading_error = 360 - heading_error
+                rollover = True
+            if heading_error < -180:
+                heading_error = -360 - heading_error
+                rollover = True
+
+            heading_output = heading_pid.calculate(0, heading_error)
+
+            # dynamic forwards speed
+            dynamic_forwards_speed = abs(heading_output) * turn_speed_weight
+            unclamped = dynamic_forwards_speed
+            # clamp speed
+            if dynamic_forwards_speed < -4:
+                dynamic_forwards_speed = -4
+            elif dynamic_forwards_speed > 4:
+                dynamic_forwards_speed = 4
+
+            forwards_speed = self.fwd_speed
+
+            if backwards:
+                forwards_speed *= -1
+
+            # Do some stuff that lowers the authority of turning, no idea if this is reasonable
+            heading_output *= heading_authority
+            if heading_output > max_turn_volts: heading_output = max_turn_volts
+            if heading_output < -max_turn_volts: heading_output = -max_turn_volts
+            # if we rollover, fix it
+            if rollover:
+                heading_output *= -1
+            if not waiting:
+                left_speed = forwards_speed - dynamic_forwards_speed + heading_output
+                right_speed = forwards_speed - dynamic_forwards_speed - heading_output
+    
+                motor.leftA.spin(FORWARD, left_speed, VOLT)
+                motor.leftB.spin(FORWARD, left_speed, VOLT)
+                motor.leftC.spin(FORWARD, left_speed, VOLT)
+
+                motor.rightA.spin(FORWARD, right_speed, VOLT)
+                motor.rightB.spin(FORWARD, right_speed, VOLT)
+                motor.rightC.spin(FORWARD, right_speed, VOLT)
+            else:
+                if brain.timer.system() >= wait_stop:
+                    waiting = False
+
+            for event in events:
+                if dist(robot.pos, event[1]) < event_look_ahead_dist:
+                    print(event)
+                    if type(event[2]) == str:
+                        if event[2] == "wait_function":
+                            if not event[4]:
+                                # This tells us to wait
+                                # format: ["description", (x, y), EventWaitType(), duration, completed]
+                                waiting = True
+                                wait_stop = brain.timer.system() + event[3]
+
+                                # make sure we dont get stuck in a waiting loop
+                                event[4] = True
+
+                                AutonomousCommands.kill_motors()
+                        else:
+                            # this is a variable change
+                            # format: ["speed down", (0, 1130), "speed", 3.5]
+                            if hasattr(self, event[2]):
+                                setattr(self, event[2], event[3])
+                                log("Updated {} to {}".format(event[2], event[3]))
+                            else:
+                                raise AttributeError("No attribute found {}".format(event[2]))
+                    elif callable(event[2]):
+                        # Call the function (at index 2) with the unpacked (*) args (at index 3)
+                        try:
+                            event[2](*event[3])
+                            log("Ran {}({})".format(event[2], event[3]))
+                        except:
+                            raise NameError("Function not defined")
+
+            done = path_handler.path_complete
+            if done:
+                log("Path complete")
+
+            if timeout is not None:
+                if brain.timer.system() > time_end:
+                    done = True
+                    log("Path timed out", LogLevel.WARNING)
+
+            if not done:
+                sleep(20, MSEC)
+            else:
+                AutonomousCommands.kill_motors(BRAKE)
 
 class AutonomousListener():
     def __init__(self, parent) -> None:
@@ -707,6 +699,8 @@ class Driver():
         self.robot = parent
         self.elevation_hold_duration = 0
         self.elevation_hold_duration_reset = 7
+
+        self.LB_PID = LadyBrown(motor.ladyBrown)
 
         self.LB_braketype = BrakeType.HOLD
 
@@ -791,7 +785,65 @@ class Driver():
             self.elevation_hold_duration = self.elevation_hold_duration_reset
     
     def elevation_drive_controls(self) -> None:
-        pass
+        if abs(con_2.axis2.position()) > 1 or abs(con_2.axis3.position()) > 1:
+            motor.leftA.spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
+            motor.leftB.spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
+            motor.leftC.spin(FORWARD, (con_2.axis3.position() / 100) * 12, VOLT)
+
+            motor.rightA.spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
+            motor.rightB.spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
+            motor.rightC.spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
+
+            LB_braketype = BrakeType.COAST
+        else:
+            motor.leftA.stop(BrakeType.COAST)
+            motor.leftB.stop(BrakeType.COAST)
+            motor.leftC.stop(BrakeType.COAST)
+
+            motor.rightA.stop(BrakeType.COAST)
+            motor.rightB.stop(BrakeType.COAST)
+            motor.rightC.stop(BrakeType.COAST)
+
+        # lady brown controls
+        if con.buttonL1.pressing() or control_2.LB_MANUAL_DOWN.pressing():
+            motor.ladyBrown.spin(REVERSE, 100, PERCENT)
+            self.LB_PID.enabled = False
+            LB_braketype = BrakeType.HOLD
+        elif con.buttonL2.pressing() or control_2.LB_MANUAL_UP.pressing():
+            motor.ladyBrown.spin(FORWARD, 100, PERCENT)
+            self.LB_PID.enabled = False
+            LB_braketype = BrakeType.HOLD
+        else:
+            motor.ladyBrown.stop(LB_braketype)
+
+        # intake controls
+        if con.buttonR1.pressing() or control_2.INTAKE_IN.pressing():
+            motor.intakeFlex.spin(FORWARD, 100, PERCENT)
+            motor.intakeChain.spin(FORWARD, 100, PERCENT)
+        elif con.buttonR2.pressing():# or controls2["INTAKE_OUT"].pressing():
+            motor.intakeFlex.spin(REVERSE, 100, PERCENT)
+            motor.intakeChain.spin(REVERSE, 100, PERCENT)
+        else:
+            motor.intakeFlex.stop()
+            motor.intakeChain.stop(BrakeType.BRAKE)
+
+        # roll = imu.orientation(OrientationType.PITCH)
+        # pid_output = round(roll_pid.calculate(0, roll), 3)
+        # data = {
+        #     "roll": round(roll, 2),
+        #     "output": round(pid_output, 2),
+        #     "height": round(elevationDistance.object_distance(), 2)
+        # }
+        # payload_manager.send_data("elevation", data)
+
+        scr = con_2.screen
+        scr.set_cursor(1,1)
+        if pneumatic.elevation_bar_lift.value():
+            scr.print("UP__")
+        else:
+            scr.print("DOWN")
+
+        sleep(35, MSEC)
 
     def start_elevation(self) -> None:
         log("Starting elevation")
@@ -826,24 +878,84 @@ class Driver():
 
 # control objects
 class LadyBrown():
-    def __init__(self, parent: Robot) -> None:
-        self.robot = parent
-        self.pid = MultipurposePID(0.15, 0.015, 0.02, 5, None)
-        # SENSOR VARIABLES
-        # use flags.wall_setpoint for index
-        self.wall_positions = [15, 125, 400, 600] # wall_setpoint is an INDEX used to grab from THIS LIST
+    POS_LOAD = 130
+    POS_ELEVATION_UNWIND = 300
+    def __init__(self, wall_motor) -> None:
+        # self.pid = MultipurposePID(0.03, 0, 0.005, 3, None)
+        # self.pid = MultipurposePID(0.03, 0.08, 0.005, 3, None)
+        self.pid = MultipurposePID(0.1, 0.015, 0.02, 5, None)
+        self.sensor_type = RotationSensorType.RELATIVE
+        self.enabled = False
+        self.autostop = False
+        self.threshold = 5
+        self.motor = wall_motor
+        self.target_rotation = 0
+
+        self.sensor = 0
+        self.last_enabled = self.enabled
     
-    def use_PID(self) -> None:
+    def home(self):
+        """
+        Homes PID to ready to load position
+        """
+        self.target_rotation = LadyBrown.POS_LOAD
+        self.sensor_type = RotationSensorType.RELATIVE
+        self.enabled = True
+        log("Homing lady brown")
+    
+    def elevation(self):
+        """
+        Run PID to try and unwinch the winches and prep for next ladder
+        """
+        self.target_rotation = LadyBrown.POS_ELEVATION_UNWIND
+        self.sensor_type = RotationSensorType.RELATIVE
+        self.autostop = True
+        self.enabled = True
+
+    def run(self):
+        """
+        Run once to start PID thread.
+        """
+        print("starting LB")
         while True:
-            if flags.LB_enable_PID:
-                target = self.wall_positions[flags.wall_setpoint]
-                output = self.pid.calculate(target, sensor.wallEncoder.position())
+            if self.enabled:
+                self.loop()
 
-                motor.ladyBrown.spin(FORWARD, output*2, VOLT)
+            if (not self.enabled) and self.last_enabled:
+                self.pid.integral = 0
+            
+            self.last_enabled = self.enabled
+            
+            sleep(20, MSEC)
 
-                sleep(20, TimeUnits.MSEC)
-            else:
-                sleep(75, TimeUnits.MSEC)
+    def loop(self):
+        """
+        Runs once every loop.
+        """
+        if self.sensor_type == RotationSensorType.ABSOLUTE:
+            self.sensor = sensor.wallEncoder.angle()
+
+            if sensor.wallEncoder.position() < 90:
+                if sensor.wallEncoder.angle() > 180:
+                    self.sensor = (360 - self.sensor) * -1
+            elif sensor.wallEncoder.position() > 300:
+                if sensor.wallEncoder.angle() < 180:
+                    self.sensor += 360
+            
+        elif self.sensor_type == RotationSensorType.RELATIVE:
+            self.sensor = sensor.wallEncoder.position()
+        
+        output = self.pid.calculate(self.target_rotation, self.sensor)
+
+        self.motor.spin(FORWARD, output, VOLT)
+
+        if abs(self.pid.error) < self.threshold and self.autostop:
+            self.autostop = False
+            self.enabled = False
+            self.motor.stop(BrakeType.HOLD)
+            log("LB PID Autostop")
+            self.pid.integral = 0
+            self.threshold = 5
 
 class ColorSort():
     def __init__(self, parent: Robot) -> None:
