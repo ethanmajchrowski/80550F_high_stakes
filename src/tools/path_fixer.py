@@ -1,4 +1,5 @@
 import os
+from math import pi, atan2, sin, dist
 # import pyperclip
 
 def get_latest_file(download_path):
@@ -55,9 +56,49 @@ for path_number, path in enumerate(all_paths_segments):
     # print(f"Path {path_number+1}")
     # print(path, end=",\n")
 
-# for path in ap:
-#     print(path)
-print(ap)
+# calculate curvature of each point
+
+def angle_diff(a, b):
+    diff = a - b
+    while diff > pi:
+        diff -= 2 * pi
+    while diff < -pi:
+        diff += 2 * pi
+    return diff
+
+def lerp(a, b, t):
+    return a * t + (b - a)
+
+def calculate_curvature(path) -> list:
+    np = []
+    for i in range(len(path)):
+        point = path[i][:2]
+        if i + 1 < len(path):
+            point2 = path[i + 1][:2]
+        else:
+            continue
+
+        bx, by = point2
+        ax, ay = point
+
+        # point curvature
+        prev_point = path[max(0, i - 1)]
+        # atan2(by​−ay​, bx​−xi​)−atan2(yi​−yi−1​,xi​−xi−1​)
+        curvature_heading = angle_diff(atan2(by-ay, bx-ax), atan2(ay-prev_point[1], ax-prev_point[0]))
+        curvature = 2*sin(curvature_heading) / dist(point, point2)
+        if i == 0: curvature = 0
+        output = abs(round(curvature * 100, 2))
+
+        np.append((*path[i], output))
+        # print(np[i])
+
+    return np
+
+ap2 = []
+for path in ap:
+    ap2.append(calculate_curvature(path))
+
+print(ap2)
 # print(path)
 # pyperclip.copy(str(path))
 # print("Copied to clipboard!")
