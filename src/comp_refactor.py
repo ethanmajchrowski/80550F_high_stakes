@@ -101,7 +101,7 @@ class pneumatic():
     elevation_bar_lift = DigitalOut(brain.three_wire_port.c)
     PTO_left = DigitalOut(brain.three_wire_port.d) #! left/right not done yet
     PTO_right = DigitalOut(brain.three_wire_port.e)
-    passive_hook_release = DigitalOut(brain.three_wire_port.f)
+    elevation_bar_lower = DigitalOut(brain.three_wire_port.f)
     doinker = DigitalOut(brain.three_wire_port.g)
     intake = DigitalOut(brain.three_wire_port.h)
 
@@ -549,7 +549,7 @@ class Autonomous():
 
         # place temporary / testing code here
         sleep(500, TimeUnits.MSEC)
-        paths = [((-19.17, -54.72), (-22.72, 15.16), (-36.51, 83.7), (-60.54, 149.31), (-93.88, 210.72), (-135.04, 267.21), (-182.34, 318.73), (-234.26, 365.64), (-289.61, 408.47), (-347.37, 448.01), (-406.75, 485.07), (-467.26, 520.26), (-528.51, 554.15), (-590.18, 587.27), (-651.98, 620.13), (-713.65, 653.26), (-774.87, 687.2), (-835.28, 722.55), (-894.42, 759.97), (-951.65, 800.24), (-1006.09, 844.19), (-1056.5, 892.68), (-1100.88, 946.72), (-1135.99, 1007.14), (-1160.45, 1072.53), (-1172.88, 1141.25), (-1174.64, 1184.0))]
+        paths = [((0.81, 1.89), (-2.87, 71.75), (-17.16, 140.18), (-42.16, 205.41), (-76.93, 266.0), (-119.85, 321.17), (-169.07, 370.86), (-223.07, 415.37), (-280.41, 455.49), (-339.94, 492.31), (-400.99, 526.54), (-463.08, 558.85), (-525.84, 589.86), (-588.96, 620.12), (-652.17, 650.18), (-715.21, 680.61), (-777.78, 711.98), (-839.52, 744.95), (-899.96, 780.24), (-958.41, 818.71), (-1013.94, 861.27), (-1064.84, 909.25), (-1108.4, 963.91), (-1142.67, 1024.75), (-1165.42, 1090.78), (-1174.64, 1184.0))]
 
         controller.fwd_speed = 8
         controller.path(paths[0])
@@ -734,6 +734,7 @@ class ControllerFunctions():
     def manual_elevation():
         log("Manual elevation pneumatics")
         pneumatic.elevation_bar_lift.set(not pneumatic.elevation_bar_lift.value())
+        pneumatic.elevation_bar_lower.set(pneumatic.elevation_bar_lift.value())
     
     @staticmethod
     def toggle_PTO():
@@ -910,11 +911,6 @@ class Driver():
         pneumatic.mogo.set(True)
 
         roll_pid = MultipurposePID(0.1, 0, 0, 0)
-
-        pneumatic.elevation_hook_release.set(True)
-        # wait and close these pistons cause leak :(
-        sleep(200, MSEC)
-        pneumatic.elevation_hook_release.set(False)
 
         # wait for matics
         sleep(100, MSEC)
