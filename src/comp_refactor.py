@@ -403,14 +403,14 @@ class MultipurposePID:
 
 class Robot():
     def __init__(self) -> None:
-        self.color_sort_controller = ColorSort(parent=self)
+        self.color_sort_controller = ColorSortController(parent=self)
 
         self.autonomous_controller = Autonomous(parent=self)
         self.driver_controller = Driver(parent=self)
 
         # Autonomous variables
-        self.pos = [0, 0]
-        self.heading = 0
+        self.pos = [0.0, 0.0]
+        self.heading = 0.0
 
     def driver(self) -> None:
         log("Starting driver")
@@ -431,6 +431,13 @@ class AutonomousCommands:
         motor.rightB.stop(brake)
         motor.rightC.stop(brake)
 
+class AutonomousFlags:
+    intake_halt_tolerance = 60
+    intake_auto_halt = False
+    drop_after_auto_halt = False
+    raise_after_auto_halt = False
+    last_intake_command = None
+
 # robot states
 class Autonomous():
     def __init__(self, parent: Robot) -> None:
@@ -444,15 +451,28 @@ class Autonomous():
 
         self.fwd_speed = 8
 
+        drivetrain.set_timeout(1.5, TimeUnits.SECONDS)
+        drivetrain.set_turn_threshold(5)
+        drivetrain.set_turn_constant(0.6)
+
         log("Autonomous object setup")
     
     def autonomous_setup(self) -> None:
         """
         Call at start of auton. Sets up the coordinates n stuff for the loaded path.
         """
-        drivetrain.set_timeout(1.5, TimeUnits.SECONDS)
-        drivetrain.set_turn_threshold(5)
-        drivetrain.set_turn_constant(0.6)
+        try:
+            sensor.imu.set_heading(self.autonomous_data["start_heading"])
+            self.robot.heading = (self.autonomous_data["start_heading"])
+            self.robot.pos = list(self.autonomous_data["start_pos"])
+            log("Set initial heading and position.")
+        except:
+            log("Couldn't set initial heading / pos! Likely because load_path hasn't been run yet.", LogLevel.WARNING)
+        
+        log("Starting autonomous threads.")
+        self.pos_thread = Thread(self.position_thread)
+        self.background_thread = Thread(self.background)
+        log("Autonomous threads started.")
 
         self.start_time = brain.timer.system()
 
@@ -479,7 +499,24 @@ class Autonomous():
         except:
             log("Auton not recognized!", LogLevel.ERROR)
             raise ImportError("Can't find auton file")
+    
+    def autonomous_cleanup(self) -> None:
+        """
+        Runs at end of autonomous. Do not modify.
+        """
+        self.end_time = brain.timer.system()
+        elapsed_time = self.end_time - self.start_time
+        log("Auton complete. Time taken: {}".format(elapsed_time), LogLevel.INFO)
+    
+    def position_thread(self):
+        while True:
+            self.robot.heading = sensor.imu.heading()
+            dx, dy = self.positioning_algorithm.update()
+            self.robot.pos[0] += dx
+            self.robot.pos[1] += dy
 
+            sleep(20, TimeUnits.MSEC)
+    
     def run(self) -> None:
         """
         Runs autonomous. Do not modify.
@@ -491,14 +528,6 @@ class Autonomous():
         
         self.autonomous_cleanup()
     
-    def autonomous_cleanup(self) -> None:
-        """
-        Runs at end of autonomous. Do not modify.
-        """
-        self.end_time = brain.timer.system()
-        elapsed_time = self.end_time - self.start_time
-        log("Auton complete. Time taken: {}".format(elapsed_time), LogLevel.INFO)
-    
     def test(self) -> None:
         """
         Run a test version of autonomous. This is NOT run in competition!
@@ -507,9 +536,35 @@ class Autonomous():
         self.autonomous_setup()
 
         # place temporary / testing code here
+        sleep(500, TimeUnits.MSEC)
 
         self.autonomous_cleanup()
     
+    def background(self) -> None:
+        """
+        Starts at beginning of auton. Stops at end.
+        """
+        log("Starting background thread.")
+
+        while True:
+            self.listeners()
+            self.robot.color_sort_controller.sense()
+
+            sleep(35, MSEC)
+
+    def listeners(self) -> None:
+        auto_flags = AutonomousFlags
+
+        # Auto halt intake when we get a ring
+        if auto_flags.intake_auto_halt:
+            if sensor.intakeDistance.object_distance() < auto_flags.intake_halt_tolerance:
+                motor.intakeChain.stop(BrakeType.BRAKE)
+
+                if auto_flags.drop_after_auto_halt:
+                    pneumatic.intake.set(False)
+                if auto_flags.raise_after_auto_halt:
+                    pneumatic.intake.set(True)
+
     def path(self, path, events=[], checkpoints=[], backwards = False,
              look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
              heading_authority=1.0, max_turn_volts = 8,
@@ -634,22 +689,6 @@ class Autonomous():
                 sleep(20, MSEC)
             else:
                 AutonomousCommands.kill_motors(BRAKE)
-
-class AutonomousListener():
-    def __init__(self, parent) -> None:
-        self.color_sort_controller = ColorSort(parent.robot)
-
-    def thread(self) -> None:
-        """
-        This function runs in the background of autonomous to handle flag events n stuff
-        """
-        while True:
-            
-            sleep(30, TimeUnits.MSEC)
-    
-    # def color_sort(self):
-    #     if flags.color_setting != "none":
-
 
 class ControllerFunctions():
     @staticmethod
@@ -957,7 +996,12 @@ class LadyBrown():
             self.pid.integral = 0
             self.threshold = 5
 
-class ColorSort():
+class ColorSort:
+    NONE = 0
+    EJECT_BLUE = 1
+    EJECT_RED = 2
+
+class ColorSortController():
     def __init__(self, parent: Robot) -> None:
         self.robot = parent
         
@@ -1035,7 +1079,7 @@ class flags():
     LB_enable_PID = False
     mogo_pneu_engaged = False
     mogo_pneu_status = False
-    color_setting = "none" # "none", "eject_blue", "eject_red"
+    color_setting = ColorSort.NONE
     allow_intake_input = True
     elevating = False
     wall_setpoint = 1
@@ -1063,7 +1107,7 @@ def main():
         robot = Robot()
         comp = Competition(robot.driver, robot.autonomous)
 
-        pull_data(data, robot)
+        pull_data(data, robot) # send data from SD data (local scope) into robot object & subobjects
         # when connected to the field, do everything normally
         if comp.is_field_control() or comp.is_competition_switch():
             log("Connected to field or comp switch.")
