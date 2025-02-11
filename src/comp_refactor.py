@@ -32,6 +32,7 @@ def threaded_log(msg: Any, level):
     time_ms = brain.timer.system()
     time_s = time_ms % 60000 // 1000
     time_min = time_ms // 60000
+    time_ms -= (time_s * 1000) + (time_min * 60000)
 
     time_str = "{minutes:02}:{seconds:02}.{milliseconds:03} ".format(
                 minutes=time_min, seconds=time_s, milliseconds=time_ms) # MM:SS.mS
@@ -78,6 +79,7 @@ class control_2():
     INTAKE_OUT =                    con_2.buttonR2
     LB_MANUAL_UP =                  con_2.buttonL1
     LB_MANUAL_DOWN =                con_2.buttonL2
+    ZERO_ROT_SENSOR =               con_2.buttonLeft
 
 class motor():
     leftA = Motor( Ports.PORT3, GearSetting.RATIO_6_1, True) # stacked top
@@ -88,7 +90,7 @@ class motor():
     rightB = Motor(Ports.PORT16, GearSetting.RATIO_6_1, False) # rear
     rightC = Motor(Ports.PORT15, GearSetting.RATIO_6_1, False) # front
 
-    intakeChain = Motor(Ports.PORT14, GearSetting.RATIO_6_1, True)
+    intakeChain = Motor(Ports.PORT10, GearSetting.RATIO_6_1, False)
     intakeFlex = Motor(Ports.PORT5, GearSetting.RATIO_6_1, True)
     ladyBrown = Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
 
@@ -155,7 +157,7 @@ sensor.intakeColor.set_light_power(100, PERCENT)
 def calibrate_lady_brown():
     log("calibrating lady brown")
 
-    motor.ladyBrown.spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
+    # motor.ladyBrown.spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
     sensor.wallEncoder.set_position(0)
 
     log("lady brown calibration complete")
@@ -165,7 +167,7 @@ def calibrate_imu():
 
     sensor.imu.calibrate()
     while sensor.imu.is_calibrating():
-        wait(5)
+        sleep(10, TimeUnits.MSEC)
 
     log("IMU calibration complete")
 
@@ -408,6 +410,8 @@ class Robot():
         self.autonomous_controller = Autonomous(parent=self)
         self.driver_controller = Driver(parent=self)
 
+        self.LB_PID = LadyBrown(motor.ladyBrown)
+
         # Autonomous variables
         self.pos = [0.0, 0.0]
         self.heading = 0.0
@@ -524,7 +528,7 @@ class Autonomous():
         log("Running autonomous")
         self.autonomous_setup()
 
-        self.sequence()
+        self.sequence(globals())
         
         self.autonomous_cleanup()
     
@@ -533,12 +537,13 @@ class Autonomous():
         Run a test version of autonomous. This is NOT run in competition!
         """
         log("Running autonomous TEST", LogLevel.WARNING)
-        self.autonomous_setup()
+        self.run()
+        # self.autonomous_setup()
 
-        # place temporary / testing code here
-        sleep(500, TimeUnits.MSEC)
+        # # place temporary / testing code here
+        # sleep(500, TimeUnits.MSEC)
 
-        self.autonomous_cleanup()
+        # self.autonomous_cleanup()
     
     def background(self) -> None:
         """
@@ -697,6 +702,7 @@ class ControllerFunctions():
 
     @staticmethod
     def switch_mogo():
+        log("Switched mogo pneumatic")
         if pneumatic.mogo.value() == 0 and flags.mogo_pneu_engaged:
             flags.mogo_pneu_engaged = False
 
@@ -719,16 +725,15 @@ class ControllerFunctions():
         pneumatic.elevation_bar_lift.set(not pneumatic.elevation_bar_lift.value())
     
     @staticmethod
-    def home_lady_brown_PID():
-        log("Home lady brown PID")
-        flags.LB_enable_PID = True
-        flags.wall_setpoint = 1
-    
-    @staticmethod
     def toggle_PTO():
         log("Toggled PTO pneumatics")
         pneumatic.PTO_left.set(not pneumatic.PTO_left.value())
         pneumatic.PTO_right.set(pneumatic.PTO_left.value()) # right mimics left
+    
+    @staticmethod
+    def zero_lady_brown():
+        log("Zeroed wall stake rotation sensor")
+        sensor.wallEncoder.set_position(0)
 
 class Driver():
     def __init__(self, parent: Robot) -> None:
@@ -738,9 +743,6 @@ class Driver():
         self.robot = parent
         self.elevation_hold_duration = 0
         self.elevation_hold_duration_reset = 7
-
-        self.LB_PID = LadyBrown(motor.ladyBrown)
-
         self.LB_braketype = BrakeType.HOLD
 
         log("Driver object setup")
@@ -750,10 +752,13 @@ class Driver():
         Setup driver runtime things
         """
         sensor.intakeColor.set_light_power(100, PERCENT)
-        brain.screen.clear_screen()
 
         # bind controller functions
         control.DOINKER.pressed(ControllerFunctions.switch_doinker)
+        control.MOGO_GRABBER_TOGGLE.pressed(ControllerFunctions.switch_mogo)
+        control.INTAKE_HEIGHT_TOGGLE.pressed(ControllerFunctions.switch_intake_height)
+        control.LB_MACRO_HOME.pressed(self.robot.LB_PID.home)
+        control_2.ZERO_ROT_SENSOR.pressed(ControllerFunctions.zero_lady_brown)
 
     def run(self) -> None:
         """
@@ -789,6 +794,7 @@ class Driver():
     def intake_controls(self) -> None:
         if (control.INTAKE_IN_HOLD.pressing()):
             motor.intakeFlex.spin(FORWARD, 100, PERCENT)
+
             if flags.allow_intake_input:
                 motor.intakeChain.spin(FORWARD, 100, PERCENT)
         elif (control.INTAKE_OUT_HOLD.pressing()):
@@ -802,16 +808,17 @@ class Driver():
         # WALL STAKES MOTORS
         if control.LB_MANUAL_UP.pressing():
             motor.ladyBrown.spin(FORWARD, 100, PERCENT)
-            flags.LB_enable_PID = False
+            self.robot.LB_PID.enabled = False
         elif control.LB_MANUAL_DOWN.pressing():
             motor.ladyBrown.spin(REVERSE, 30, PERCENT)
-            flags.LB_enable_PID = False
-        else:
+            self.robot.LB_PID.enabled = False
+        elif not self.robot.LB_PID.enabled:
             motor.ladyBrown.stop(HOLD)
 
     def driver_loop(self) -> None:
         self.drive_controls()
         self.intake_controls()
+        self.lady_brown_controls()
 
         self.robot.color_sort_controller.sense()
 
@@ -833,7 +840,7 @@ class Driver():
             motor.rightB.spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
             motor.rightC.spin(FORWARD, (con_2.axis2.position() / 100) * 12, VOLT)
 
-            LB_braketype = BrakeType.COAST
+            self.LB_braketype = BrakeType.COAST
         else:
             motor.leftA.stop(BrakeType.COAST)
             motor.leftB.stop(BrakeType.COAST)
@@ -845,15 +852,16 @@ class Driver():
 
         # lady brown controls
         if con.buttonL1.pressing() or control_2.LB_MANUAL_DOWN.pressing():
+
             motor.ladyBrown.spin(REVERSE, 100, PERCENT)
-            self.LB_PID.enabled = False
-            LB_braketype = BrakeType.HOLD
+            self.robot.LB_PID.enabled = False
+            self.LB_braketype = BrakeType.HOLD
         elif con.buttonL2.pressing() or control_2.LB_MANUAL_UP.pressing():
             motor.ladyBrown.spin(FORWARD, 100, PERCENT)
-            self.LB_PID.enabled = False
-            LB_braketype = BrakeType.HOLD
-        else:
-            motor.ladyBrown.stop(LB_braketype)
+            self.robot.LB_PID.enabled = False
+            self.LB_braketype = BrakeType.HOLD
+        elif not self.robot.LB_PID.enabled:
+            motor.ladyBrown.stop(self.LB_braketype)
 
         # intake controls
         if con.buttonR1.pressing() or control_2.INTAKE_IN.pressing():
@@ -886,7 +894,7 @@ class Driver():
 
     def start_elevation(self) -> None:
         log("Starting elevation")
-        flags.LB_enable_PID = False
+        self.robot.LB_PID.enabled = False
         
         pneumatic.mogo.set(True)
 
@@ -929,6 +937,7 @@ class LadyBrown():
         self.threshold = 5
         self.motor = wall_motor
         self.target_rotation = 0
+        self.thread: Thread
 
         self.sensor = 0
         self.last_enabled = self.enabled
@@ -949,7 +958,7 @@ class LadyBrown():
         self.target_rotation = LadyBrown.POS_ELEVATION_UNWIND
         self.sensor_type = RotationSensorType.RELATIVE
         self.autostop = True
-        self.enabled = True
+        self.enabled = False
 
     def run(self):
         """
@@ -1076,7 +1085,6 @@ class flags():
     """
     'global' booleans enum for various states.
     """
-    LB_enable_PID = False
     mogo_pneu_engaged = False
     mogo_pneu_status = False
     color_setting = ColorSort.NONE
@@ -1088,6 +1096,9 @@ def pull_data(data: dict, robot: Robot):
     """
     Assigns data variables to different objects.
     """
+    pass
+
+def null_function():
     pass
 
 do_logging = True
@@ -1105,27 +1116,42 @@ def main():
     
     if not sd_fail:
         robot = Robot()
-        comp = Competition(robot.driver, robot.autonomous)
+        robot.LB_PID.thread = Thread(robot.LB_PID.run)
+        comp = Competition(null_function, null_function)
+
+        # Load autonomous into robot
+        robot.autonomous_controller.load_path(data["autons"]["selected"])
 
         pull_data(data, robot) # send data from SD data (local scope) into robot object & subobjects
         # when connected to the field, do everything normally
         if comp.is_field_control() or comp.is_competition_switch():
             log("Connected to field or comp switch.")
+            comp = Competition(robot.driver, robot.autonomous)
 
             calibrate_imu()
             calibrate_lady_brown()
 
-            # Load autonomous into robot
-            robot.autonomous_controller.load_path(data["autons"]["selected"])
+            brain.screen.clear_screen(Color.GREEN)
+            brain.screen.render()
+
+            log("Ready for match!")
+
         elif data["config"]["auton_test"]:
             calibrate_imu()
+
+            brain.screen.clear_screen(Color.YELLOW)
+            brain.screen.render()
             log("Not auto-calibrating LB (auton test)", LogLevel.WARNING)
             robot.autonomous_controller.test()
+
         else:
             log("Default to driver (no auton test, no field control)", LogLevel.WARNING)
 
-            calibrate_imu()
             calibrate_lady_brown()
+            calibrate_imu()
+
+            brain.screen.clear_screen(Color.YELLOW)
+            brain.screen.render()
 
             robot.driver_controller.run()
 
