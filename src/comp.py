@@ -11,6 +11,7 @@
 
 from vex import *
 from json import load, dumps
+from math import radians
 
 class LogLevel():
     # LogLevel constants for better ID
@@ -37,42 +38,50 @@ def threaded_log(msg: Any, level):
     time_str = "{minutes:02}:{seconds:02}.{milliseconds:03} ".format(
                 minutes=time_min, seconds=time_s, milliseconds=time_ms) # MM:SS.mS
 
-    if level == 0: tag = "[UNKNOWN] "
-    if level == 1: tag = "[DEBUG] "
-    if level == 2: tag = "[INFO] "
-    if level == 3: tag = "[WARNING] "
-    if level == 4: tag = "[ERROR] "
-    if level == 5: tag = "[FATAL] "
+    if level == 0: tag = "UNKNOWN"
+    if level == 1: tag = "DEBUG"
+    if level == 2: tag = "INFO"
+    if level == 3: tag = "WARNING"
+    if level == 4: tag = "ERROR"
+    if level == 5: tag = "FATAL"
     # MM:SS.0000 [WARNING] Unable to load SD card!
-    print(time_str + tag + str(msg))
+    # print(time_str + tag + str(msg))
+    foxglove_logLevel = {
+        "topic": "foxglove.LogLevel",
+        "const": level
+    }
+    packet_mgr.add_packet("foxglove.Log", {"timestamp": time_ms, "message": msg, "level": foxglove_logLevel, "name": "main", "file": "main", "line": 0})
 
 def log(msg: Any, level = LogLevel.INFO):
     if do_logging:
         Thread(threaded_log, (msg, level))
 
 class PacketTiming:
-    CONTROLLER = 35
+    CONTROLLER = 40
     BRAIN = 20
 
 class PacketManager():
-    def __init__(self, timing) -> None:
+    def __init__(self, timing: PacketTiming | int) -> None:
         self.thread: Thread
         self.queue = []
         self.delay = timing
         self.allow_sending = True
 
     def start(self) -> None:
-        global do_logging
+        #print newline to ensure we don't get a decode error from previous print
+        print("") 
+        # global do_logging
         self.thread = Thread(self.loop)
-        do_logging = False
+        # do_logging = False
     
     def loop(self) -> None:
         while True:
             if self.allow_sending:
                 if len(self.queue) != 0:
-                    print(self.queue.pop(0)[0])
+                    print(self.queue.pop(0)[1])
+                    # print(brain.timer.system())
             
-            sleep(self.delay, TimeUnits.MSEC)
+            sleep(self.delay, TimeUnits.MSEC) #type: ignore
     
     def add_packet(self, topic, payload: dict) -> bool:
         """
@@ -81,9 +90,10 @@ class PacketManager():
             False if packet topic already in queue.
             True if packet was added to queue.
         """
-        for item in self.queue:
-            if item[0] == topic:
-                return False
+        if topic != "LOG": # we don't want to drop any log packets
+            for item in self.queue:
+                if item[0] == topic:
+                    return False
         
         data = {
             "topic": topic,
@@ -1185,7 +1195,22 @@ def pull_data(data: dict, robot: Robot):
 def null_function():
     pass
 
+def odom_packets(robot: Robot):
+    while True:
+        data = {
+            "x": round(robot.pos[0] / 25.4, 2),
+            "y": round(robot.pos[1] / 25.4, 2),
+            "theta": round(radians(sensor.imu.heading()), 2)
+        }
+        packet_mgr.add_packet("odometry", data)
+        sleep(35, MSEC)
+
+def start_odom_packets(robot: Robot):
+    Thread(odom_packets, (robot,))
+
 do_logging = True
+packet_mgr = PacketManager(PacketTiming.CONTROLLER)
+packet_mgr.start()
 
 # run file
 def main():
@@ -1202,6 +1227,8 @@ def main():
         robot = Robot()
         robot.LB_PID.thread = Thread(robot.LB_PID.run)
         comp = Competition(null_function, null_function)
+
+        brain.timer.event(start_odom_packets, 2000, (robot,))
 
         # Load autonomous into robot
         robot.autonomous_controller.load_path(data["autons"]["selected"])
