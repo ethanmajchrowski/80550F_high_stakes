@@ -10,7 +10,7 @@
 # ██████  ███████   ████   ██  ██████ ███████ ███████ 
 
 from vex import *
-from json import load, dump
+from json import load, dumps
 
 class LogLevel():
     # LogLevel constants for better ID
@@ -49,6 +49,48 @@ def threaded_log(msg: Any, level):
 def log(msg: Any, level = LogLevel.INFO):
     if do_logging:
         Thread(threaded_log, (msg, level))
+
+class PacketTiming:
+    CONTROLLER = 35
+    BRAIN = 20
+
+class PacketManager():
+    def __init__(self, timing) -> None:
+        self.thread: Thread
+        self.queue = []
+        self.delay = timing
+        self.allow_sending = True
+
+    def start(self) -> None:
+        global do_logging
+        self.thread = Thread(self.loop)
+        do_logging = False
+    
+    def loop(self) -> None:
+        while True:
+            if self.allow_sending:
+                if len(self.queue) != 0:
+                    print(self.queue.pop(0)[0])
+            
+            sleep(self.delay, TimeUnits.MSEC)
+    
+    def add_packet(self, topic, payload: dict) -> bool:
+        """
+        Adds item to packet queue.
+        Returns:
+            False if packet topic already in queue.
+            True if packet was added to queue.
+        """
+        for item in self.queue:
+            if item[0] == topic:
+                return False
+        
+        data = {
+            "topic": topic,
+            "payload": payload
+        }
+        self.queue.append((topic, dumps(data)))
+        return True
 
 brain = Brain()
 con = Controller(PRIMARY)
