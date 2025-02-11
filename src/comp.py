@@ -180,7 +180,7 @@ def dist(p1, p2):
 
 class PurePursuit():
     def __init__(self, look_ahead_dist, finish_margin, 
-                 path: list[tuple[float, float]], checkpoints) -> None:
+                 path: list[tuple[float, float, float]], checkpoints) -> None:
         """
         Init variables. Robot position is able to be passed in from another source, like a GPS sensor or odometry algorithm.
         Arguments:
@@ -208,6 +208,7 @@ class PurePursuit():
         and that is closest to the end of the path.
         """
         goal = self.path[self.last_found_point+1][:2]
+        curvature = 0.0
 
         # Iterate over every un-crossed point in our path.
         #if we are close to the finish point, regardless of what has happened, finish the path
@@ -253,13 +254,15 @@ class PurePursuit():
 
                         minX, minY = min(ax, bx), min(ay, by)
                         maxX, maxY = max(ax, bx), max(ay, by)
+
                         # general check to see if either point is on the line 
                         if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) or ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
+                            sol1_distance = dist(sol1, point2)
+                            sol2_distance = dist(sol2, point2)
+
                             if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) and ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
                                 # both solutions are within bounds, so we need to compare and decide which is better
                                 # choose based on distance to pt2
-                                sol1_distance = dist(sol1, point2)
-                                sol2_distance = dist(sol2, point2)
 
                                 if sol1_distance < sol2_distance:
                                     goal = sol1
@@ -271,6 +274,16 @@ class PurePursuit():
                                     goal = sol1
                                 else:
                                     goal = sol2
+                            
+                            # we have a goal solution at this point in time
+                            # we can now get that solutions completion of the line segment
+                            # this lets us linearly interpolate between the curvature of point[i] and point[i+1]
+                            segment_length = dist(self.path[i][:2], self.path[i+1][:2])
+                            if goal == sol1: completed_length = sol1_distance
+                            else: completed_length = sol2_distance
+
+                            percent = (1 - (completed_length/segment_length))
+                            curvature = (self.path[i][2] * (1 - percent) + self.path[i+1][2] * percent)
                             
                         # first, check if the robot is not close to the end point in the path
                         distance_to_end = dist(current_pos, self.path[len(self.path)-1][:2])
@@ -296,7 +309,7 @@ class PurePursuit():
         except ZeroDivisionError:
             raise NameError
     
-        return goal
+        return goal[:2], curvature
 
 class DeltaPositioning():
     def __init__(self, leftEnc, rightEnc, imu) -> None:
@@ -580,26 +593,47 @@ class Autonomous():
                     pneumatic.intake.set(False)
                 if auto_flags.raise_after_auto_halt:
                     pneumatic.intake.set(True)
-
-    def path(self, path, events=[], checkpoints=[], backwards = False,
+    
+    def path(self, path, *, events=[], checkpoints=[], backwards = False,
              look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
              heading_authority=1.0, max_turn_volts = 8,
              hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
-             turn_speed_weight = 0.0) -> None:
+             K_curvature_speed = 0.0, K_curvature_look_ahead = 0.0, a_curvature_exp = 0.1,
+             max_curvature_speed = 3.0, min_look_ahead = 300) -> None:
+        """
+        Runs a path. Halts program execution until finished.
+        
+        Arguments:
+            path (Iterable): List of points that will be followed.
+            K_curvature_speed (float): Constant that defines the weight 
+                that the path curvature will be multiplied by (usually more than 1, curvature is often small).
+            K_curvature_look_ahead (float): Constant the defines the weight that the look
+                ahead distance will shrink based on path curvature
+            max_curvature_speed (float): Most volts that the curvature will be allowed to change on the motors.
+            min_look_ahead (int): Minimum look ahead that we will look on the path (curvature based look ahead)
+        """
         log("Running path")
         if timeout is not None:
+            # determine when we will stop trying to drive the path and just complete it
             time_end = brain.timer.system() + timeout
 
+        # intialize the path controller object for this path only
         path_handler = self.path_controller(look_ahead_dist, finish_margin, path, checkpoints)
+        # create the heading PID with this path's settings
         heading_pid = MultipurposePID(hPID_KP, hPID_KD, hPID_KI, hPID_KI_MAX, hPID_MIN_OUT)
+        # reference the robot from the controller
         robot = self.robot
 
+        # setup local path variables
         done = path_handler.path_complete
         waiting = False
         wait_stop = 0
 
+        prev_curvature = 0
+
+        # start driving this path
         while not done:
-            target_point = path_handler.goal_search(robot.pos)
+            target_point, curvature = path_handler.goal_search(robot.pos)
             dx, dy = target_point[0] - robot.pos[0], target_point[1] - robot.pos[1] # type: ignore
             heading_to_target = math.degrees(math.atan2(dx, dy))
 
@@ -625,14 +659,15 @@ class Autonomous():
 
             heading_output = heading_pid.calculate(0, heading_error)
 
-            # dynamic forwards speed
-            dynamic_forwards_speed = abs(heading_output) * turn_speed_weight
-            unclamped = dynamic_forwards_speed
-            # clamp speed
-            if dynamic_forwards_speed < -4:
-                dynamic_forwards_speed = -4
-            elif dynamic_forwards_speed > 4:
-                dynamic_forwards_speed = 4
+            # Curvature exponential smoothing ((x * 1-a) + (y * a))
+            curvature = (prev_curvature * (1-a_curvature_exp)) + (curvature * a_curvature_exp)
+            # avoid unnecessary calculations if these are off (0.0)
+            if K_curvature_speed != 0.0:
+                dynamic_forwards_speed = min(max_curvature_speed, curvature * K_curvature_speed)
+            else: dynamic_forwards_speed = 0
+            
+            if K_curvature_look_ahead != 0.0:
+                path_handler.look_dist = look_ahead_dist - min(curvature * K_curvature_look_ahead, min_look_ahead)
 
             forwards_speed = self.fwd_speed
 
