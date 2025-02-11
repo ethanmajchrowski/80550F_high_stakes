@@ -56,7 +56,8 @@ controls2 = {
     "INTAKE_OUT": con_2.buttonR2,
     "LB_MANUAL_UP": con_2.buttonL1,
     "LB_MANUAL_DOWN": con_2.buttonL2,
-    "LB_RAISE_MACRO": con_2.buttonA
+    "LB_RAISE_MACRO": con_2.buttonA,
+    "ZERO_ROT_SENSOR": con_2.buttonLeft
 }
 
 motors = {
@@ -831,6 +832,10 @@ def toggle_PTO():
     PTO_right_pneu.set(PTO_left_pneu.value()) # right mimics left
     print("PTO L: {}, PTO R: {}".format(PTO_left_pneu.value(), PTO_left_pneu.value()))
 
+def zero_lady_brown():
+    print("zeroed wall stake rotation sensor!")
+    wallEnc.set_position(0)
+
 def elevation_macro():
     print("start elevation")
 
@@ -1108,17 +1113,16 @@ def driver():
         else:
             elevation_hold_duration = 5
 
-        data = {
-            "integral": round(LB_PID.pid.integral * LB_PID.pid.kI, 3),
-            "integral_p": round(LB_PID.pid.integral_processed, 3),
-            "target": round(LB_PID.target_rotation, 3),
-            "sensor": round(LB_PID.sensor, 3),
-            "derivative": round(LB_PID.pid.derivative, 3),
-            "proportional": round(LB_PID.pid.error * LB_PID.pid.kP, 3)
-        }
+        # data = {
+        #     "integral": round(LB_PID.pid.integral * LB_PID.pid.kI, 3),
+        #     "integral_p": round(LB_PID.pid.integral_processed, 3),
+        #     "target": round(LB_PID.target_rotation, 3),
+        #     "sensor": round(LB_PID.sensor, 3),
+        #     "derivative": round(LB_PID.pid.derivative, 3),
+        #     "proportional": round(LB_PID.pid.error * LB_PID.pid.kP, 3)
+        # }
         # payload_manager.send_data("LB", data)
-
-        # print(wallEnc.angle(), wallEnc.position(), LB_PID.sensor, LB_PID.target_rotation, LB_PID.pid.integral)
+        # print(wallEnc.position())
 
         brain.screen.render()
 
@@ -1154,6 +1158,7 @@ controls["DOINKER"].pressed(switch_doinker)
 controls["MOGO_GRABBER_TOGGLE"].pressed(switch_mogo)
 controls["INTAKE_HEIGHT_TOGGLE"].pressed(switch_intake_height)
 controls["LB_MACRO_HOME"].pressed(LB_PID.home)
+controls2["ZERO_ROT_SENSOR"].pressed(zero_lady_brown)
 
 def odom_logging_thread():
     while True:
