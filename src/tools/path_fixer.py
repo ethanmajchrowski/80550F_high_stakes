@@ -55,9 +55,9 @@ for path_number, path in enumerate(all_paths_segments):
     # print(f"Path {path_number+1}")
     # print(path, end=",\n")
 
-for path in ap:
-    print(path)
-# print(ap)
+# for path in ap:
+#     print(path)
+print(ap)
 # print(path)
 # pyperclip.copy(str(path))
 # print("Copied to clipboard!")

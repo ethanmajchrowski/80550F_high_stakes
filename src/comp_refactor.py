@@ -461,10 +461,11 @@ class Autonomous():
 
         log("Autonomous object setup")
     
-    def autonomous_setup(self) -> None:
+    def autonomous_setup(self, pos_override: None | list[int] | list[tuple] = None, heading_override: None | int | float = None) -> None:
         """
         Call at start of auton. Sets up the coordinates n stuff for the loaded path.
         """
+        # if pos_override is not None:
         try:
             sensor.imu.set_heading(self.autonomous_data["start_heading"])
             self.robot.heading = (self.autonomous_data["start_heading"])
@@ -537,13 +538,23 @@ class Autonomous():
         Run a test version of autonomous. This is NOT run in competition!
         """
         log("Running autonomous TEST", LogLevel.WARNING)
-        self.run()
-        # self.autonomous_setup()
+        # self.run()
+        self.autonomous_setup()
 
-        # # place temporary / testing code here
-        # sleep(500, TimeUnits.MSEC)
+        self.robot.pos = [0.0, 0.0]
+        sensor.imu.set_heading(0)
 
-        # self.autonomous_cleanup()
+
+        controller = self
+
+        # place temporary / testing code here
+        sleep(500, TimeUnits.MSEC)
+        paths = [((-19.17, -54.72), (-22.72, 15.16), (-36.51, 83.7), (-60.54, 149.31), (-93.88, 210.72), (-135.04, 267.21), (-182.34, 318.73), (-234.26, 365.64), (-289.61, 408.47), (-347.37, 448.01), (-406.75, 485.07), (-467.26, 520.26), (-528.51, 554.15), (-590.18, 587.27), (-651.98, 620.13), (-713.65, 653.26), (-774.87, 687.2), (-835.28, 722.55), (-894.42, 759.97), (-951.65, 800.24), (-1006.09, 844.19), (-1056.5, 892.68), (-1100.88, 946.72), (-1135.99, 1007.14), (-1160.45, 1072.53), (-1172.88, 1141.25), (-1174.64, 1184.0))]
+
+        controller.fwd_speed = 8
+        controller.path(paths[0])
+
+        self.autonomous_cleanup()
     
     def background(self) -> None:
         """
@@ -575,7 +586,7 @@ class Autonomous():
              heading_authority=1.0, max_turn_volts = 8,
              hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
              turn_speed_weight = 0.0) -> None:
-
+        log("Running path")
         if timeout is not None:
             time_end = brain.timer.system() + timeout
 
@@ -964,7 +975,7 @@ class LadyBrown():
         """
         Run once to start PID thread.
         """
-        print("starting LB")
+        log("Starting lady brown thread")
         while True:
             if self.enabled:
                 self.loop()
@@ -1113,7 +1124,7 @@ def main():
     except:
         sd_fail = True
         log("ERROR LOADING SD CARD DATA", LogLevel.FATAL)
-    
+
     if not sd_fail:
         robot = Robot()
         robot.LB_PID.thread = Thread(robot.LB_PID.run)
