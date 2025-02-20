@@ -11,7 +11,7 @@
 
 from vex import *
 from json import load, dumps
-from math import radians
+from random import random
 
 class LogLevel():
     # LogLevel constants for better ID
@@ -102,6 +102,10 @@ class PacketManager():
         self.queue.append((topic, dumps(data)))
         return True
 
+do_logging = True
+packet_mgr = PacketManager(PacketTiming.CONTROLLER)
+packet_mgr.start()
+
 brain = Brain()
 con = Controller(PRIMARY)
 con_2 = Controller(PARTNER)
@@ -144,17 +148,17 @@ class motor():
 
     intakeChain = Motor(Ports.PORT10, GearSetting.RATIO_6_1, False)
     intakeFlex = Motor(Ports.PORT5, GearSetting.RATIO_6_1, True)
-    ladyBrown = Motor(Ports.PORT7, GearSetting.RATIO_18_1, False)
+    ladyBrown = Motor(Ports.PORT7, GearSetting.RATIO_18_1, True)
 
 # PNEUMATICS
 class pneumatic():
     mogo = DigitalOut(brain.three_wire_port.a)
-    elevation_hook_release = DigitalOut(brain.three_wire_port.b)
-    elevation_bar_lift = DigitalOut(brain.three_wire_port.c)
-    PTO_left = DigitalOut(brain.three_wire_port.d) #! left/right not done yet
-    PTO_right = DigitalOut(brain.three_wire_port.e)
-    elevation_bar_lower = DigitalOut(brain.three_wire_port.f)
-    doinker = DigitalOut(brain.three_wire_port.g)
+    # elevation_hook_release = DigitalOut(brain.three_wire_port.b)
+    elevation_bar_lift_left = DigitalOut(brain.three_wire_port.c)
+    PTO = DigitalOut(brain.three_wire_port.d)
+
+    elevation_bar_lower_right = DigitalOut(brain.three_wire_port.f)
+    intake = DigitalOut(brain.three_wire_port.g)
     intake = DigitalOut(brain.three_wire_port.h)
 
 #### SENSORS
@@ -166,10 +170,12 @@ class sensor():
     # DISTANCE SENSORS
     intakeDistance = Distance(Ports.PORT9)
 
-    leftWallDistance = Distance(Ports.PORT6)
-    backWallDistance = Distance(Ports.PORT13)
+    wallLeftDistance = Distance(Ports.PORT6)
+    wallBackDistance = Distance(Ports.PORT13)
+    wallFrontDistance = Distance(Ports.PORT9)
+    wallRightDistance = Distance(Ports.PORT20)
 
-    elevationDistance = Distance(Ports.PORT20)
+    # elevationDistance = Distance(Ports.PORT20) # unplugged
 
     # MISC SENSORS
     intakeColor = Optical(Ports.PORT10)
@@ -228,6 +234,12 @@ def dist(p1, p2):
     x2, y2 = p2
     return math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
 
+def gauss(mu = 0, sigma = 1):
+    u1 = random()
+    u2 = random()
+
+    z = math.sqrt(-2.0 * math.log(u1)) * math.cos(2.0 * math.pi * u2)
+    return mu + sigma * z
 # classes
 
 class PurePursuit():
@@ -467,6 +479,282 @@ class MultipurposePID:
             wait(DELAY, MSEC)
         
         return output
+class MCL:
+    def __init__(self):
+        self.num_lasers = 4
+
+        self.field_size = 3600
+        self.num_particles = 50
+        self.avg_score = 0
+        self.avg_pos = [0, 0]
+
+        self.simulation = set()
+
+    def update_avg_position(self):
+        """Returns the average position of all the points in the simulation set."""
+        avg_x, avg_y = self.avg_pos
+        for point in self.simulation:
+            #* linear average
+            # avg_x = (avg_x + point[1][0]) / 2
+            # avg_y = (avg_y + point[1][1]) / 2
+
+            #! weighted average based on score ( not working?)
+            # if point[0] > 2000: continue
+            # print(point)
+            if self.avg_score:
+                weight = point[0] / self.avg_score * 1.8
+            else:
+                weight = 0
+
+            weight = round(weight, 3) * 5
+            if 1-weight < 0:
+                weight = 1
+            
+            # print(weight)
+
+            avg_x = (avg_x * (weight)) + (point[1][0] * (1-weight))
+            avg_y = (avg_y * (weight)) + (point[1][1] * (1-weight))
+            # print(avg_x, avg_y, weight, 1-weight)
+        
+        self.avg_pos = [avg_x, avg_y]
+        return((avg_x, avg_y))
+
+    def redistribute(self, angle, target, clear = True, count = None):
+        """
+        Used to continue the algorithm. Resets the current simulation and evenly distributes the points across the map.
+        """
+        if count is None:
+            count = self.num_particles
+        
+        if clear:
+            self.simulation = set()
+        num = int(math.sqrt(count))
+        dist = self.field_size / num
+
+        for x in range(num):
+            for y in range(num):
+                pos = (int(dist*x - 1800 + 5), int(dist*y - 1800 + 5))
+
+                self.simulate_robot(pos, angle, target)
+
+    def simulate_robot(self, pos: list | tuple, angle, target: list[int]):
+        """
+        Returns the error score of a simulated robot at the given pos / angle.
+        Compares to the given target lasers, a list of 4 integers.
+        If a laser is over 2.5m, it should be handled as None.
+        Target list of lasers should move counter clockwise starting at 0*, and have the same length as num_lasers
+        """
+        score = 0
+        for i in range(self.num_lasers):
+            corrected_angle = (angle + i*(360//self.num_lasers) + 90) % 360
+            dist = self.simulate_laser(pos, corrected_angle)
+            # None checking (if a sim laser is out of range, the same real lasers should also be out of range)
+            if target[i] is None:
+                if dist > 2500:
+                    # this means that our found distance is correct (out of range, so keep going)
+                    continue 
+                else:
+                    # one of our points is technically within range, but it should be none
+                    # return
+                    score = 9000
+                    break
+
+            # linear error from the target
+            error = abs(target[i] - dist)
+            score += error
+        
+        self.simulation.add((score, pos))
+
+    def motion_offset(self, motion):
+        dx, dy = motion
+        ns = set()
+        for point in self.simulation:
+            x = point[1][0] + dx + gauss(0, 2)
+            y = point[1][1] - dy - gauss(0, 2)
+            if -1800 <= x <= 1800 and -1800 <= y <= 1800:
+                ns.add((point[0], (x, y)))
+        self.simulation = ns.copy()
+        del ns
+
+    def resample(self, tolerance, angle, target):
+        """Iterate through our simulated points and destroy they ones with high error.
+        Re-run robot simulation with some noise"""
+        angle = angle % 360
+
+        survived = set()
+        avg_score = 0
+        for point in self.simulation:
+            avg_score = (avg_score + point[0]) / 2
+        self.avg_score = avg_score
+        for point in self.simulation:
+            if point[0] < avg_score:
+                if random() > 0.2:
+                    survived.add(point)
+        
+        if len(survived) != 0:
+            children = self.num_particles // len(survived)
+
+            self.simulation = survived.copy()
+            for point in survived:
+                for i in range(children):
+                    pos = (point[1][0] + (gauss()) * 20, point[1][1] + (gauss()) * 20)
+                    self.simulate_robot(pos, angle, target)
+
+            # # add in small number of distributed points
+            # self.redistribute(angle, target, 100, False)
+
+            # print(f"Number of points: {len(self.simulation)}")
+    
+    def simulate_laser(self, pos: list | tuple, angle):
+        """
+        Fire a laser in the direction of the angle at the given pos.
+        Returns the distance that the laser gives from the wall.
+        """
+        # Get the equation of the laser based on slope.
+        # We can then plug in the coordinate of the wall to get the pos that it hit.
+        angle %= 360
+        r_angle = math.radians(angle)
+        x, y = pos
+
+        west_intersect = None
+        east_intersect = None
+        north_intersect = None
+        south_intersect = None
+
+        sin_out = math.sin(r_angle)
+        cos_out = math.cos(r_angle)
+
+        # using an equation we can find the intersection with a certain coordinate
+        # this can give us the intersection with the wall from this simulated position
+        if cos_out != 0:
+            west_intersect = (-1800, y - (((1800 + x) / cos_out) * sin_out))
+            east_intersect = (1800, y + (((1800 - x) / cos_out) * sin_out))
+        if sin_out != 0:
+            north_intersect = (x + (((1800 - y) / sin_out) * cos_out), 1800)
+            south_intersect = (x - (((1800 + y) / sin_out) * cos_out), -1800)
+
+        points = [west_intersect, east_intersect, north_intersect, south_intersect]
+        valid_points = []
+        # start be excluding the points outside of our bounds
+        # because of the order of points, valid_points[0] will be west or east
+        # and valid_points[1] will be north or south
+        for point in points:
+            if point is not None:
+                if (-1800 <= point[0] <= 1800) and (-1800 <= point[1] <= 1800):
+                    valid_points.append((round(point[0]), round(point[1])))
+        
+        # sort by point Y - coordinate
+        valid_points.sort(key=lambda x: x[1], reverse=True)
+        # now determine which point we are looking at via angle
+        # if we are looking up, we take the pos that has a higher y coordinate
+        if len(valid_points) == 0:
+            return 9999
+        if 0 < angle <= 180: laser_point = valid_points[0]
+        else: laser_point = valid_points[1]
+
+        return int(dist(laser_point, pos))
+
+class MCL_Handler:
+    def __init__(self) -> None:
+        self.left = sensor.wallLeftDistance
+        self.right = sensor.wallRightDistance
+        self.back = sensor.wallFrontDistance
+        self.front = sensor.wallBackDistance
+        self.lasers = [None, None, None, None]
+        self.prev_pos = [0.0, 0.0]
+
+        self.mcl = MCL()
+
+        self.is_running = False
+
+    def start(self):
+        self.mcl.redistribute(sensor.imu.heading(), self.lasers)
+        self.thread = Thread(self.main)
+        self.is_running = True
+
+    def main(self):
+        while True:
+            if self.is_running:
+                # print("start")
+                self.loop()
+                # print("end")
+                sleep(35, TimeUnits.MSEC)
+
+    def loop(self):
+        # filter each laser and distance it
+        # get distance and add in distance from the center of the robot
+        fd = self.front.object_distance() - 40
+        ld = self.left.object_distance() + 163
+        bd = self.back.object_distance() + 110
+        rd = self.right.object_distance() + 163
+        if fd >= 9000:
+            self.lasers[0] = None
+        elif self.lasers[0] is not None:
+            self.lasers[0] = (self.lasers[0] * 0.9 + fd * 0.1)
+        else:
+            self.lasers[0] = fd # type: ignore
+
+        if ld >= 9000:
+            self.lasers[1] = None
+        elif self.lasers[1] is not None:
+            self.lasers[1] = (self.lasers[1] * 0.9 + ld * 0.1)
+        else:
+            self.lasers[1] = ld # type: ignore
+
+        if bd >= 9000:
+            self.lasers[2] = None
+        elif self.lasers[2] is not None:
+            self.lasers[2] = (self.lasers[2] * 0.9 + bd * 0.1) # type: ignore
+        else:
+            self.lasers[2] = bd # type: ignore
+
+        if rd >= 9000:
+            self.lasers[3] = None
+        elif self.lasers[3] is not None:
+            self.lasers[3] = (self.lasers[3] * 0.9 + rd * 0.1) # type: ignore
+        else:
+            self.lasers[3] = rd # type: ignore
+        
+        # print(self.lasers)
+
+        self.mcl.resample(1000, sensor.imu.heading(), self.lasers)
+        self.mcl.redistribute(sensor.imu.heading(), self.lasers, False, 20)
+        # print(len(self.mcl.simulation))
+        out_x, out_y = self.mcl.update_avg_position()
+        # print("")
+        # print(self.mcl.simulation)
+        out_x = (0.6 * self.prev_pos[0]) + (0.4 * out_x)
+        out_y = (0.6 * self.prev_pos[1]) + (0.4 * out_y)
+
+        self.prev_pos = (out_x, out_y)
+        # print(self.lasers, self.prev_pos)
+        # for pos in self.mcl.simulation:
+        #     print(pos)
+
+        data = {
+            "x": round(self.prev_pos[0] / 25.4, 2),
+            "y": round(-self.prev_pos[1] / 25.4, 2),
+            "theta": round(math.radians(sensor.imu.heading()), 2)
+        }
+        packet_mgr.add_packet("odometry", data)
+
+        data = {
+            "f": self.lasers[0],
+            "l": self.lasers[1],
+            "b": self.lasers[2],
+            "r": self.lasers[3]
+        }
+        # packet_mgr.add_packet("lsr", data)
+        sleep(35, MSEC)
+
+        # data = {
+        #     "f": self.lasers[0],
+        #     "l": self.lasers[1],
+        #     "b": self.lasers[2],
+        #     "r": self.lasers[3]
+        # }
+        # packet_mgr.add_packet("lsr", data)
+
 
 class Robot():
     def __init__(self) -> None:
@@ -517,6 +805,7 @@ class Autonomous():
 
         self.positioning_algorithm = DeltaPositioning(sensor.leftEncoder, sensor.rightEncoder, sensor.imu)
         self.path_controller = PurePursuit
+        self.mcl_controller = MCL_Handler()
 
         self.fwd_speed = 8
 
@@ -582,8 +871,9 @@ class Autonomous():
         while True:
             self.robot.heading = sensor.imu.heading()
             dx, dy = self.positioning_algorithm.update()
-            self.robot.pos[0] += dx
-            self.robot.pos[1] += dy
+            # self.robot.pos[0] += dx
+            # self.robot.pos[1] += dy
+            self.mcl_controller.mcl.motion_offset((dx, dy))
 
             sleep(20, TimeUnits.MSEC)
     
@@ -609,15 +899,29 @@ class Autonomous():
         self.robot.pos = [0.0, 0.0]
         sensor.imu.set_heading(0)
 
+        self.mcl_controller.start()
 
         controller = self
 
         # place temporary / testing code here
         sleep(500, TimeUnits.MSEC)
-        paths = [((0.81, 1.89), (-2.87, 71.75), (-17.16, 140.18), (-42.16, 205.41), (-76.93, 266.0), (-119.85, 321.17), (-169.07, 370.86), (-223.07, 415.37), (-280.41, 455.49), (-339.94, 492.31), (-400.99, 526.54), (-463.08, 558.85), (-525.84, 589.86), (-588.96, 620.12), (-652.17, 650.18), (-715.21, 680.61), (-777.78, 711.98), (-839.52, 744.95), (-899.96, 780.24), (-958.41, 818.71), (-1013.94, 861.27), (-1064.84, 909.25), (-1108.4, 963.91), (-1142.67, 1024.75), (-1165.42, 1090.78), (-1174.64, 1184.0))]
+        # paths = [[(0.0, 0.0, 0), (1.72, 59.98, 0.0), (3.44, 119.95, 0.05), (4.35, 179.93, 0.11), (3.33, 239.92, 0.0), (2.3, 299.91, 0.16), (-1.63, 359.78, 0.02), (-5.94, 419.62, 0.16), (-13.19, 479.16, 0.05), (-21.4, 538.59, 0.23), (-33.69, 597.3, 0.1), (-47.79, 655.57, 0.24), (-66.07, 712.72, 0.29), (-89.17, 768.02, 0.29), (-116.99, 821.05, 0.38), (-150.62, 870.57, 0.46), (-190.73, 915.01, 0.51), (-237.12, 952.83, 0.51), (-288.77, 983.1, 0.47), (-344.18, 1005.85, 0.39), (-401.9, 1021.98, 0.3), (-460.87, 1032.82, 0.21), (-520.44, 1039.87, 0.13), (-580.25, 1044.58, 0.05), (-640.13, 1048.31, 0.02), (-699.99, 1052.4, 0.11), (-759.69, 1058.4, 0.2), (-818.9, 1067.94, 0.3), (-877.0, 1082.69, 0.4), (-932.85, 1104.32, 0.5), (-984.78, 1134.07, 0.57), (-1030.9, 1172.17, 0.57), (-1069.84, 1217.62, 0.52), (-1101.31, 1268.56, 0.42), (-1126.1, 1323.06, 0.32), (-1145.59, 1379.71, 0.23), (-1161.16, 1437.64, 0.31), (-1171.36, 1496.77, 0.12), (-1179.47, 1556.17, 0.14), (-1185.0, 1615.91, 0.14), (-1188.08, 1675.81, 0.08), (-1189.74, 1735.78, 0.06)]]
 
-        controller.fwd_speed = 8
-        controller.path(paths[0])
+
+        # controller.fwd_speed = 12
+        # controller.path(paths[0], 
+        #                 K_curvature_speed=1800,
+        #                 max_curvature_speed=3.5,
+        #                 a_curvature_exp=0.025, 
+        #                 K_curvature_look_ahead=10,
+        #                 a_curvature_speed_exp=0.1)
+        # controller.path(paths[0], 
+        #                 K_curvature_speed=3000,
+        #                 max_curvature_speed=5,
+        #                 a_curvature_exp=0.025, 
+        #                 K_curvature_look_ahead=10,
+        #                 a_curvature_speed_exp=0.1)
+        sleep(1000, SECONDS)
 
         self.autonomous_cleanup()
     
@@ -651,7 +955,7 @@ class Autonomous():
              heading_authority=1.0, max_turn_volts = 8,
              hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
              K_curvature_speed = 0.0, K_curvature_look_ahead = 0.0, a_curvature_exp = 0.1,
-             max_curvature_speed = 3.0, min_look_ahead = 300) -> None:
+             max_curvature_speed = 3.0, min_look_ahead = 300, a_curvature_speed_exp = 0.1) -> None:
         """
         Runs a path. Halts program execution until finished.
         
@@ -682,6 +986,7 @@ class Autonomous():
         wait_stop = 0
 
         prev_curvature = 0
+        prev_speed_curvature = 0
 
         # start driving this path
         while not done:
@@ -712,10 +1017,13 @@ class Autonomous():
             heading_output = heading_pid.calculate(0, heading_error)
 
             # Curvature exponential smoothing ((x * 1-a) + (y * a))
+            if curvature < 0.05: curvature = 0
             curvature = (prev_curvature * (1-a_curvature_exp)) + (curvature * a_curvature_exp)
             # avoid unnecessary calculations if these are off (0.0)
             if K_curvature_speed != 0.0:
                 dynamic_forwards_speed = min(max_curvature_speed, curvature * K_curvature_speed)
+                dynamic_forwards_speed = (prev_speed_curvature * (1-a_curvature_speed_exp) + (dynamic_forwards_speed * a_curvature_speed_exp))
+                prev_speed_curvature = dynamic_forwards_speed
             else: dynamic_forwards_speed = 0
             
             if K_curvature_look_ahead != 0.0:
@@ -779,6 +1087,13 @@ class Autonomous():
                         except:
                             raise NameError("Function not defined")
 
+            data = {
+                "curvature": curvature,
+                "fwd_adjust": dynamic_forwards_speed,
+                # "look_ahead": path_handler.look_dist
+            }
+            packet_mgr.add_packet("pd", data)
+
             done = path_handler.path_complete
             if done:
                 log("Path complete")
@@ -826,8 +1141,7 @@ class ControllerFunctions():
     @staticmethod
     def toggle_PTO():
         log("Toggled PTO pneumatics")
-        pneumatic.PTO_left.set(not pneumatic.PTO_left.value())
-        pneumatic.PTO_right.set(pneumatic.PTO_left.value()) # right mimics left
+        pneumatic.PTO.set(not pneumatic.PTO.value())
     
     @staticmethod
     def zero_lady_brown():
@@ -909,7 +1223,7 @@ class Driver():
             motor.ladyBrown.spin(FORWARD, 100, PERCENT)
             self.robot.LB_PID.enabled = False
         elif control.LB_MANUAL_DOWN.pressing():
-            motor.ladyBrown.spin(REVERSE, 30, PERCENT)
+            motor.ladyBrown.spin(REVERSE, 40, PERCENT)
             self.robot.LB_PID.enabled = False
         elif not self.robot.LB_PID.enabled:
             motor.ladyBrown.stop(HOLD)
@@ -1200,17 +1514,13 @@ def odom_packets(robot: Robot):
         data = {
             "x": round(robot.pos[0] / 25.4, 2),
             "y": round(robot.pos[1] / 25.4, 2),
-            "theta": round(radians(sensor.imu.heading()), 2)
+            "theta": round(math.radians(sensor.imu.heading()), 2)
         }
         packet_mgr.add_packet("odometry", data)
         sleep(35, MSEC)
 
 def start_odom_packets(robot: Robot):
     Thread(odom_packets, (robot,))
-
-do_logging = True
-packet_mgr = PacketManager(PacketTiming.CONTROLLER)
-packet_mgr.start()
 
 # run file
 def main():
@@ -1228,7 +1538,7 @@ def main():
         robot.LB_PID.thread = Thread(robot.LB_PID.run)
         comp = Competition(null_function, null_function)
 
-        brain.timer.event(start_odom_packets, 2000, (robot,))
+        # brain.timer.event(start_odom_packets, 2000, (robot,))
 
         # Load autonomous into robot
         robot.autonomous_controller.load_path(data["autons"]["selected"])
