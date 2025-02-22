@@ -46,10 +46,7 @@ def threaded_log(msg: Any, level):
     if level == 5: tag = "FATAL"
     # MM:SS.0000 [WARNING] Unable to load SD card!
     # print(time_str + tag + str(msg))
-    foxglove_logLevel = {
-        "topic": "foxglove.LogLevel",
-        "const": level
-    }
+    foxglove_logLevel = level
     packet_mgr.add_packet("foxglove.Log", {"timestamp": time_ms, "message": msg, "level": foxglove_logLevel, "name": "main", "file": "main", "line": 0})
 
 def log(msg: Any, level = LogLevel.INFO):
@@ -171,9 +168,9 @@ class sensor():
     intakeDistance = Distance(Ports.PORT9)
 
     wallLeftDistance = Distance(Ports.PORT6)
-    wallBackDistance = Distance(Ports.PORT13)
+    wallBackDistance = Distance(Ports.PORT20)
     wallFrontDistance = Distance(Ports.PORT9)
-    wallRightDistance = Distance(Ports.PORT20)
+    wallRightDistance = Distance(Ports.PORT13)
 
     # elevationDistance = Distance(Ports.PORT20) # unplugged
 
@@ -479,12 +476,33 @@ class MultipurposePID:
             wait(DELAY, MSEC)
         
         return output
+    
+class Laser:
+    def __init__(self, sensor: Distance, x_offset, y_offset, distance_offset) -> None:
+        """
+        Create a MCL laser with offsets for build location.
+
+        Arguments:
+        x_offset: offset from the forwards/backwards axis of the robot. forwards on the robot is positive
+        y_offset: offset from the center of the robot left/right. right on the robot is positive.
+        distance_offset: distance LOCAL to the sensor forwards/backwards. Away from the center is positive.
+        """
+        self.offset = (x_offset, y_offset)
+        self.sensor = sensor
+        self.forward_offset = distance_offset
+
+        self.distance = math.sqrt((x_offset**2) + (y_offset**2))
+        self.angle = math.degrees(math.atan2(y_offset, x_offset))
+    
+    def get_distance(self):
+        return self.sensor.object_distance()# + self.forward_offset
+
 class MCL:
     def __init__(self):
         self.num_lasers = 4
 
         self.field_size = 3600
-        self.num_particles = 50
+        self.num_particles = 100
         self.avg_score = 0
         self.avg_pos = [0, 0]
 
@@ -519,7 +537,7 @@ class MCL:
         self.avg_pos = [avg_x, avg_y]
         return((avg_x, avg_y))
 
-    def redistribute(self, angle, target, clear = True, count = None):
+    def redistribute(self, angle, target, lasers, clear = True, count = None):
         """
         Used to continue the algorithm. Resets the current simulation and evenly distributes the points across the map.
         """
@@ -535,9 +553,9 @@ class MCL:
             for y in range(num):
                 pos = (int(dist*x - 1800 + 5), int(dist*y - 1800 + 5))
 
-                self.simulate_robot(pos, angle, target)
+                self.simulate_robot(pos, angle, target, lasers)
 
-    def simulate_robot(self, pos: list | tuple, angle, target: list[int]):
+    def simulate_robot(self, pos: list | tuple, angle, target: list[int], lasers: list):
         """
         Returns the error score of a simulated robot at the given pos / angle.
         Compares to the given target lasers, a list of 4 integers.
@@ -547,7 +565,7 @@ class MCL:
         score = 0
         for i in range(self.num_lasers):
             corrected_angle = (angle + i*(360//self.num_lasers) + 90) % 360
-            dist = self.simulate_laser(pos, corrected_angle)
+            dist = self.simulate_laser(pos, corrected_angle, lasers[i])
             # None checking (if a sim laser is out of range, the same real lasers should also be out of range)
             if target[i] is None:
                 if dist > 2500:
@@ -576,7 +594,7 @@ class MCL:
         self.simulation = ns.copy()
         del ns
 
-    def resample(self, tolerance, angle, target):
+    def resample(self, tolerance, angle, target, lasers):
         """Iterate through our simulated points and destroy they ones with high error.
         Re-run robot simulation with some noise"""
         angle = angle % 360
@@ -597,15 +615,15 @@ class MCL:
             self.simulation = survived.copy()
             for point in survived:
                 for i in range(children):
-                    pos = (point[1][0] + (gauss()) * 20, point[1][1] + (gauss()) * 20)
-                    self.simulate_robot(pos, angle, target)
+                    pos = (point[1][0] + (gauss()) * 50, point[1][1] + (gauss()) * 50)
+                    self.simulate_robot(pos, angle, target, lasers)
 
             # # add in small number of distributed points
             # self.redistribute(angle, target, 100, False)
 
             # print(f"Number of points: {len(self.simulation)}")
     
-    def simulate_laser(self, pos: list | tuple, angle):
+    def simulate_laser(self, pos: list | tuple, angle, laser: Laser):
         """
         Fire a laser in the direction of the angle at the given pos.
         Returns the distance that the laser gives from the wall.
@@ -623,6 +641,11 @@ class MCL:
 
         sin_out = math.sin(r_angle)
         cos_out = math.cos(r_angle)
+
+        # get the x/y offset based off the lasers position on the robot
+        # we need to have the simulated lasers at that position, not in the center of the robot
+        x = x - (laser.distance*math.cos(math.radians((laser.angle + angle - 90) % 360)))
+        y = y + (laser.distance*math.sin(math.radians((laser.angle + angle - 90) % 360)))
 
         # using an equation we can find the intersection with a certain coordinate
         # this can give us the intersection with the wall from this simulated position
@@ -656,10 +679,11 @@ class MCL:
 
 class MCL_Handler:
     def __init__(self) -> None:
-        self.left = sensor.wallLeftDistance
-        self.right = sensor.wallRightDistance
-        self.back = sensor.wallFrontDistance
-        self.front = sensor.wallBackDistance
+        self.front = Laser(sensor.wallBackDistance, 45, -35, -35)
+        self.left = Laser(sensor.wallLeftDistance, -170, 60, 170)
+        self.back = Laser(sensor.wallFrontDistance, -160, -135, 135)
+        self.right = Laser(sensor.wallRightDistance, 170, 60, 170)
+        self.all_directions = [self.front, self.left, self.back, self.right]
         self.lasers = [None, None, None, None]
         self.prev_pos = [0.0, 0.0]
 
@@ -668,7 +692,7 @@ class MCL_Handler:
         self.is_running = False
 
     def start(self):
-        self.mcl.redistribute(sensor.imu.heading(), self.lasers)
+        self.mcl.redistribute(sensor.imu.heading(), self.lasers, self.all_directions)
         self.thread = Thread(self.main)
         self.is_running = True
 
@@ -683,16 +707,23 @@ class MCL_Handler:
     def loop(self):
         # filter each laser and distance it
         # get distance and add in distance from the center of the robot
-        fd = self.front.object_distance() - 40
-        ld = self.left.object_distance() + 163
-        bd = self.back.object_distance() + 110
-        rd = self.right.object_distance() + 163
+        fd = self.front.get_distance()
+        ld = self.left.get_distance()
+        bd = self.back.get_distance()
+        rd = self.right.get_distance()
         if fd >= 9000:
             self.lasers[0] = None
         elif self.lasers[0] is not None:
             self.lasers[0] = (self.lasers[0] * 0.9 + fd * 0.1)
         else:
-            self.lasers[0] = fd # type: ignore
+            if fd < 300:
+                # don't change anything because we have a ring in the intake
+                #TODO change this to not simulate the front laser if we have a ring in the intake
+                # self.lasers[0] = self.lasers[0]
+                self.lasers[0] = fd # type: ignore
+                # pass
+            else:
+                self.lasers[0] = fd # type: ignore
 
         if ld >= 9000:
             self.lasers[1] = None
@@ -717,8 +748,8 @@ class MCL_Handler:
         
         # print(self.lasers)
 
-        self.mcl.resample(1000, sensor.imu.heading(), self.lasers)
-        self.mcl.redistribute(sensor.imu.heading(), self.lasers, False, 20)
+        self.mcl.resample(1000, sensor.imu.heading(), self.lasers, [self.front, self.left, self.back, self.right])
+        self.mcl.redistribute(sensor.imu.heading(), self.lasers, [self.front, self.left, self.back, self.right], False, 20)
         # print(len(self.mcl.simulation))
         out_x, out_y = self.mcl.update_avg_position()
         # print("")
@@ -805,7 +836,9 @@ class Autonomous():
 
         self.positioning_algorithm = DeltaPositioning(sensor.leftEncoder, sensor.rightEncoder, sensor.imu)
         self.path_controller = PurePursuit
+
         self.mcl_controller = MCL_Handler()
+        self.run_mcl = True
 
         self.fwd_speed = 8
 
@@ -871,9 +904,12 @@ class Autonomous():
         while True:
             self.robot.heading = sensor.imu.heading()
             dx, dy = self.positioning_algorithm.update()
-            # self.robot.pos[0] += dx
-            # self.robot.pos[1] += dy
-            self.mcl_controller.mcl.motion_offset((dx, dy))
+
+            if self.run_mcl:
+                self.mcl_controller.mcl.motion_offset((dx, dy))
+            else:
+                self.robot.pos[0] += dx
+                self.robot.pos[1] += dy
 
             sleep(20, TimeUnits.MSEC)
     
@@ -888,6 +924,34 @@ class Autonomous():
         
         self.autonomous_cleanup()
     
+    def laser_calibrate(self, direction: int, calibrate_axis: int ):
+        """Reset x/y based on laser distance.
+        direction: 0-3 forwards, left, back, rght as index
+        calibrate_axis: 0 or 1, x or y"""
+        laser = self.mcl_controller.all_directions[direction]
+        print(math.cos(math.radians((laser.angle + self.robot.heading - 90) % 360)))
+        print(self.robot.heading, (laser.angle + self.robot.heading - 90) % 360)
+        if calibrate_axis:
+            flip = 1
+        else:
+            flip = -1
+        start_x = self.robot.pos[1] + (laser.distance*math.cos(math.radians((laser.angle + self.robot.heading - 90) % 360))) * flip
+        start_y = self.robot.pos[0] - (laser.distance*math.sin(math.radians((laser.angle + self.robot.heading - 90) % 360))) * flip
+        temp = start_x
+
+        start_x = start_y
+        start_y = temp
+
+        # distance = laser.get_distance()
+        # distance_x = distance*math.cos(math.radians(self.robot.heading)) + start_y
+        # distance_y = distance*math.sin(math.radians(self.robot.heading)) + start_x
+        robot_x = start_x + 170 * flip
+        robot_y = start_y - 60 * flip
+        # -1630
+        # return (-1800+distance_x)
+        print("start pos: {}".format((start_x, start_y)))
+        return("rx: {}, ry: {}".format(robot_x, robot_y))
+
     def test(self) -> None:
         """
         Run a test version of autonomous. This is NOT run in competition!
@@ -896,8 +960,8 @@ class Autonomous():
         # self.run()
         self.autonomous_setup()
 
-        self.robot.pos = [0.0, 0.0]
-        sensor.imu.set_heading(0)
+        self.robot.pos = [-1200.0, 600.0]
+        sensor.imu.set_heading(90)
 
         self.mcl_controller.start()
 
@@ -906,7 +970,8 @@ class Autonomous():
         # place temporary / testing code here
         sleep(500, TimeUnits.MSEC)
         # paths = [[(0.0, 0.0, 0), (1.72, 59.98, 0.0), (3.44, 119.95, 0.05), (4.35, 179.93, 0.11), (3.33, 239.92, 0.0), (2.3, 299.91, 0.16), (-1.63, 359.78, 0.02), (-5.94, 419.62, 0.16), (-13.19, 479.16, 0.05), (-21.4, 538.59, 0.23), (-33.69, 597.3, 0.1), (-47.79, 655.57, 0.24), (-66.07, 712.72, 0.29), (-89.17, 768.02, 0.29), (-116.99, 821.05, 0.38), (-150.62, 870.57, 0.46), (-190.73, 915.01, 0.51), (-237.12, 952.83, 0.51), (-288.77, 983.1, 0.47), (-344.18, 1005.85, 0.39), (-401.9, 1021.98, 0.3), (-460.87, 1032.82, 0.21), (-520.44, 1039.87, 0.13), (-580.25, 1044.58, 0.05), (-640.13, 1048.31, 0.02), (-699.99, 1052.4, 0.11), (-759.69, 1058.4, 0.2), (-818.9, 1067.94, 0.3), (-877.0, 1082.69, 0.4), (-932.85, 1104.32, 0.5), (-984.78, 1134.07, 0.57), (-1030.9, 1172.17, 0.57), (-1069.84, 1217.62, 0.52), (-1101.31, 1268.56, 0.42), (-1126.1, 1323.06, 0.32), (-1145.59, 1379.71, 0.23), (-1161.16, 1437.64, 0.31), (-1171.36, 1496.77, 0.12), (-1179.47, 1556.17, 0.14), (-1185.0, 1615.91, 0.14), (-1188.08, 1675.81, 0.08), (-1189.74, 1735.78, 0.06)]]
-
+        # while True:
+        #     print(self.laser_calibrate(1, 0), round(self.mcl_controller.all_directions[1].get_distance(), 1))
 
         # controller.fwd_speed = 12
         # controller.path(paths[0], 
@@ -1130,13 +1195,15 @@ class ControllerFunctions():
     @staticmethod
     def switch_doinker():
         log("Switched doinker")
-        pneumatic.doinker.set(not pneumatic.doinker.value())
+        log("Fix doinker pneumatics!", LogLevel.WARNING)
+        # pneumatic.doinker.set(not pneumatic.doinker.value())
 
     @staticmethod
     def manual_elevation():
         log("Manual elevation pneumatics")
-        pneumatic.elevation_bar_lift.set(not pneumatic.elevation_bar_lift.value())
-        pneumatic.elevation_bar_lower.set(pneumatic.elevation_bar_lift.value())
+        log("Fix elevation pneumatics!", LogLevel.WARNING)
+        # pneumatic.elevation_bar_lift.set(not pneumatic.elevation_bar_lift.value())
+        # pneumatic.elevation_bar_lower.set(pneumatic.elevation_bar_lift.value())
     
     @staticmethod
     def toggle_PTO():
@@ -1296,12 +1363,12 @@ class Driver():
         # }
         # payload_manager.send_data("elevation", data)
 
-        scr = con_2.screen
-        scr.set_cursor(1,1)
-        if pneumatic.elevation_bar_lift.value():
-            scr.print("UP__")
-        else:
-            scr.print("DOWN")
+        # scr = con_2.screen
+        # scr.set_cursor(1,1)
+        # if pneumatic.elevation_bar_lift.value():
+        #     scr.print("UP__")
+        # else:
+        #     scr.print("DOWN")
 
         sleep(35, MSEC)
 
