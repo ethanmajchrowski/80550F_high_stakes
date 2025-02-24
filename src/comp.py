@@ -1418,7 +1418,7 @@ class LadyBrown():
     def __init__(self, wall_motor) -> None:
         # self.pid = MultipurposePID(0.03, 0, 0.005, 3, None)
         # self.pid = MultipurposePID(0.06, 0.08, 0.01, 5, None)
-        self.pid = MultipurposePID(0.3, 0.45, 0.03, 2, None)
+        self.pid = MultipurposePID(0.3, 0.55, 0.03, 2, None)
         # self.pid = MultipurposePID(0.1, 0.015, 0.02, 5, None)
         self.enabled = False
         self.autostop = False
@@ -1474,6 +1474,12 @@ class LadyBrown():
         
         output = self.pid.calculate(self.target_rotation, self.sensor)
         print(sensor.wallEncoder.angle(), output)
+
+        # limit output
+        if output < -8:
+            output = -8
+        elif output > 8:
+            output = 8
 
         self.motor.spin(FORWARD, output, VOLT)
 
