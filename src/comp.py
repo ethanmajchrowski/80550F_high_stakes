@@ -178,10 +178,6 @@ class sensor():
     intakeColor = Optical(Ports.PORT10)
     imu = Inertial(Ports.PORT11)
 
-class RotationSensorType:
-    ABSOLUTE = 1
-    RELATIVE = 2
-
 lmg = MotorGroup(motor.leftA, motor.leftB, motor.leftC)
 rmg = MotorGroup(motor.rightA, motor.rightB, motor.rightC)
 """
@@ -237,6 +233,11 @@ def gauss(mu = 0, sigma = 1):
 
     z = math.sqrt(-2.0 * math.log(u1)) * math.cos(2.0 * math.pi * u2)
     return mu + sigma * z
+
+def sign(num):
+    if num == 0: return 0
+    if num < 0: return -1
+    else: return 1
 # classes
 
 class PurePursuit():
@@ -424,23 +425,24 @@ class MultipurposePID:
         Create a multipurpose PID that has individually tuned control variables.
 
         Args:
-            KP (float): kP value for tuning controller
-            KD (float): kD value for tuning controller
-            KI (float): kI value for tuning controller
-            KI_MAX (float): integral will not be allowed to pass this value
-            MIN (float): a minimum value that the PID will output
+            KP (int): kP value for tuning controller
+            KD (int): kD value for tuning controller
+            KI (int): kI value for tuning controller
+            KI_MAX (int): integral will not be allowed to pass this value
+            MIN (int): a minimum value that the PID will output
 
         Returns:
             None
         '''
+        
         self.kP, self.kD, self.kI = KP, KD, KI
         self.kI_max = KI_MAX
         self.error = 0
         self.integral = 0
+        self.integral_processed = 0
         self.derivative = 0
         self.last_error = 0
         self.minimum = MIN
-    
     def calculate(self, TARGET, INPUT, DELAY = 0) -> int:
         '''
         Calculates the output based on the PID's tuning and the provided target & input
@@ -454,31 +456,35 @@ class MultipurposePID:
             PID outpit (int)
         '''
         self.error = TARGET - INPUT
-        if self.kI != 0:
-            if abs(self.error) < self.kI_max:
-                self.integral += self.error
-            else:
-                self.integral = 0
-        else:
-            self.integral = 0
 
-        self.derivative = self.error - self.last_error
+        if self.kI != 0:
+            self.integral += self.error
+            if self.integral > 0:
+                self.integral = min(self.integral, 5 / self.kI)
+            else:
+                self.integral = max(self.integral, 5 / self.kI * -1)
+            self.integral_processed = self.integral * self.kI
+
+            if self.kI_max is not None:
+                if self.integral_processed > 0:
+                    self.integral_processed = min(self.integral_processed, self.kI_max)
+                else:
+                    self.integral_processed = max(self.integral_processed, self.kI_max * -1)
+
+        self.derivative = (self.error - self.last_error) * self.kD
         
-        output = (self.error * self.kP) + (self.integral * self.kI) + (self.derivative * self.kD)
+        output = (self.error * self.kP) + self.integral_processed + self.derivative
         if self.minimum is not None:
             if abs(output) < self.minimum:
                 if self.error < 0: output = -self.minimum
                 else: output = self.minimum
         
         self.last_error = self.error
-
-        if DELAY != 0:
-            wait(DELAY, MSEC)
-        
+        wait(DELAY, MSEC)
         return output
     
 class Laser:
-    def __init__(self, sensor: Distance, x_offset, y_offset, distance_offset) -> None:
+    def __init__(self, sensor: Distance, offset) -> None:
         """
         Create a MCL laser with offsets for build location.
 
@@ -487,15 +493,15 @@ class Laser:
         y_offset: offset from the center of the robot left/right. right on the robot is positive.
         distance_offset: distance LOCAL to the sensor forwards/backwards. Away from the center is positive.
         """
-        self.offset = (x_offset, y_offset)
+        self.offset = offset
         self.sensor = sensor
-        self.forward_offset = distance_offset
+        # self.forward_offset = distance_offset
 
-        self.distance = math.sqrt((x_offset**2) + (y_offset**2))
-        self.angle = math.degrees(math.atan2(y_offset, x_offset))
+        # self.distance = math.sqrt((x_offset**2) + (y_offset**2))
+        # self.angle = math.degrees(math.atan2(y_offset, x_offset))
     
     def get_distance(self):
-        return self.sensor.object_distance()# + self.forward_offset
+        return self.sensor.object_distance() + self.offset
 
 class MCL:
     def __init__(self):
@@ -644,8 +650,8 @@ class MCL:
 
         # get the x/y offset based off the lasers position on the robot
         # we need to have the simulated lasers at that position, not in the center of the robot
-        x = x - (laser.distance*math.cos(math.radians((laser.angle + angle - 90) % 360)))
-        y = y + (laser.distance*math.sin(math.radians((laser.angle + angle - 90) % 360)))
+        # x = x - (laser.distance*math.cos(math.radians((laser.angle + angle - 90) % 360)))
+        # y = y + (laser.distance*math.sin(math.radians((laser.angle + angle - 90) % 360)))
 
         # using an equation we can find the intersection with a certain coordinate
         # this can give us the intersection with the wall from this simulated position
@@ -679,13 +685,20 @@ class MCL:
 
 class MCL_Handler:
     def __init__(self) -> None:
-        self.front = Laser(sensor.wallBackDistance, 45, -35, -35)
-        self.left = Laser(sensor.wallLeftDistance, -170, 60, 170)
-        self.back = Laser(sensor.wallFrontDistance, -160, -135, 135)
-        self.right = Laser(sensor.wallRightDistance, 170, 60, 170)
+        self.front = Laser(sensor.wallBackDistance, 60)
+        self.left = Laser(sensor.wallLeftDistance, 0)
+        self.back = Laser(sensor.wallFrontDistance, 180)
+        self.right = Laser(sensor.wallRightDistance, 345)
         self.all_directions = [self.front, self.left, self.back, self.right]
         self.lasers = [None, None, None, None]
         self.prev_pos = [0.0, 0.0]
+
+        # self.sim_center_offset = (60, 165)
+        # self.sim_center_offset = math.sqrt(self.sim_center_offset[0]**2 + self.sim_center_offset[1]**2)
+        self.sim_center_distance = 175.5
+        self.sim_center_angle = 290
+
+        print("ange : " + str(self.sim_center_angle))
 
         self.mcl = MCL()
 
@@ -704,7 +717,7 @@ class MCL_Handler:
                 # print("end")
                 sleep(35, TimeUnits.MSEC)
 
-    def loop(self):
+    def filter_lasers(self):
         # filter each laser and distance it
         # get distance and add in distance from the center of the robot
         fd = self.front.get_distance()
@@ -720,24 +733,24 @@ class MCL_Handler:
                 # don't change anything because we have a ring in the intake
                 #TODO change this to not simulate the front laser if we have a ring in the intake
                 # self.lasers[0] = self.lasers[0]
-                self.lasers[0] = fd # type: ignore
+                self.lasers[0] = fd
                 # pass
             else:
-                self.lasers[0] = fd # type: ignore
+                self.lasers[0] = fd
 
         if ld >= 9000:
             self.lasers[1] = None
         elif self.lasers[1] is not None:
             self.lasers[1] = (self.lasers[1] * 0.9 + ld * 0.1)
         else:
-            self.lasers[1] = ld # type: ignore
+            self.lasers[1] = ld
 
         if bd >= 9000:
             self.lasers[2] = None
         elif self.lasers[2] is not None:
-            self.lasers[2] = (self.lasers[2] * 0.9 + bd * 0.1) # type: ignore
+            self.lasers[2] = (self.lasers[2] * 0.9 + bd * 0.1)
         else:
-            self.lasers[2] = bd # type: ignore
+            self.lasers[2] = bd
 
         if rd >= 9000:
             self.lasers[3] = None
@@ -745,9 +758,8 @@ class MCL_Handler:
             self.lasers[3] = (self.lasers[3] * 0.9 + rd * 0.1) # type: ignore
         else:
             self.lasers[3] = rd # type: ignore
-        
-        # print(self.lasers)
 
+    def loop(self):
         self.mcl.resample(1000, sensor.imu.heading(), self.lasers, [self.front, self.left, self.back, self.right])
         self.mcl.redistribute(sensor.imu.heading(), self.lasers, [self.front, self.left, self.back, self.right], False, 20)
         # print(len(self.mcl.simulation))
@@ -758,16 +770,22 @@ class MCL_Handler:
         out_y = (0.6 * self.prev_pos[1]) + (0.4 * out_y)
 
         self.prev_pos = (out_x, out_y)
-        # print(self.lasers, self.prev_pos)
-        # for pos in self.mcl.simulation:
-        #     print(pos)
+
+        # Adjust the calculated center to our robot center based on the offset of the sim center
+        # and robot heading.
+        # self.sim_center_distance = 175.5
+        # self.sim_center_angle = 290
+        out_x = self.prev_pos[0] + self.sim_center_distance * math.sin(math.radians((self.sim_center_angle + 180 + sensor.imu.heading()) % 360))
+        out_y = self.prev_pos[1] + self.sim_center_distance * math.cos(math.radians((self.sim_center_angle + 180 + sensor.imu.heading()) % 360))
 
         data = {
-            "x": round(self.prev_pos[0] / 25.4, 2),
-            "y": round(-self.prev_pos[1] / 25.4, 2),
+            "x": round(out_x / 25.4, 2),
+            "y": round(-out_y / 25.4, 2),
             "theta": round(math.radians(sensor.imu.heading()), 2)
         }
-        packet_mgr.add_packet("odometry", data)
+        # packet_mgr.add_packet("odometry", data)
+        # print("out: {}, {}".format(out_x, out_y))
+        # print("raw: {}, {}".format(*self.prev_pos))
 
         data = {
             "f": self.lasers[0],
@@ -777,15 +795,6 @@ class MCL_Handler:
         }
         # packet_mgr.add_packet("lsr", data)
         sleep(35, MSEC)
-
-        # data = {
-        #     "f": self.lasers[0],
-        #     "l": self.lasers[1],
-        #     "b": self.lasers[2],
-        #     "r": self.lasers[3]
-        # }
-        # packet_mgr.add_packet("lsr", data)
-
 
 class Robot():
     def __init__(self) -> None:
@@ -838,7 +847,8 @@ class Autonomous():
         self.path_controller = PurePursuit
 
         self.mcl_controller = MCL_Handler()
-        self.run_mcl = True
+        self.run_mcl = False
+        self.run_mcl_lasers = True
 
         self.fwd_speed = 8
 
@@ -910,6 +920,9 @@ class Autonomous():
             else:
                 self.robot.pos[0] += dx
                 self.robot.pos[1] += dy
+            
+            if self.run_mcl_lasers:
+                self.mcl_controller.filter_lasers()
 
             sleep(20, TimeUnits.MSEC)
     
@@ -924,33 +937,33 @@ class Autonomous():
         
         self.autonomous_cleanup()
     
-    def laser_calibrate(self, direction: int, calibrate_axis: int ):
-        """Reset x/y based on laser distance.
-        direction: 0-3 forwards, left, back, rght as index
-        calibrate_axis: 0 or 1, x or y"""
-        laser = self.mcl_controller.all_directions[direction]
-        print(math.cos(math.radians((laser.angle + self.robot.heading - 90) % 360)))
-        print(self.robot.heading, (laser.angle + self.robot.heading - 90) % 360)
-        if calibrate_axis:
-            flip = 1
-        else:
-            flip = -1
-        start_x = self.robot.pos[1] + (laser.distance*math.cos(math.radians((laser.angle + self.robot.heading - 90) % 360))) * flip
-        start_y = self.robot.pos[0] - (laser.distance*math.sin(math.radians((laser.angle + self.robot.heading - 90) % 360))) * flip
-        temp = start_x
+    # def laser_calibrate(self, direction: int, calibrate_axis: int ):
+    #     """Reset x/y based on laser distance.
+    #     direction: 0-3 forwards, left, back, rght as index
+    #     calibrate_axis: 0 or 1, x or y"""
+    #     laser = self.mcl_controller.all_directions[direction]
+    #     # print(math.cos(math.radians((laser.angle + self.robot.heading - 90) % 360)))
+    #     # print(self.robot.heading, (laser.angle + self.robot.heading - 90) % 360)
+    #     if calibrate_axis:
+    #         flip = 1
+    #     else:
+    #         flip = -1
+    #     # start_x = self.robot.pos[1] + (laser.distance*math.cos(math.radians((laser.angle + self.robot.heading - 90) % 360))) * flip
+    #     # start_y = self.robot.pos[0] - (laser.distance*math.sin(math.radians((laser.angle + self.robot.heading - 90) % 360))) * flip
+    #     temp = start_x
 
-        start_x = start_y
-        start_y = temp
+    #     start_x = start_y
+    #     start_y = temp
 
-        # distance = laser.get_distance()
-        # distance_x = distance*math.cos(math.radians(self.robot.heading)) + start_y
-        # distance_y = distance*math.sin(math.radians(self.robot.heading)) + start_x
-        robot_x = start_x + 170 * flip
-        robot_y = start_y - 60 * flip
-        # -1630
-        # return (-1800+distance_x)
-        print("start pos: {}".format((start_x, start_y)))
-        return("rx: {}, ry: {}".format(robot_x, robot_y))
+    #     # distance = laser.get_distance()
+    #     # distance_x = distance*math.cos(math.radians(self.robot.heading)) + start_y
+    #     # distance_y = distance*math.sin(math.radians(self.robot.heading)) + start_x
+    #     robot_x = start_x + 170 * flip
+    #     robot_y = start_y - 60 * flip
+    #     # -1630
+    #     # return (-1800+distance_x)
+    #     print("start pos: {}".format((start_x, start_y)))
+    #     return("rx: {}, ry: {}".format(robot_x, robot_y))
 
     def test(self) -> None:
         """
@@ -961,7 +974,7 @@ class Autonomous():
         self.autonomous_setup()
 
         self.robot.pos = [-1200.0, 600.0]
-        sensor.imu.set_heading(90)
+        sensor.imu.set_heading(0)
 
         self.mcl_controller.start()
 
@@ -1400,13 +1413,13 @@ class Driver():
 
 # control objects
 class LadyBrown():
-    POS_LOAD = 130
-    POS_ELEVATION_UNWIND = 300
+    POS_LOAD = 12
+    POS_ELEVATION_UNWIND = 110
     def __init__(self, wall_motor) -> None:
         # self.pid = MultipurposePID(0.03, 0, 0.005, 3, None)
-        # self.pid = MultipurposePID(0.03, 0.08, 0.005, 3, None)
-        self.pid = MultipurposePID(0.1, 0.015, 0.02, 5, None)
-        self.sensor_type = RotationSensorType.RELATIVE
+        # self.pid = MultipurposePID(0.06, 0.08, 0.01, 5, None)
+        self.pid = MultipurposePID(0.3, 0.45, 0.03, 2, None)
+        # self.pid = MultipurposePID(0.1, 0.015, 0.02, 5, None)
         self.enabled = False
         self.autostop = False
         self.threshold = 5
@@ -1422,7 +1435,6 @@ class LadyBrown():
         Homes PID to ready to load position
         """
         self.target_rotation = LadyBrown.POS_LOAD
-        self.sensor_type = RotationSensorType.RELATIVE
         self.enabled = True
         log("Homing lady brown")
     
@@ -1431,7 +1443,6 @@ class LadyBrown():
         Run PID to try and unwinch the winches and prep for next ladder
         """
         self.target_rotation = LadyBrown.POS_ELEVATION_UNWIND
-        self.sensor_type = RotationSensorType.RELATIVE
         self.autostop = True
         self.enabled = False
 
@@ -1448,6 +1459,7 @@ class LadyBrown():
                 self.pid.integral = 0
             
             self.last_enabled = self.enabled
+            # motor.ladyBrown.stop(BrakeType.COAST)
             
             sleep(20, MSEC)
 
@@ -1455,20 +1467,13 @@ class LadyBrown():
         """
         Runs once every loop.
         """
-        if self.sensor_type == RotationSensorType.ABSOLUTE:
-            self.sensor = sensor.wallEncoder.angle()
+        self.sensor = sensor.wallEncoder.angle()
 
-            if sensor.wallEncoder.position() < 90:
-                if sensor.wallEncoder.angle() > 180:
-                    self.sensor = (360 - self.sensor) * -1
-            elif sensor.wallEncoder.position() > 300:
-                if sensor.wallEncoder.angle() < 180:
-                    self.sensor += 360
-            
-        elif self.sensor_type == RotationSensorType.RELATIVE:
-            self.sensor = sensor.wallEncoder.position()
+        if self.sensor > 270:
+            self.sensor = 360 - self.sensor
         
         output = self.pid.calculate(self.target_rotation, self.sensor)
+        print(sensor.wallEncoder.angle(), output)
 
         self.motor.spin(FORWARD, output, VOLT)
 
@@ -1590,6 +1595,7 @@ def start_odom_packets(robot: Robot):
     Thread(odom_packets, (robot,))
 
 # run file
+log("Battery at {}".format(brain.battery.capacity()))
 def main():
     sd_fail = False
     try:
