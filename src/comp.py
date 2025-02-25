@@ -410,6 +410,7 @@ class DeltaPositioning():
 
         drift_dist = 80
         self.drift_circumference = 2 * 3.14159 * drift_dist
+        self.drift_accum = 0
 
     def update(self) -> list[float]:
         """Call constantly to update position."""
@@ -435,18 +436,33 @@ class DeltaPositioning():
         # To determine if this is actually drift or just IMU error, we compare the angle error
         # of the drift wheel to the IMU
         drift_angle = (d_drift / self.drift_circumference) * 360
-        angle_error = abs(dh - drift_angle)
-        if round(angle_error, 2) > 1.2:
+        angle_error = round(abs(dh - drift_angle), 3)
+        # print(round(angle_error, 2))
+        threshold = 2 + 0.5*abs(dh)
+
+        encoder_sign = sign(dl) * sign(dr)
+
+        if encoder_sign == 1:
+            # possibly drifting
+            if angle_error > threshold:
+                self.drift_accum += abs(d_drift)
+        else:
+            self.drift_accum *= 0.95
+
+        # print(self.drift_accum > 10, encoder_sign,angle_error > threshold, round(self.drift_accum, 2), round(dh, 2), threshold)
+        if abs(self.drift_accum) > 1:
+            print("difting!")
             # we are drifting
             drift_x = d_drift * math.sin(math.radians(h + 90))
             drift_y = d_drift * math.cos(math.radians(h + 90))
         else:
+            # print("not difting!")
             drift_x, drift_y = 0, 0
 
         dx = (dNet * math.sin(h_rad)) + drift_x
         dy = (dNet * math.cos(h_rad)) + drift_y
 
-        print(round(dh, 2), round(dl, 2), round(dr, 2), round(d_drift, 2))
+        # print(round(dh, 2), round(dl, 2), round(dr, 2), round(d_drift, 2))
 
         self.last_time = brain.timer.time()
         self.last_heading = self.imu.heading()
@@ -961,6 +977,8 @@ class Autonomous():
                 self.mcl_controller.filter_lasers()
 
             sleep(20, TimeUnits.MSEC)
+            print(self.robot.pos)
+            # sleep(100, TimeUnits.MSEC)
     
     def run(self) -> None:
         """
@@ -1144,12 +1162,27 @@ class Autonomous():
         # self.robot.pos[1] = y
         # print(d1, d2)
         sensor.imu.set_heading(90)
-        self.robot.pos = [-1200.0, 0.0]
-        while True:
-            # print(self.robot.pos)
-            sleep(35, MSEC)
+        self.robot.pos = [-1200.0, -600.0]
 
-        sleep(1000)
+        print("start")
+        sleep(0.5, SECONDS)
+        # motor.leftA.spin(FORWARD, 0.7*12, VOLT)
+        # motor.leftB.spin(FORWARD, 0.7*12, VOLT)
+        # motor.leftC.spin(FORWARD, 0.7*12, VOLT)
+        # motor.rightA.spin(FORWARD, 0.7*12, VOLT)
+        # motor.rightB.spin(FORWARD, 0.7*12, VOLT)
+        # motor.rightC.spin(FORWARD, 0.7*12, VOLT)
+
+        sleep(2500)
+        print("done")
+
+        motor.leftA.stop()
+        motor.leftB.stop()
+        motor.leftC.stop()
+        motor.rightA.stop()
+        motor.rightB.stop()
+        motor.rightC.stop()
+        
 
         motor.intakeFlex.stop()
         
