@@ -99,6 +99,7 @@ for path in ap:
     ap2.append(calculate_curvature(path))
 
 print(ap2)
+print(f"{len(ap2)} paths processed.")
 # print(path)
 # pyperclip.copy(str(path))
 # print("Copied to clipboard!")

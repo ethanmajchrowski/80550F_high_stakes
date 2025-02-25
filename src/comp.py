@@ -47,7 +47,10 @@ def threaded_log(msg: Any, level):
     # MM:SS.0000 [WARNING] Unable to load SD card!
     # print(time_str + tag + str(msg))
     foxglove_logLevel = level
-    packet_mgr.add_packet("foxglove.Log", {"timestamp": time_ms, "message": msg, "level": foxglove_logLevel, "name": "main", "file": "main", "line": 0})
+    if foxglove_log:
+        packet_mgr.add_packet("foxglove.Log", {"timestamp": time_ms, "message": msg, "level": foxglove_logLevel, "name": "main", "file": "main", "line": 0})
+    else:
+        print("[{}] {}: {}".format(tag, time_ms + (time_s + time_min*60)*1000, msg))
 
 def log(msg: Any, level = LogLevel.INFO):
     if do_logging:
@@ -55,6 +58,7 @@ def log(msg: Any, level = LogLevel.INFO):
 
 class PacketTiming:
     CONTROLLER = 40
+    CONTROLLER_2 = 50
     BRAIN = 20
 
 class PacketManager():
@@ -87,7 +91,7 @@ class PacketManager():
             False if packet topic already in queue.
             True if packet was added to queue.
         """
-        if topic != "LOG": # we don't want to drop any log packets
+        if topic not in ["LOG", "foxglove.LOG"]: # we don't want to drop any log packets
             for item in self.queue:
                 if item[0] == topic:
                     return False
@@ -100,7 +104,7 @@ class PacketManager():
         return True
 
 do_logging = True
-packet_mgr = PacketManager(PacketTiming.CONTROLLER)
+packet_mgr = PacketManager(PacketTiming.CONTROLLER_2)
 packet_mgr.start()
 
 brain = Brain()
@@ -163,6 +167,8 @@ class pneumatic():
 class sensor():
     leftEncoder = Rotation(Ports.PORT2)
     rightEncoder = Rotation(Ports.PORT17)
+    driftEncoder = Rotation(Ports.PORT21)
+
     wallEncoder = Rotation(Ports.PORT1)
     # DISTANCE SENSORS
     intakeDistance = Distance(Ports.PORT9)
@@ -374,18 +380,23 @@ class PurePursuit():
         return goal[:2], curvature
 
 class DeltaPositioning():
-    def __init__(self, leftEnc, rightEnc, imu) -> None:
+    def __init__(self, leftEnc: Rotation | Motor, rightEnc: Rotation | Motor, 
+                 driftEnc: Rotation | Motor, imu: Inertial) -> None:
+        """Odometry based on tracking wheels."""
         self.last_time = brain.timer.time()
         self.leftEnc = leftEnc
         self.rightEnc = rightEnc
+        self.driftEnc = driftEnc
 
         self.leftEnc.reset_position()
         self.rightEnc.reset_position()
+        self.driftEnc.reset_position()
 
         self.imu = imu
 
         self.last_left_encoder = 0
         self.last_right_encoder = 0
+        self.last_drift_encoder = 0
         self.last_heading = 0
 
         # formula:
@@ -397,26 +408,51 @@ class DeltaPositioning():
         wheel_diameter = 2 # inches
         self.circumference = (wheel_diameter * 3.14159) * 25.4 * external_gear_ratio
 
+        drift_dist = 80
+        self.drift_circumference = 2 * 3.14159 * drift_dist
+
     def update(self) -> list[float]:
-        # Call constantly to update position.
+        """Call constantly to update position."""
+
+        h = self.imu.heading()
+        h_rad = math.radians(h)
 
         # change in left & right encoders (degrees)
         dl = self.leftEnc.position() - self.last_left_encoder
         dr = self.rightEnc.position() - self.last_right_encoder
+        d_drift = self.driftEnc.position() - self.last_drift_encoder
+        # change in heading
+        dh = h - self.last_heading
 
+        # get change in encode wheel in distance
         dl = (dl / 360) * self.circumference
         dr = (dr / 360) * self.circumference
+        d_drift = (d_drift / 360) * self.circumference
 
         # average the position of left & right to get the center of the robot
         dNet = (dl + dr) / 2 
 
-        dx = dNet * math.sin(math.radians(self.imu.heading()))
-        dy = dNet * math.cos(math.radians(self.imu.heading()))
+        # To determine if this is actually drift or just IMU error, we compare the angle error
+        # of the drift wheel to the IMU
+        drift_angle = (d_drift / self.drift_circumference) * 360
+        angle_error = abs(dh - drift_angle)
+        if round(angle_error, 2) > 1.2:
+            # we are drifting
+            drift_x = d_drift * math.sin(math.radians(h + 90))
+            drift_y = d_drift * math.cos(math.radians(h + 90))
+        else:
+            drift_x, drift_y = 0, 0
+
+        dx = (dNet * math.sin(h_rad)) + drift_x
+        dy = (dNet * math.cos(h_rad)) + drift_y
+
+        print(round(dh, 2), round(dl, 2), round(dr, 2), round(d_drift, 2))
 
         self.last_time = brain.timer.time()
         self.last_heading = self.imu.heading()
         self.last_right_encoder = self.rightEnc.position()
         self.last_left_encoder = self.leftEnc.position()
+        self.last_drift_encoder = self.driftEnc.position()
         return [dx, dy]
 
 class MultipurposePID:
@@ -843,7 +879,7 @@ class Autonomous():
         """
         self.robot = parent
 
-        self.positioning_algorithm = DeltaPositioning(sensor.leftEncoder, sensor.rightEncoder, sensor.imu)
+        self.positioning_algorithm = DeltaPositioning(sensor.leftEncoder, sensor.rightEncoder, sensor.driftEncoder, sensor.imu)
         self.path_controller = PurePursuit
 
         self.mcl_controller = MCL_Handler()
@@ -973,15 +1009,154 @@ class Autonomous():
         # self.run()
         self.autonomous_setup()
 
-        self.robot.pos = [-1200.0, 600.0]
-        sensor.imu.set_heading(0)
+        self.robot.pos = [0.0, 0.0]
+        sensor.imu.set_heading(90)
 
         self.mcl_controller.start()
 
-        controller = self
-
         # place temporary / testing code here
-        sleep(500, TimeUnits.MSEC)
+
+        #* Skills
+        # controller = self
+        # drivetrain.set_turn_threshold(2)
+        # drivetrain.set_turn_constant(0.28)
+        # paths = [[(-1593.76, 6.33, 0), (-1553.77, 5.83, 0.07), (-1513.78, 4.74, 0.04), (-1473.81, 3.36, 0.02), (-1433.84, 1.8, 0.01), (-1393.87, 0.15, 0.01), (-1353.91, -1.55, 0.0), (-1313.94, -3.25, 0.0), (-1273.98, -4.92, 0.01), (-1234.01, -6.49, 0.02), (-1194.03, -7.9, 0.03), (-1154.05, -9.03, 0.07)], [(-1176.67, -24.08, 0), (-1179.01, -64.01, 0.05), (-1181.73, -103.92, 0.05), (-1184.83, -143.8, 0.05), (-1188.34, -183.65, 0.05), (-1192.23, -223.46, 0.04), (-1196.44, -263.23, 0.02), (-1200.84, -302.99, 0.0), (-1205.26, -342.75, 0.03), (-1209.47, -382.52, 0.05), (-1213.26, -422.34, 0.07), (-1216.48, -462.21, 0.08), (-1219.05, -502.13, 0.08), (-1220.96, -542.08, 0.08), (-1222.27, -582.06, 0.07), (-1223.0, -622.06, 0.06), (-1223.25, -662.05, 0.05), (-1223.07, -702.05, 0.05), (-1222.52, -742.05, 0.05)], [(-1195.33, -666.9, 0), (-1158.53, -651.2, 0.01), (-1121.77, -635.44, 0.01), (-1084.97, -619.75, 0.03), (-1048.08, -604.31, 0.06), (-1010.99, -589.33, 0.1), (-973.61, -575.08, 0.15), (-935.83, -561.94, 0.21), (-897.53, -550.43, 0.29), (-858.63, -541.17, 0.39), (-819.13, -534.98, 0.51), (-779.21, -532.81, 0.62), (-739.34, -535.59, 0.7), (-700.26, -543.9, 0.72), (-662.77, -557.73, 0.67), (-627.45, -576.44, 0.57), (-594.49, -599.06, 0.49), (-563.87, -624.78, 0.37), (-535.26, -652.72, 0.31), (-508.43, -682.38, 0.25), (-483.11, -713.34, 0.02), (-457.66, -744.18, 0.48), (-429.36, -772.41, 0.43), (-398.75, -798.14, 0.36), (-366.35, -821.58, 0.27), (-332.73, -843.24, 0.25), (-298.06, -863.17, 0.2), (-262.62, -881.71, 0.17), (-226.58, -899.07, 0.17), (-189.98, -915.19, 0.13), (-152.98, -930.38, 0.11), (-115.63, -944.72, 0.11), (-77.98, -958.22, 0.1), (-40.06, -970.95, 0.09), (-1.93, -983.02, 0.08), (36.39, -994.48, 0.07), (74.88, -1005.37, 0.08), (113.53, -1015.67, 0.07), (152.32, -1025.44, 0.06), (191.22, -1034.74, 0.06), (230.23, -1043.57, 0.06), (269.34, -1051.97, 0.06), (308.55, -1059.87, 0.05), (347.85, -1067.37, 0.05), (387.21, -1074.45, 0.05), (426.66, -1081.1, 0.06), (466.17, -1087.3, 0.05), (505.75, -1093.1, 0.07), (545.4, -1098.37, 0.06), (585.11, -1103.18, 0.07), (624.89, -1107.4, 0.09), (664.73, -1110.92, 0.11), (704.64, -1113.56, 0.19), (744.62, -1114.69, 0.51)], [(719.37, -1102.13, 0), (682.63, -1086.31, 0.2), (645.29, -1071.98, 0.22), (607.35, -1059.33, 0.25), (568.83, -1048.6, 0.34), (529.66, -1040.5, 0.32), (490.07, -1034.9, 0.45), (450.13, -1032.89, 0.45), (410.2, -1034.51, 0.53), (370.66, -1040.38, 0.6), (332.11, -1050.96, 0.65), (295.26, -1066.45, 0.67), (260.79, -1086.71, 0.65), (229.25, -1111.27, 0.61), (200.93, -1139.5, 0.55), (175.89, -1170.67, 0.48), (153.98, -1204.11, 0.42), (134.95, -1239.27, 0.36), (118.49, -1275.71, 0.32), (104.38, -1313.14, 0.29), (92.45, -1351.31, 0.23), (82.26, -1389.99, 0.23), (73.87, -1429.09, 0.18), (66.86, -1468.47, 0.19), (61.33, -1508.09, 0.14), (56.93, -1547.84, 0.15), (53.73, -1587.71, 0.13), (51.54, -1627.65, 0.11), (50.25, -1667.63, 0.13), (49.96, -1707.62, 0.1), (50.46, -1747.62, 0.09), (51.7, -1787.6, 0.1)], [(36.85, -1839.17, 0), (37.02, -1799.17, 0.03), (37.42, -1759.18, 0.04), (38.11, -1719.18, 0.06), (39.24, -1679.2, 0.06), (40.81, -1639.23, 0.06), (42.84, -1599.28, 0.06), (45.38, -1559.37, 0.08), (48.53, -1519.49, 0.09), (52.41, -1479.68, 0.11), (57.13, -1439.96, 0.13), (62.85, -1400.38, 0.15), (69.74, -1360.98, 0.18), (78.02, -1321.85, 0.21), (87.94, -1283.1, 0.31), (100.27, -1245.06, 0.34), (115.13, -1207.94, 0.49), (133.55, -1172.46, 0.64), (156.32, -1139.61, 0.83), (184.21, -1111.02, 0.96), (217.04, -1088.31, 0.99), (253.7, -1072.5, 0.89), (292.62, -1063.48, 0.65), (332.41, -1059.62, 0.47), (372.4, -1059.54, 0.32), (412.32, -1061.99, 0.19), (452.12, -1065.97, 0.1), (491.83, -1070.77, 0.04), (531.51, -1075.85, 0.02), (571.2, -1080.79, 0.06), (610.95, -1085.26, 0.1), (650.78, -1088.94, 0.13), (690.69, -1091.58, 0.14)], [(367.75, -1185.65, 0), (327.76, -1184.88, 0.06), (287.76, -1184.6, 0.08), (247.76, -1184.95, 0.07), (207.78, -1185.88, 0.08), (167.81, -1187.42, 0.08), (127.87, -1189.62, 0.08), (87.97, -1192.44, 0.08), (48.11, -1195.87, 0.07), (8.32, -1199.88, 0.06), (-31.43, -1204.4, 0.05), (-71.12, -1209.35, 0.04), (-110.77, -1214.63, 0.03), (-150.39, -1220.11, 0.01), (-190.01, -1225.65, 0.01), (-229.63, -1231.1, 0.03), (-269.29, -1236.3, 0.05), (-309.0, -1241.13, 0.06), (-348.76, -1245.48, 0.07), (-388.58, -1249.26, 0.08), (-428.46, -1252.41, 0.09), (-468.38, -1254.88, 0.09), (-508.34, -1256.67, 0.09), (-548.33, -1257.76, 0.09), (-588.32, -1258.15, 0.08), (-628.32, -1257.92, 0.08), (-668.31, -1257.04, 0.08), (-708.28, -1255.54, 0.1), (-748.22, -1253.26, 0.08), (-788.11, -1250.35, 0.08), (-827.95, -1246.77, 0.1), (-867.7, -1242.36, 0.12), (-907.34, -1236.99, 0.15), (-946.8, -1230.42, 0.17), (-986.01, -1222.54, 0.19), (-1024.9, -1213.2, 0.18), (-1063.42, -1202.43, 0.13), (-1101.66, -1190.7, 0.01), (-1139.89, -1178.92, 0.14), (-1178.43, -1168.23, 0.24), (-1217.43, -1159.38, 0.27), (-1256.85, -1152.61, 0.23), (-1296.54, -1147.7, 0.19), (-1336.4, -1144.33, 0.16), (-1376.34, -1142.25, 0.83), (-1415.15, -1133.7, 0.08), (-1454.32, -1125.74, 0.76), (-1494.21, -1123.79, 1.19), (-1533.31, -1131.31, 2.24), (-1564.71, -1155.06, 3.19), (-1574.33, -1193.08, 2.49), (-1563.7, -1231.39, 1.34), (-1543.14, -1265.61, 0.81), (-1517.31, -1296.11, 0.55), (-1488.3, -1323.62, 0.41), (-1457.11, -1348.64, 0.31), (-1424.4, -1371.65, 0.27), (-1390.51, -1392.88, 0.23), (-1355.69, -1412.55, 0.2), (-1320.11, -1430.82, 0.16), (-1283.95, -1447.92, 0.15), (-1247.28, -1463.91, 0.15), (-1210.16, -1478.81, 0.13), (-1172.68, -1492.76, 0.12), (-1134.88, -1505.84, 0.11), (-1096.81, -1518.12, 0.1), (-1058.51, -1529.65, 0.09), (-1020.0, -1540.48, 0.1), (-981.3, -1550.56, 0.08), (-942.42, -1560.0, 0.08), (-903.42, -1568.85, 0.05)], [(-831.22, -1575.91, 0), (-855.17, -1543.88, 0.3), (-881.0, -1513.36, 0.38), (-909.06, -1484.87, 0.45), (-939.58, -1459.03, 0.51), (-972.54, -1436.42, 0.58), (-1007.91, -1417.8, 0.65), (-1045.4, -1403.97, 0.73), (-1084.52, -1395.79, 0.72), (-1124.4, -1393.36, 0.71), (-1164.23, -1396.59, 0.66), (-1203.29, -1405.08, 0.61), (-1241.02, -1418.31, 0.52), (-1277.17, -1435.38, 0.45), (-1311.63, -1455.66, 0.4), (-1344.38, -1478.6, 0.34), (-1375.5, -1503.72, 0.32), (-1404.97, -1530.76, 0.26), (-1432.97, -1559.31, 0.23), (-1459.62, -1589.13, 0.22), (-1484.92, -1620.11, 0.2), (-1508.98, -1652.06, 0.18), (-1531.91, -1684.84, 0.17), (-1553.68, -1718.39, 0.15), (-1574.43, -1752.58, 0.15), (-1594.17, -1787.37, 0.14), (-1612.92, -1822.7, 0.12), (-1630.81, -1858.48, 0.15)]]        
+
+        # x = -1800 + sensor.wallBackDistance.object_distance() + 130
+        # dev = x - self.robot.pos[0]
+        # log("Reset x position to {}. Deviation: {}".format(x, dev))
+        # self.robot.pos[0] = x
+
+        # motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+        # sleep(350, TimeUnits.MSEC)        
+        # motor.intakeChain.stop(BrakeType.COAST)
+
+        # motor.ladyBrown.spin(DirectionType.FORWARD, 70, VelocityUnits.PERCENT)
+        # brain.timer.event(motor.ladyBrown.spin, 200, (DirectionType.REVERSE, 50, VelocityUnits.PERCENT))
+
+        # self.fwd_speed = 8
+        # self.path(paths[0], 
+        #         backwards=False,
+        #         heading_authority=3,
+        #         finish_margin=200)
+
+        # motor.ladyBrown.stop(BrakeType.COAST)
+        
+        # drivetrain.set_turn_threshold(10)
+        # drivetrain.set_turn_constant(0.8)
+        # drivetrain.turn_for(TurnType.LEFT, 65, RotationUnits.DEG, 100, VelocityUnits.PERCENT)
+
+        # # x = -1800 + (sensor.wallLeftDistance.object_distance() + 170 - abs(60*math.sin(math.radians(90+sensor.imu.heading())))) * math.cos(math.radians(sensor.imu.heading()))
+        # # x = ((170 + sensor.wallLeftDistance.object_distance()) * math.cos(math.radians(sensor.imu.heading()))) - (60 * math.sin(math.radians(sensor.imu.heading())))
+        # # x = -1800 + x
+        # # x = round(x, 1)
+        # # dev = x - self.robot.pos[0]
+        # # print(sensor.wallLeftDistance.object_distance())
+        # # log("Reset x position from {} to {}. Deviation: {}".format(self.robot.pos[0], x, dev))
+        # # self.robot.pos[0] = x
+
+        # self.fwd_speed = 6
+        # self.path(paths[1], backwards=True, heading_authority=2)
+        
+        # pneumatic.mogo.set(True)
+        # sleep(100, TimeUnits.MSEC)
+
+        # drivetrain.turn_for(TurnType.RIGHT, 60, RotationUnits.DEG, 100, VelocityUnits.PERCENT)
+        # motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+        # motor.intakeFlex.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+
+        # self.fwd_speed = 12
+        # # drive across field to get 2 rings and raise LB for second ring
+        # self.path(paths[2], backwards=False, 
+        #         events=[["raise LB", [500, -1000], self.robot.LB_PID.home, []]],
+        #         heading_authority=1.4, look_ahead_dist=400, event_look_ahead_dist=300, finish_margin=200,
+        #         K_curvature_speed=2400,
+        #         max_curvature_speed=4.5,
+        #         a_curvature_exp=0.025,
+        #         K_curvature_look_ahead=100,
+        #         a_curvature_speed_exp=0.1)
+
+        # drivetrain.turn_for(TurnType.LEFT, 105, RotationUnits.DEG, 80, VelocityUnits.PERCENT)
+        # drivetrain.stop()
+        # motor.intakeChain.stop()
+        
+        # self.fwd_speed = 7
+        # # line up for wall stake
+        # self.path(paths[3], backwards=False, heading_authority=2, timeout=2000, look_ahead_dist=250)
+        # # disable PID to allow us to spin it and score
+        # self.robot.LB_PID.enabled = False
+        # motor.ladyBrown.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+        # sleep(300, TimeUnits.MSEC)
+        # motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+
+        # sleep(200, TimeUnits.MSEC)
+        # motor.ladyBrown.spin(DirectionType.REVERSE, 70, VelocityUnits.PERCENT)
+        # brain.timer.event(motor.ladyBrown.stop, 700, (BrakeType.COAST,))
+
+        # # Recalibrate position
+        # y = -1800 + sensor.wallFrontDistance.object_distance() + 120
+        # diff = y - self.robot.pos[1]
+        # log("Recalibrate y pos from {} to {}. Diff: {}".format(self.robot.pos[1], y, diff))
+        # self.robot.pos[1] = y
+
+        # # x = -1800 + (sensor.wallRightDistance.object_distance() * math.cos(math.radians(sensor.imu.heading() - 180))) + (170 * math.cos(math.radians(sensor.imu.heading() - 180)))
+        # # print(sensor.wallRightDistance.object_distance())
+        # # diff = x - self.robot.pos[0]
+        # # print("Recalibrate x pos from {} to {}. Diff: {}".format(self.robot.pos[0], x, diff))
+        # # self.robot.pos[0] = x
+
+        # # backup away from wall stake
+        # self.path(paths[4], backwards=True, heading_authority=2)
+        # motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+        # motor.intakeFlex.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+        # # pickup bottom left rings
+        # self.fwd_speed = 9
+        # self.path(paths[5], look_ahead_dist=280, checkpoints=[47], heading_authority=1.8,
+        #           K_curvature_speed=3000,
+        #           max_curvature_speed=5,
+        #           a_curvature_exp=0.025, 
+        #           K_curvature_look_ahead=50,
+        #           a_curvature_speed_exp=0.1)
+
+        # # drop mogo in corner
+        # self.path(paths[6], backwards=True, timeout=1300, heading_authority=2)
+        # pneumatic.mogo.set(False)
+
+        # recalibrate x and y since we're in the corner
+        # sleep(200, TimeUnits.MSEC)
+        # sensor.imu.set_heading(45)
+        # h = math.radians(sensor.imu.heading())
+        # d1 = sensor.wallLeftDistance.object_distance()
+        # x = d1 * math.cos(h)
+        # left_offset = 180.3 * math.cos(math.radians(19.4) + h)
+        # x = -1800 + x + left_offset
+
+        # diff = x - self.robot.pos[0]
+        # print("Recalibrate x pos from {} to {}. Diff: {}".format(self.robot.pos[0], x, diff))
+        # self.robot.pos[0] = x
+
+        # d2 = sensor.wallRightDistance.object_distance()
+        # y = d2*math.sin(h)
+        # right_offset = 180.3 * math.sin(math.radians(19.4) - h)
+        # y = -1800 + y - right_offset
+        # diff = y - self.robot.pos[1]
+        # print("Recalibrate y pos from {} to {}. Diff: {}".format(self.robot.pos[1], y, diff))
+        # self.robot.pos[1] = y
+        # print(d1, d2)
+        sensor.imu.set_heading(90)
+        self.robot.pos = [-1200.0, 0.0]
+        while True:
+            # print(self.robot.pos)
+            sleep(35, MSEC)
+
+        sleep(1000)
+
+        motor.intakeFlex.stop()
+        
+        log("Done!")
+        sleep(99999, TimeUnits.SECONDS)
+
+        # sleep(500, TimeUnits.MSEC)
         # paths = [[(0.0, 0.0, 0), (1.72, 59.98, 0.0), (3.44, 119.95, 0.05), (4.35, 179.93, 0.11), (3.33, 239.92, 0.0), (2.3, 299.91, 0.16), (-1.63, 359.78, 0.02), (-5.94, 419.62, 0.16), (-13.19, 479.16, 0.05), (-21.4, 538.59, 0.23), (-33.69, 597.3, 0.1), (-47.79, 655.57, 0.24), (-66.07, 712.72, 0.29), (-89.17, 768.02, 0.29), (-116.99, 821.05, 0.38), (-150.62, 870.57, 0.46), (-190.73, 915.01, 0.51), (-237.12, 952.83, 0.51), (-288.77, 983.1, 0.47), (-344.18, 1005.85, 0.39), (-401.9, 1021.98, 0.3), (-460.87, 1032.82, 0.21), (-520.44, 1039.87, 0.13), (-580.25, 1044.58, 0.05), (-640.13, 1048.31, 0.02), (-699.99, 1052.4, 0.11), (-759.69, 1058.4, 0.2), (-818.9, 1067.94, 0.3), (-877.0, 1082.69, 0.4), (-932.85, 1104.32, 0.5), (-984.78, 1134.07, 0.57), (-1030.9, 1172.17, 0.57), (-1069.84, 1217.62, 0.52), (-1101.31, 1268.56, 0.42), (-1126.1, 1323.06, 0.32), (-1145.59, 1379.71, 0.23), (-1161.16, 1437.64, 0.31), (-1171.36, 1496.77, 0.12), (-1179.47, 1556.17, 0.14), (-1185.0, 1615.91, 0.14), (-1188.08, 1675.81, 0.08), (-1189.74, 1735.78, 0.06)]]
         # while True:
         #     print(self.laser_calibrate(1, 0), round(self.mcl_controller.all_directions[1].get_distance(), 1))
@@ -1136,7 +1311,7 @@ class Autonomous():
 
             for event in events:
                 if dist(robot.pos, event[1]) < event_look_ahead_dist:
-                    print(event)
+                    log(str(event))
                     if type(event[2]) == str:
                         if event[2] == "wait_function":
                             if not event[4]:
@@ -1170,7 +1345,7 @@ class Autonomous():
                 "fwd_adjust": dynamic_forwards_speed,
                 # "look_ahead": path_handler.look_dist
             }
-            packet_mgr.add_packet("pd", data)
+            # packet_mgr.add_packet("pd", data)
 
             done = path_handler.path_complete
             if done:
@@ -1473,7 +1648,7 @@ class LadyBrown():
             self.sensor = 360 - self.sensor
         
         output = self.pid.calculate(self.target_rotation, self.sensor)
-        print(sensor.wallEncoder.angle(), output)
+        # print(sensor.wallEncoder.angle(), output)
 
         # limit output
         if output < -8:
@@ -1601,6 +1776,7 @@ def start_odom_packets(robot: Robot):
     Thread(odom_packets, (robot,))
 
 # run file
+foxglove_log = True
 log("Battery at {}".format(brain.battery.capacity()))
 def main():
     sd_fail = False
