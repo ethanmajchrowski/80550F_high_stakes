@@ -1161,11 +1161,14 @@ class Autonomous():
         # print("Recalibrate y pos from {} to {}. Diff: {}".format(self.robot.pos[1], y, diff))
         # self.robot.pos[1] = y
         # print(d1, d2)
-        sensor.imu.set_heading(90)
-        self.robot.pos = [-1200.0, -600.0]
+        paths = [[(0.0, 0.0, 0), (-59.99, 0.78, 0.01), (-119.99, 1.32, 0.0), (-179.99, 1.77, 0.01), (-239.99, 2.32, 0.02), (-299.98, 3.14, 0.02), (-359.97, 4.41, 0.04), (-419.94, 6.33, 0.05), (-479.87, 9.23, 0.07), (-539.72, 13.34, 0.08), (-599.46, 18.91, 0.1), (-659.0, 26.26, 0.14), (-718.19, 36.04, 0.16), (-776.83, 48.69, 0.18), (-834.69, 64.52, 0.27), (-891.1, 84.91, 0.27), (-945.64, 109.84, 0.38), (-996.97, 140.8, 0.38), (-1044.43, 177.42, 0.5), (-1085.91, 220.7, 0.45), (-1121.17, 269.14, 0.49), (-1149.02, 322.22, 0.4), (-1170.37, 378.23, 0.41), (-1184.69, 436.46, 0.3), (-1193.73, 495.74, 0.26), (-1198.14, 555.55, 0.24), (-1198.16, 615.51, 0.25), (-1193.65, 675.31, 0.27), (-1184.3, 734.54, 0.35), (-1168.71, 792.43, 0.37), (-1146.84, 848.25, 0.41), (-1118.3, 900.94, 0.45), (-1082.86, 949.29, 0.44), (-1041.43, 992.58, 0.42), (-994.9, 1030.39, 0.39), (-944.31, 1062.56, 0.32), (-890.86, 1089.76, 0.29), (-835.27, 1112.27, 0.24), (-778.22, 1130.8, 0.18), (-720.23, 1146.15, 0.18), (-661.47, 1158.28, 0.13), (-602.29, 1168.08, 0.11), (-542.8, 1175.89, 0.1), (-483.11, 1181.98, 0.09), (-423.28, 1186.45, 0.07), (-363.37, 1189.72, 0.06), (-303.42, 1192.0, 0.05), (-243.43, 1193.44, 0.04), (-183.44, 1194.21, 0.03), (-123.44, 1194.45, 0.02), (-63.44, 1194.28, 0.01)]]      
+        sensor.imu.set_heading(270)
+        self.robot.pos = [0.0, 0.0]
 
         print("start")
         sleep(0.5, SECONDS)
+        self.path(paths[0], speed_ramp_time=600, min_start_voltage=2, 
+                  finish_margin=5, min_slow_voltage=2, slowdown_distance=500, look_ahead_dist=300)
         # motor.leftA.spin(FORWARD, 0.7*12, VOLT)
         # motor.leftB.spin(FORWARD, 0.7*12, VOLT)
         # motor.leftC.spin(FORWARD, 0.7*12, VOLT)
@@ -1238,10 +1241,12 @@ class Autonomous():
     
     def path(self, path, *, events=[], checkpoints=[], backwards = False,
              look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
-             heading_authority=1.0, max_turn_volts = 8,
+             heading_authority=2.0, max_turn_volts = 8,
              hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
              K_curvature_speed = 0.0, K_curvature_look_ahead = 0.0, a_curvature_exp = 0.1,
-             max_curvature_speed = 3.0, min_look_ahead = 300, a_curvature_speed_exp = 0.1) -> None:
+             max_curvature_speed = 3.0, min_look_ahead = 300, a_curvature_speed_exp = 0.1,
+             speed_ramp_time = 500, min_start_voltage = 2, 
+             slowdown_distance = 500, min_slow_voltage = 2) -> None:
         """
         Runs a path. Halts program execution until finished.
         
@@ -1274,11 +1279,21 @@ class Autonomous():
         prev_curvature = 0
         prev_speed_curvature = 0
 
+        prev_time = brain.timer.system()
+        start_time = prev_time
+
         # start driving this path
         while not done:
+            current_time = brain.timer.system()
+            dt = current_time - prev_time
+            prev_time = current_time
+
+            elapsed_time = current_time - start_time
+
             target_point, curvature = path_handler.goal_search(robot.pos)
             dx, dy = target_point[0] - robot.pos[0], target_point[1] - robot.pos[1] # type: ignore
             heading_to_target = math.degrees(math.atan2(dx, dy))
+            distance_to_end = dist(self.robot.pos, path[-1][:2])
 
             if dx < 0:
                 heading_to_target = 360 + heading_to_target
@@ -1315,7 +1330,15 @@ class Autonomous():
             if K_curvature_look_ahead != 0.0:
                 path_handler.look_dist = look_ahead_dist - min(curvature * K_curvature_look_ahead, min_look_ahead)
 
-            forwards_speed = self.fwd_speed
+            # forwards speed linear acceleration
+            if elapsed_time < speed_ramp_time:
+                forwards_speed = min_start_voltage + (self.fwd_speed - min_start_voltage) * (elapsed_time / speed_ramp_time)
+            else:
+                forwards_speed = self.fwd_speed
+
+            # if close to end, slow down
+            if distance_to_end < slowdown_distance:
+                forwards_speed = min_slow_voltage + (self.fwd_speed - min_slow_voltage) * (distance_to_end / slowdown_distance)
 
             if backwards:
                 forwards_speed *= -1
