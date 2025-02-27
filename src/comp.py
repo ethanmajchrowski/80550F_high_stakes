@@ -163,7 +163,7 @@ class sensor():
     rightEncoder = Rotation(Ports.PORT17)
     driftEncoder = Rotation(Ports.PORT21)
 
-    wallEncoder = Rotation(Ports.PORT1)
+    wallEncoder = Rotation(Ports.PORT20)
     # DISTANCE SENSORS
     intakeDistance = Distance(Ports.PORT9)
 
@@ -1495,13 +1495,19 @@ class Driver():
     def lady_brown_controls(self) -> None:
         # WALL STAKES MOTORS
         if control.LB_MANUAL_UP.pressing():
-            motor.ladyBrown.spin(FORWARD, 100, PERCENT)
-            self.robot.LB_PID.enabled = False
+            if not sensor.wallEncoder.angle() > 200:
+                motor.ladyBrown.spin(FORWARD, 80, PERCENT)
+                self.robot.LB_PID.enabled = False
+            else:
+                motor.ladyBrown.stop(BRAKE)
         elif control.LB_MANUAL_DOWN.pressing():
-            motor.ladyBrown.spin(REVERSE, 40, PERCENT)
-            self.robot.LB_PID.enabled = False
+            if not (sensor.wallEncoder.angle() < 5 or sensor.wallEncoder.angle() > 350): # arm is lowered
+                motor.ladyBrown.spin(REVERSE, 40, PERCENT)
+                self.robot.LB_PID.enabled = False
+            else:
+                motor.ladyBrown.stop(BRAKE)
         elif not self.robot.LB_PID.enabled:
-            motor.ladyBrown.stop(HOLD)
+            motor.ladyBrown.stop(BRAKE)
 
     def driver_loop(self) -> None:
         self.drive_controls()
@@ -1608,13 +1614,10 @@ class Driver():
 
 # control objects
 class LadyBrown():
-    POS_LOAD = 12
+    POS_LOAD = 20
     POS_ELEVATION_UNWIND = 110
     def __init__(self, wall_motor) -> None:
-        # self.pid = MultipurposePID(0.03, 0, 0.005, 3, None)
-        # self.pid = MultipurposePID(0.06, 0.08, 0.01, 5, None)
-        self.pid = MultipurposePID(0.3, 0.55, 0.03, 2, None)
-        # self.pid = MultipurposePID(0.1, 0.015, 0.02, 5, None)
+        self.pid = MultipurposePID(0.15, 0.5, 0.007, 2, None)
         self.enabled = False
         self.autostop = False
         self.threshold = 5
@@ -1669,6 +1672,17 @@ class LadyBrown():
         
         output = self.pid.calculate(self.target_rotation, self.sensor)
         # print(sensor.wallEncoder.angle(), output)
+
+        # debug data
+        # data = {
+        #     "o": str(round(output, 2)),
+        #     "error": str(round(self.target_rotation-self.sensor, 2)),
+        #     "integral": str(round(self.pid.integral, 2)),
+        #     "integralp": str(round(self.pid.integral_processed, 2)),
+        #     "d": str(round(self.pid.error * self.pid.kP, 2)),
+        #     "p": str(round(self.pid.derivative * self.pid.kD))
+        # }
+        # packet_mgr.add_packet("lb", data)
 
         # limit output
         if output < -8:
