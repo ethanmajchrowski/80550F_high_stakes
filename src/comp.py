@@ -154,13 +154,8 @@ class motor():
 # PNEUMATICS
 class pneumatic():
     mogo = DigitalOut(brain.three_wire_port.a)
-    # elevation_hook_release = DigitalOut(brain.three_wire_port.b)
-    elevation_bar_lift_left = DigitalOut(brain.three_wire_port.c)
-    PTO = DigitalOut(brain.three_wire_port.d)
-
-    elevation_bar_lower_right = DigitalOut(brain.three_wire_port.f)
+    doinker = DigitalOut(brain.three_wire_port.d)
     intake = DigitalOut(brain.three_wire_port.g)
-    intake = DigitalOut(brain.three_wire_port.h)
 
 #### SENSORS
 # ENCODERS
@@ -1421,15 +1416,25 @@ class ControllerFunctions():
 
     @staticmethod
     def manual_elevation():
-        log("Manual elevation pneumatics")
-        log("Fix elevation pneumatics!", LogLevel.WARNING)
-        # pneumatic.elevation_bar_lift.set(not pneumatic.elevation_bar_lift.value())
-        # pneumatic.elevation_bar_lower.set(pneumatic.elevation_bar_lift.value())
+        log("Elevation not on robot!", LogLevel.WARNING)
+        # if pneumatic.elevation_bar_lift_left.value(): # elevation is up
+        #     pneumatic.elevation_bar_lift_left.set(False)
+        #     pneumatic.elevation_bar_lift_right.set(False)
+
+        #     pneumatic.elevation_bar_lower_left.set(True)
+        #     pneumatic.elevation_bar_lower_right.set(True)
+        # else:
+        #     pneumatic.elevation_bar_lift_left.set(True)
+        #     pneumatic.elevation_bar_lift_right.set(True)
+
+        #     pneumatic.elevation_bar_lower_left.set(False)
+        #     pneumatic.elevation_bar_lower_right.set(False)
     
     @staticmethod
     def toggle_PTO():
         log("Toggled PTO pneumatics")
-        pneumatic.PTO.set(not pneumatic.PTO.value())
+        log("PTOs not on robot!", LogLevel.WARNING)
+        # pneumatic.PTO.set(not pneumatic.PTO.value())
     
     @staticmethod
     def zero_lady_brown():
@@ -1524,12 +1529,12 @@ class Driver():
         self.robot.color_sort_controller.sense()
 
         # elevation hold button
-        if con.buttonUp.pressing() and not flags.elevating:
-            self.elevation_hold_duration -= 1
-            if self.elevation_hold_duration <= 0:
-                self.start_elevation()
-        else:
-            self.elevation_hold_duration = self.elevation_hold_duration_reset
+        # if con.buttonUp.pressing() and not flags.elevating:
+        #     self.elevation_hold_duration -= 1
+        #     if self.elevation_hold_duration <= 0:
+        #         self.start_elevation()
+        # else:
+        #     self.elevation_hold_duration = self.elevation_hold_duration_reset
     
     def elevation_drive_controls(self) -> None:
         if abs(con_2.axis2.position()) > 1 or abs(con_2.axis3.position()) > 1:
