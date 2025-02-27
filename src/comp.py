@@ -48,7 +48,7 @@ def threaded_log(msg: Any, level):
     # print(time_str + tag + str(msg))
     foxglove_logLevel = level
     if foxglove_log:
-        packet_mgr.add_packet("foxglove.Log", {"timestamp": time_ms, "message": msg, "level": foxglove_logLevel, "name": "main", "file": "main", "line": 0})
+        packet_mgr.add_packet("foxglove.Log", {"timestamp": {"sec": time_s, "nsec": time_ms * 1000000}, "message": msg, "level": foxglove_logLevel, "name": "main", "file": "main", "line": 0})
     else:
         print("[{}] {}: {}".format(tag, time_ms + (time_s + time_min*60)*1000, msg))
 
@@ -1864,7 +1864,7 @@ def main():
             calibrate_lady_brown()
             calibrate_imu()
 
-            brain.screen.clear_screen(Color.YELLOW)
+            brain.screen.clear_screen(Color.CYAN)
             brain.screen.render()
 
             robot.driver_controller.run()
