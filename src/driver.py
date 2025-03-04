@@ -163,7 +163,7 @@ class pneumatic():
 class sensor():
     leftEncoder = Rotation(Ports.PORT2)
     rightEncoder = Rotation(Ports.PORT17)
-    driftEncoder = Rotation(Ports.PORT21)
+    driftEncoder = Rotation(Ports.PORT13)
 
     wallEncoder = Rotation(Ports.PORT20)
     # DISTANCE SENSORS
@@ -172,9 +172,7 @@ class sensor():
     wallLeftDistance = Distance(Ports.PORT6)
     wallBackDistance = Distance(Ports.PORT20)
     wallFrontDistance = Distance(Ports.PORT9)
-    wallRightDistance = Distance(Ports.PORT13)
-
-    # elevationDistance = Distance(Ports.PORT20) # unplugged
+    wallRightDistance = Distance(Ports.PORT19)
 
     # MISC SENSORS
     intakeColor = Optical(Ports.PORT10)
