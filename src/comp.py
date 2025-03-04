@@ -153,7 +153,8 @@ class motor():
 # PNEUMATICS
 class pneumatic():
     mogo = DigitalOut(brain.three_wire_port.a)
-    doinker = DigitalOut(brain.three_wire_port.d)
+    doinker = DigitalOut(brain.three_wire_port.h)
+    elevatoinBarLift = DigitalOut(brain.three_wire_port.d)
     intake = DigitalOut(brain.three_wire_port.g)
 
 #### SENSORS
@@ -1422,6 +1423,11 @@ class ControllerFunctions():
     def zero_lady_brown():
         log("Zeroed wall stake rotation sensor")
         sensor.wallEncoder.set_position(0)
+    
+    @staticmethod
+    def elevation_bar():
+        log("Toggled elevation bar pneumatics")
+        pneumatic.elevatoinBarLift.set(not pneumatic.elevatoinBarLift.value())
 
 class Driver():
     def __init__(self, parent: Robot) -> None:
@@ -1447,6 +1453,7 @@ class Driver():
         control.INTAKE_HEIGHT_TOGGLE.pressed(ControllerFunctions.switch_intake_height)
         control.LB_MACRO_HOME.pressed(self.robot.LB_PID.home)
         control_2.ZERO_ROT_SENSOR.pressed(ControllerFunctions.zero_lady_brown)
+        control.MANUAL_ELEVATION_PNEUMATICS.pressed(ControllerFunctions.elevation_bar)
 
     def run(self) -> None:
         """
