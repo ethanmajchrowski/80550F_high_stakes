@@ -258,7 +258,8 @@ class PurePursuit():
         self.path_complete = False
 
         self.checkpoints = checkpoints
-        if len(self.checkpoints) != 0:
+        if self.checkpoints:
+            log("Starting path with checkpoints")
             self.current_checkpoint = checkpoints[0]
             self.checkpoints_complete = False
         else:
@@ -361,14 +362,17 @@ class PurePursuit():
                             else:
                                 self.last_found_point = i 
 
-                    if not self.checkpoints_complete:
-                        if (self.last_found_point + 2 >= self.current_checkpoint):
-                            # If we are done with our checkpoints,
-                            if (self.checkpoints.index(self.current_checkpoint)+1) >= len(self.checkpoints):
-                                self.checkpoints_complete = True
-                            else:
-                                # Set the current checkpoint to the next checkpoint in the checkpoints list
-                                self.current_checkpoint = self.checkpoints[self.checkpoints.index(self.current_checkpoint) + 1]
+                    if self.checkpoints:
+                        if not self.checkpoints_complete:
+                            if (self.last_found_point + 2 >= self.current_checkpoint):
+                                # If we are done with our checkpoints,
+                                if (self.checkpoints.index(self.current_checkpoint)+1) >= len(self.checkpoints):
+                                    self.checkpoints_complete = True
+                                    log("Path done with checkpoints")
+                                else:
+                                    # Set the current checkpoint to the next checkpoint in the checkpoints list
+                                    log("Path next checkpoint")
+                                    self.current_checkpoint = self.checkpoints[self.checkpoints.index(self.current_checkpoint) + 1]
         except ZeroDivisionError:
             raise NameError
     
@@ -446,7 +450,7 @@ class DeltaPositioning():
 
         # print(self.drift_accum > 10, encoder_sign,angle_error > threshold, round(self.drift_accum, 2), round(dh, 2), threshold)
         if abs(self.drift_accum) > 1:
-            print("difting!")
+            # print("difting!")
             # we are drifting
             drift_x = d_drift * math.sin(math.radians(h + 90))
             drift_y = d_drift * math.cos(math.radians(h + 90))
@@ -454,8 +458,8 @@ class DeltaPositioning():
             # print("not difting!")
             drift_x, drift_y = 0, 0
 
-        dx = (dNet * math.sin(h_rad)) + drift_x
-        dy = (dNet * math.cos(h_rad)) + drift_y
+        dx = (dNet * math.sin(h_rad))# + drift_x
+        dy = (dNet * math.cos(h_rad))# + drift_y
 
         # print(round(dh, 2), round(dl, 2), round(dr, 2), round(d_drift, 2))
 
@@ -1033,12 +1037,13 @@ class Autonomous():
         controller = self
         drivetrain.set_turn_threshold(2)
         drivetrain.set_turn_constant(0.28)
-        paths = [[(-1593.76, 6.33, 0), (-1553.77, 5.83, 0.07), (-1513.78, 4.74, 0.04), (-1473.81, 3.36, 0.02), (-1433.84, 1.8, 0.01), (-1393.87, 0.15, 0.01), (-1353.91, -1.55, 0.0), (-1313.94, -3.25, 0.0), (-1273.98, -4.92, 0.01), (-1234.01, -6.49, 0.02), (-1194.03, -7.9, 0.03), (-1154.05, -9.03, 0.07)], [(-1176.67, -24.08, 0), (-1179.01, -64.01, 0.05), (-1181.73, -103.92, 0.05), (-1184.83, -143.8, 0.05), (-1188.34, -183.65, 0.05), (-1192.23, -223.46, 0.04), (-1196.44, -263.23, 0.02), (-1200.84, -302.99, 0.0), (-1205.26, -342.75, 0.03), (-1209.47, -382.52, 0.05), (-1213.26, -422.34, 0.07), (-1216.48, -462.21, 0.08), (-1219.05, -502.13, 0.08), (-1220.96, -542.08, 0.08), (-1222.27, -582.06, 0.07), (-1223.0, -622.06, 0.06), (-1223.25, -662.05, 0.05), (-1223.07, -702.05, 0.05), (-1222.52, -742.05, 0.05)], [(-1195.33, -666.9, 0), (-1158.53, -651.2, 0.01), (-1121.77, -635.44, 0.01), (-1084.97, -619.75, 0.03), (-1048.08, -604.31, 0.06), (-1010.99, -589.33, 0.1), (-973.61, -575.08, 0.15), (-935.83, -561.94, 0.21), (-897.53, -550.43, 0.29), (-858.63, -541.17, 0.39), (-819.13, -534.98, 0.51), (-779.21, -532.81, 0.62), (-739.34, -535.59, 0.7), (-700.26, -543.9, 0.72), (-662.77, -557.73, 0.67), (-627.45, -576.44, 0.57), (-594.49, -599.06, 0.49), (-563.87, -624.78, 0.37), (-535.26, -652.72, 0.31), (-508.43, -682.38, 0.25), (-483.11, -713.34, 0.03), (-457.95, -744.43, 0.2), (-431.54, -774.46, 0.19), (-403.99, -803.46, 0.15), (-375.56, -831.6, 0.11), (-346.53, -859.12, 0.06), (-317.2, -886.31, 0.0), (-287.88, -913.52, 0.06), (-258.9, -941.1, 0.13), (-230.63, -969.39, 0.18), (-203.4, -998.69, 0.22), (-177.52, -1029.18, 0.26), (-153.26, -1060.98, 0.28), (-130.84, -1094.1, 0.29), (-110.41, -1128.48, 0.3), (-92.1, -1164.03, 0.27), (-75.76, -1200.54, 0.25), (-61.27, -1237.81, 0.27), (-48.78, -1275.81, 0.2), (-37.81, -1314.27, 0.22), (-28.53, -1353.18, 0.17), (-20.6, -1392.38, 0.16), (-13.89, -1431.81, 0.14), (-8.32, -1471.42, 0.14), (-3.88, -1511.17, 0.12), (-0.36, -1551.01, 0.1), (2.33, -1590.92, 0.1), (4.25, -1630.87, 0.09), (5.47, -1670.86, 0.08), (6.06, -1710.85, 0.08), (6.03, -1750.85, 0.07), (5.42, -1790.85, 0.05)], [(10.16, -1834.21, 0), (12.09, -1794.26, 0.14), (15.15, -1754.38, 0.15), (19.41, -1714.61, 0.16), (24.98, -1675.0, 0.17), (31.9, -1635.6, 0.2), (40.37, -1596.51, 0.21), (50.44, -1557.81, 0.24), (62.39, -1519.64, 0.26), (76.33, -1482.15, 0.3), (92.49, -1445.57, 0.35), (111.18, -1410.22, 0.38), (132.49, -1376.38, 0.45), (156.78, -1344.63, 0.49), (184.05, -1315.39, 0.55), (214.34, -1289.3, 0.59), (247.48, -1266.95, 0.59), (283.01, -1248.64, 0.6), (320.49, -1234.75, 0.57), (359.31, -1225.21, 0.44)], [(290.56, -1231.51, 0), (250.57, -1230.61, 0.03), (210.57, -1229.98, 0.04), (170.57, -1229.71, 0.04), (130.57, -1229.8, 0.05), (90.58, -1230.27, 0.05), (50.59, -1231.14, 0.05), (10.61, -1232.44, 0.05), (-29.35, -1234.17, 0.05), (-69.3, -1236.29, 0.05), (-109.22, -1238.77, 0.04), (-149.13, -1241.53, 0.02), (-189.02, -1244.46, 0.0), (-228.91, -1247.42, 0.01), (-268.81, -1250.28, 0.03), (-308.72, -1252.91, 0.05), (-348.66, -1255.18, 0.05), (-388.61, -1257.02, 0.06), (-428.59, -1258.41, 0.06), (-468.58, -1259.31, 0.06), (-508.58, -1259.72, 0.06), (-548.57, -1259.68, 0.05), (-588.57, -1259.21, 0.05), (-628.56, -1258.36, 0.05), (-668.54, -1257.13, 0.05), (-708.51, -1255.52, 0.08), (-748.44, -1253.24, 0.08), (-788.34, -1250.34, 0.09), (-828.18, -1246.74, 0.1), (-867.93, -1242.33, 0.12), (-907.57, -1236.95, 0.15), (-947.02, -1230.38, 0.17), (-986.23, -1222.49, 0.19), (-1025.12, -1213.14, 0.18), (-1063.64, -1202.37, 0.13), (-1101.88, -1190.63, 0.01), (-1140.11, -1178.85, 0.14), (-1178.65, -1168.17, 0.24), (-1217.66, -1159.34, 0.26), (-1257.08, -1152.58, 0.23), (-1296.77, -1147.68, 0.19), (-1336.63, -1144.31, 0.16), (-1376.57, -1142.24, 0.83), (-1415.37, -1133.64, 0.09), (-1454.55, -1125.7, 0.76), (-1494.44, -1123.8, 1.19), (-1533.52, -1131.41, 2.25), (-1564.83, -1155.25, 3.19), (-1574.32, -1193.31, 2.49), (-1563.6, -1231.6, 1.33), (-1543.0, -1265.79, 0.8), (-1517.16, -1296.28, 0.55), (-1488.13, -1323.77, 0.41), (-1456.93, -1348.78, 0.32), (-1424.21, -1371.77, 0.26), (-1390.31, -1393.0, 0.23), (-1355.48, -1412.66, 0.2), (-1319.9, -1430.92, 0.16), (-1283.74, -1448.01, 0.15), (-1247.07, -1464.0, 0.15), (-1209.95, -1478.89, 0.13), (-1172.46, -1492.83, 0.11), (-1134.66, -1505.92, 0.11), (-1096.59, -1518.19, 0.1), (-1058.29, -1529.71, 0.09), (-1019.78, -1540.53, 0.09), (-981.07, -1550.62, 0.08), (-942.2, -1560.05, 0.07), (-903.19, -1568.9, 0.05)], [(-831.22, -1575.91, 0), (-855.17, -1543.88, 0.3), (-881.0, -1513.36, 0.38), (-909.06, -1484.87, 0.45), (-939.58, -1459.03, 0.51), (-972.54, -1436.42, 0.58), (-1007.91, -1417.8, 0.65), (-1045.4, -1403.97, 0.73), (-1084.52, -1395.79, 0.72), (-1124.4, -1393.36, 0.71), (-1164.23, -1396.59, 0.66), (-1203.29, -1405.08, 0.61), (-1241.02, -1418.31, 0.52), (-1277.17, -1435.38, 0.45), (-1311.63, -1455.66, 0.4), (-1344.38, -1478.6, 0.34), (-1375.5, -1503.72, 0.32), (-1404.97, -1530.76, 0.26), (-1432.97, -1559.31, 0.23), (-1459.62, -1589.13, 0.22), (-1484.92, -1620.11, 0.2), (-1508.98, -1652.06, 0.18), (-1531.91, -1684.84, 0.17), (-1553.68, -1718.39, 0.15), (-1574.43, -1752.58, 0.15), (-1594.17, -1787.37, 0.14), (-1612.92, -1822.7, 0.12), (-1630.81, -1858.48, 0.15)]]
+        paths = [[(-1593.76, 6.33, 0), (-1523.79, 4.78, 0.07), (-1453.86, 1.58, 0.02), (-1383.96, -2.21, 0.0), (-1314.06, -5.96, 0.03), (-1244.13, -8.97, 0.09)], [(-1171.78, -5.29, 0), (-1171.52, -75.29, 0.04), (-1172.26, -145.28, 0.05), (-1174.31, -215.25, 0.05), (-1177.64, -285.17, 0.02), (-1181.42, -355.07, 0.03), (-1184.54, -425.0, 0.05), (-1186.53, -494.97, 0.04), (-1187.51, -564.96, 0.03), (-1187.65, -634.96, 0.03), (-1187.14, -704.96, 0.03)], [(-1181.45, -733.68, 0), (-1177.63, -663.85, 0.52), (-1161.22, -596.05, 0.93), (-1124.09, -537.46, 1.32), (-1064.4, -502.35, 1.18), (-995.13, -494.81, 0.7), (-925.92, -504.44, 0.44), (-858.91, -524.53, 0.28), (-794.13, -550.99, 0.2), (-731.35, -581.92, 0.16), (-670.35, -616.25, 0.13), (-611.0, -653.35, 0.12), (-553.25, -692.9, 0.12), (-497.18, -734.8, 0.36), (-446.85, -783.26, 0.47), (-389.23, -822.88, 0.29), (-327.83, -856.47, 0.01), (-266.54, -890.26, 0.29), (-208.98, -929.97, 0.47), (-158.75, -978.56, 0.5), (-117.71, -1035.12, 0.42), (-85.49, -1097.18, 0.36), (-61.32, -1162.83, 0.24), (-42.64, -1230.27, 0.2), (-28.65, -1298.84, 0.16), (-18.49, -1368.1, 0.11), (-11.1, -1437.71, 0.11), (-6.31, -1507.54, 0.08), (-3.46, -1577.48, 0.06), (-2.12, -1647.46, 0.05), (-1.97, -1717.46, 0.06), (-3.32, -1787.44, 0.03)], [(-8.84, -1873.05, 0), (-7.57, -1803.06, 0.02), (-5.84, -1733.08, 0.03), (-3.49, -1663.12, 0.04), (-0.26, -1593.19, 0.06), (4.37, -1523.35, 0.09), (11.15, -1453.69, 0.15), (21.5, -1384.48, 0.29), (38.81, -1316.74, 0.7), (71.82, -1255.54, 1.51), (131.17, -1220.79, 1.24), (200.75, -1215.17, 0.34), (270.7, -1217.94, 0.02), (340.66, -1220.1, 0.14)], [(-1236.13, -1191.54, 0), (-1301.55, -1166.73, 0.3), (-1369.17, -1148.91, 0.4), (-1438.59, -1140.75, 0.56), (-1508.17, -1146.32, 0.89), (-1572.17, -1173.01, 1.68), (-1608.63, -1230.42, 1.99), (-1595.71, -1298.05, 1.18), (-1555.62, -1355.12, 0.6), (-1504.36, -1402.69, 0.36), (-1447.49, -1443.42, 0.24), (-1387.39, -1479.25, 0.18), (-1325.18, -1511.28, 0.14), (-1261.41, -1540.13, 0.12), (-1196.5, -1566.3, 0.1), (-1130.74, -1590.25, 0.06)], [(307.53, -1299.09, 0), (237.53, -1298.85, 0.05), (167.54, -1299.74, 0.06), (97.59, -1302.22, 0.08), (27.74, -1306.78, 0.1), (-41.9, -1313.82, 0.08), (-111.31, -1322.88, 0.02), (-180.78, -1331.49, 0.12), (-250.54, -1337.11, 0.13), (-320.5, -1339.43, 0.1), (-390.49, -1339.18, 0.07), (-460.46, -1337.2, 0.05), (-530.39, -1333.93, 0.03), (-600.27, -1329.94, 0.03), (-670.1, -1325.12, 0.05), (-739.85, -1319.14, 0.06), (-809.44, -1311.59, 0.1), (-878.73, -1301.7, 0.13), (-947.51, -1288.74, 0.16), (-1015.43, -1271.87, 0.18), (-1082.17, -1250.79, 0.13), (-1147.85, -1226.58, 0.07), (-1212.93, -1200.81, 0.02)], [(-1025.25, -1632.24, 0), (-1084.12, -1594.39, 0.15), (-1144.94, -1559.76, 0.22), (-1208.24, -1529.94, 0.23), (-1273.7, -1505.25, 0.27), (-1341.23, -1486.97, 0.33), (-1410.41, -1476.56, 0.38), (-1480.36, -1475.51, 0.42), (-1549.67, -1484.85, 0.45), (-1616.65, -1505.0, 0.45), (-1679.66, -1535.36, 0.42), (-1737.5, -1574.7, 0.38), (-1789.64, -1621.34, 0.32), (-1836.27, -1673.48, 0.26), (-1877.96, -1729.66, 0.25), (-1914.62, -1789.28, 0.18), (-1947.53, -1851.04, 0.3)]]
 
-        x = -1800 + sensor.wallBackDistance.object_distance() + 130
-        dev = x - self.robot.pos[0]
-        log("Reset x position to {}. Deviation: {}".format(x, dev))
-        self.robot.pos[0] = x
+        # x = -1800 + sensor.wallBackDistance.object_distance() + 130
+        # dev = x - self.robot.pos[0]
+        # log("Reset x position to {}. Deviation: {}".format(x, dev))
+        # self.robot.pos[0] = x
+        self.robot.pos[0] = -1545.0
 
         motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
         sleep(350, TimeUnits.MSEC)        
@@ -1046,13 +1051,16 @@ class Autonomous():
 
         # spin lady brown to flip off the wall stake aligner (needs to start up for size)
         motor.ladyBrown.spin(DirectionType.FORWARD, 70, VelocityUnits.PERCENT)
-        brain.timer.event(motor.ladyBrown.spin, 200, (DirectionType.REVERSE, 50, VelocityUnits.PERCENT))
+
+        sleep(300, MSEC)
+        motor.ladyBrown.spin(DirectionType.REVERSE, 50, VelocityUnits.PERCENT)
+        log(self.robot.pos)
 
         # drive away from wall
-        self.fwd_speed = 8
+        self.fwd_speed = 7
         self.path(paths[0], 
                 backwards=False,
-                heading_authority=3,
+                heading_authority=2.5,
                 finish_margin=200, slowdown_distance=0)
  
         motor.ladyBrown.stop(BrakeType.COAST)
@@ -1064,7 +1072,7 @@ class Autonomous():
 
         # grab mogo path
         self.fwd_speed = 6
-        self.path(paths[1], backwards=True, heading_authority=2, slowdown_distance=0)
+        self.path(paths[1], backwards=True, heading_authority=1, slowdown_distance=0)
         
         pneumatic.mogo.set(True)
         sleep(100, TimeUnits.MSEC)
@@ -1075,48 +1083,45 @@ class Autonomous():
         motor.intakeFlex.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
 
         self.robot.LB_PID.home()
-        self.fwd_speed = 10
+        self.fwd_speed = 7
         # drive across 1st ring and into 2nd ring and wall stake
         self.path(paths[2], backwards=False, 
-                heading_authority=1.4, look_ahead_dist=400, event_look_ahead_dist=300, finish_margin=200,
-                K_curvature_speed=2400,
-                max_curvature_speed=4.5,
-                a_curvature_exp=0.025,
-                K_curvature_look_ahead=100,
-                a_curvature_speed_exp=0.1)
+                heading_authority=1.3, look_ahead_dist=350, event_look_ahead_dist=300, 
+                finish_margin=100, slowdown_distance=1300, min_slow_voltage=3, timeout=3400)
 
-        motor.intakeChain.stop()
+        motor.intakeChain.spin(DirectionType.REVERSE, 60, VelocityUnits.PERCENT)
+        sleep(100, TimeUnits.MSEC)
+        motor.intakeChain.stop(BrakeType.COAST)
 
+        sleep(100, TimeUnits.MSEC)
         # score on wall stake
         self.robot.LB_PID.enabled = False
-        motor.ladyBrown.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-        sleep(300, TimeUnits.MSEC)
-        motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-
+        motor.ladyBrown.spin(DirectionType.FORWARD, 80, VelocityUnits.PERCENT)
         sleep(200, TimeUnits.MSEC)
-        motor.ladyBrown.spin(DirectionType.REVERSE, 70, VelocityUnits.PERCENT)
-        brain.timer.event(motor.ladyBrown.stop, 700, (BrakeType.COAST,))
+        motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+        sleep(600, TimeUnits.MSEC)
+        motor.intakeChain.stop(BrakeType.COAST)
+        motor.ladyBrown.spin(DirectionType.REVERSE, 90, VelocityUnits.PERCENT)
+        brain.timer.event(motor.ladyBrown.stop, 600, (BrakeType.COAST,))
 
-        self.fwd_speed = 7
+        self.fwd_speed = 8.5
         # back up to turn for mogo fill
-        self.path(paths[3], backwards=True, heading_authority=2, timeout=2000, look_ahead_dist=250)
-        # TODO distance calibration here?
-        # TODO x --> right wall, back sensor
-        # TODO y --> bottom wall, left sensor
+        log("Starting backup path")
+        self.path(paths[3], backwards=True, heading_authority=1.4, timeout=2000, look_ahead_dist=250, finish_margin=200, slowdown_distance=900)
+        log("Backup path done")
+        sleep(800, TimeUnits.MSEC)
 
         motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
         motor.intakeFlex.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
         # pickup bottom left rings
-        self.fwd_speed = 9
-        self.path(paths[4], look_ahead_dist=280, checkpoints=[47], heading_authority=1.8,
-                  K_curvature_speed=3000,
-                  max_curvature_speed=5,
-                  a_curvature_exp=0.025, 
-                  K_curvature_look_ahead=50,
-                  a_curvature_speed_exp=0.1)
+        self.fwd_speed = 5.5
+        self.path(paths[4], speed_ramp_time=600,look_ahead_dist=320, heading_authority=1.4,)
+        self.path(paths[5],  
+                  look_ahead_dist=320, heading_authority=1.4, 
+                  finish_margin=300, slowdown_distance=700)
 
         # drop mogo in corner
-        self.path(paths[5], backwards=True, timeout=1300, heading_authority=2)
+        self.path(paths[6], backwards=True, timeout=1300, heading_authority=2)
         pneumatic.mogo.set(False)
 
         # recalibrate x and y since we're in the corner
@@ -1125,8 +1130,8 @@ class Autonomous():
         h = math.radians(sensor.imu.heading())
         d1 = sensor.wallLeftDistance.object_distance()
         x = d1 * math.cos(h)
-        left_offset = 180.3 * math.cos(math.radians(19.4) + h)
-        x = -1800 + x + left_offset
+        left_offset = 172.6 * math.cos(math.radians(-10) + h)
+        x = -1785 + x + left_offset
 
         diff = x - self.robot.pos[0]
         print("Recalibrate x pos from {} to {}. Diff: {}".format(self.robot.pos[0], x, diff))
@@ -1134,8 +1139,8 @@ class Autonomous():
 
         d2 = sensor.wallRightDistance.object_distance()
         y = d2*math.sin(h)
-        right_offset = 180.3 * math.sin(math.radians(19.4) - h)
-        y = -1800 + y - right_offset
+        right_offset = 172.6 * math.sin(math.radians(-10) - h)
+        y = -1785 + y - right_offset
         diff = y - self.robot.pos[1]
         print("Recalibrate y pos from {} to {}. Diff: {}".format(self.robot.pos[1], y, diff))
         self.robot.pos[1] = y
@@ -1296,8 +1301,6 @@ class Autonomous():
             if backwards:
                 forwards_speed *= -1
 
-            print(forwards_speed)
-
             # Do some stuff that lowers the authority of turning, no idea if this is reasonable
             heading_output *= heading_authority
             if heading_output > max_turn_volts: heading_output = max_turn_volts
@@ -1365,6 +1368,14 @@ class Autonomous():
             if timeout is not None:
                 if brain.timer.system() > time_end:
                     done = True
+
+                    motor.leftA.stop()
+                    motor.leftB.stop()
+                    motor.leftC.stop()
+                    motor.rightA.stop()
+                    motor.rightB.stop()
+                    motor.rightC.stop()
+
                     log("Path timed out", LogLevel.WARNING)
 
             if not done:
@@ -1776,13 +1787,6 @@ class ColorSortController():
             self.queued_sort = False
             self.eject_next_ring = False
 
-class PayloadManager():
-    def __init__(self) -> None:
-        self.queue = []
-    
-    def add_packet(self, topic, payload):
-        pass
-
 class flags():
     """
     'global' booleans enum for various states.
@@ -1834,10 +1838,12 @@ def main():
         robot.LB_PID.thread = Thread(robot.LB_PID.run)
         comp = Competition(null_function, null_function)
 
-        # brain.timer.event(start_odom_packets, 2000, (robot,))
+        brain.timer.event(start_odom_packets, 2000, (robot,))
 
         # Load autonomous into robot
         robot.autonomous_controller.load_path(data["autons"]["selected"])
+
+        con.screen.print(data["autons"]["selected"])
 
         pull_data(data, robot) # send data from SD data (local scope) into robot object & subobjects
         # when connected to the field, do everything normally
