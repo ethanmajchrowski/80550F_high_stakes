@@ -989,34 +989,6 @@ class Autonomous():
         self.sequence(globals())
         
         self.autonomous_cleanup()
-    
-    # def laser_calibrate(self, direction: int, calibrate_axis: int ):
-    #     """Reset x/y based on laser distance.
-    #     direction: 0-3 forwards, left, back, rght as index
-    #     calibrate_axis: 0 or 1, x or y"""
-    #     laser = self.mcl_controller.all_directions[direction]
-    #     # print(math.cos(math.radians((laser.angle + self.robot.heading - 90) % 360)))
-    #     # print(self.robot.heading, (laser.angle + self.robot.heading - 90) % 360)
-    #     if calibrate_axis:
-    #         flip = 1
-    #     else:
-    #         flip = -1
-    #     # start_x = self.robot.pos[1] + (laser.distance*math.cos(math.radians((laser.angle + self.robot.heading - 90) % 360))) * flip
-    #     # start_y = self.robot.pos[0] - (laser.distance*math.sin(math.radians((laser.angle + self.robot.heading - 90) % 360))) * flip
-    #     temp = start_x
-
-    #     start_x = start_y
-    #     start_y = temp
-
-    #     # distance = laser.get_distance()
-    #     # distance_x = distance*math.cos(math.radians(self.robot.heading)) + start_y
-    #     # distance_y = distance*math.sin(math.radians(self.robot.heading)) + start_x
-    #     robot_x = start_x + 170 * flip
-    #     robot_y = start_y - 60 * flip
-    #     # -1630
-    #     # return (-1800+distance_x)
-    #     print("start pos: {}".format((start_x, start_y)))
-    #     return("rx: {}, ry: {}".format(robot_x, robot_y))
 
     def test(self) -> None:
         """
