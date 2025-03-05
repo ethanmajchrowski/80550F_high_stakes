@@ -347,7 +347,8 @@ class PurePursuit():
                             else: completed_length = sol2_distance
 
                             percent = (1 - (completed_length/segment_length))
-                            curvature = (self.path[i][2] * (1 - percent) + self.path[i+1][2] * percent)
+                            if len(self.path[i]) >= 3: # we check this to make sure it works with a legacy path
+                                curvature = (self.path[i][2] * (1 - percent) + self.path[i+1][2] * percent)
                             
                         # first, check if the robot is not close to the end point in the path
                         distance_to_end = dist(current_pos, self.path[len(self.path)-1][:2])
