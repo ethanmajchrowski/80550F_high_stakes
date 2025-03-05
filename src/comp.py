@@ -1713,7 +1713,7 @@ class ColorSortController():
         If so, queue an eject of the next dist to the top of the intake.
         """
         # If we eject blue, 
-        if ((flags.color_setting == "eject_blue") and
+        if ((flags.color_setting == ColorSort.EJECT_BLUE) and
         sensor.intakeColor.hue() > self.blue_hue and 
         sensor.intakeColor.is_near_object() and 
         not self.eject_next_ring):
@@ -1721,9 +1721,9 @@ class ColorSortController():
             self.eject_next_ring = True
             log("Found [blue] ring to eject.")
         
-        if (flags.color_setting == "eject_red" and 
-        sensor.intakeColor.hue() < 18 and 
-        sensor.intakeColor.is_near_object()and 
+        if (flags.color_setting == ColorSort.EJECT_RED and 
+        sensor.intakeColor.hue() > self.blue_hue and 
+        sensor.intakeColor.is_near_object() and 
         not self.eject_next_ring):
             
             self.eject_next_ring = True
