@@ -1486,7 +1486,7 @@ class Driver():
     def lady_brown_controls(self) -> None:
         # WALL STAKES MOTORS
         if control.LB_MANUAL_UP.pressing():
-            if not sensor.wallEncoder.angle() > 200:
+            if not 200 < sensor.wallEncoder.angle() < 355:
                 motor.ladyBrown.spin(FORWARD, 80, PERCENT)
                 self.robot.LB_PID.enabled = False
             else:
