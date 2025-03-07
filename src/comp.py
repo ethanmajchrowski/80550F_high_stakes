@@ -883,8 +883,10 @@ class AutonomousCommands:
 class AutonomousFlags:
     intake_halt_tolerance = 60
     intake_auto_halt = False
+    intake_flex_auto_halt = False
     drop_after_auto_halt = False
-    raise_after_auto_halt = False
+    last_intake_command = 0.0
+    intake_anti_jam = False
     last_intake_command = None
 
 # robot states
@@ -901,6 +903,9 @@ class Autonomous():
         self.mcl_controller = MCL_Handler()
         self.run_mcl = False
         self.run_mcl_lasers = True
+
+        self.intake_jam_windup = 0
+        self.last_intake_turn = 0
 
         self.fwd_speed = 8
 
@@ -1164,11 +1169,37 @@ class Autonomous():
         if auto_flags.intake_auto_halt:
             if sensor.intakeDistance.object_distance() < auto_flags.intake_halt_tolerance:
                 motor.intakeChain.stop(BrakeType.BRAKE)
+                auto_flags.intake_auto_halt = False
 
                 if auto_flags.drop_after_auto_halt:
                     pneumatic.intake.set(False)
                 if auto_flags.raise_after_auto_halt:
                     pneumatic.intake.set(True)
+
+        if auto_flags.intake_flex_auto_halt:
+            if sensor.intakeDistance.object_distance() < auto_flags.intake_halt_tolerance:
+                motor.intakeFlex.stop(BrakeType.COAST)
+                auto_flags.intake_flex_auto_halt = False
+
+        if auto_flags.intake_anti_jam:
+            if motor.intakeChain.command():
+                intake_pos = motor.intakeChain.position()
+                intake_change = intake_pos - self.last_intake_turn
+                self.last_intake_turn = intake_pos
+                # print(intake_pos, intake_change)
+                if abs(intake_change) < 5:
+                    self.intake_jam_windup += 1
+                else:
+                    self.intake_jam_windup = 0
+                
+                if self.intake_jam_windup > 10:
+                    log("Intake jam!", LogLevel.WARNING)
+                    command = motor.intakeChain.command(VelocityUnits.PERCENT)
+                    brain.timer.event(motor.intakeChain.spin, 500, (DirectionType.FORWARD, command, VelocityUnits.PERCENT))
+
+                    motor.intakeChain.stop()
+                    motor.intakeChain.spin(DirectionType.REVERSE, 40, VelocityUnits.PERCENT)
+                    self.intake_jam_windup = 0
     
     def path(self, path, *, events=[], checkpoints=[], backwards = False,
              look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
