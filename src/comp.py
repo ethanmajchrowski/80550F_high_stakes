@@ -1608,7 +1608,7 @@ class LadyBrown():
     POS_LOAD = 20
     POS_ELEVATION_UNWIND = 110
     def __init__(self, wall_motor) -> None:
-        self.pid = MultipurposePID(0.15, 0.5, 0.007, 2, None)
+        self.pid = MultipurposePID(0.3, 0.5, 0.01, 2, None)
         self.enabled = False
         self.autostop = False
         self.threshold = 5
@@ -1662,7 +1662,10 @@ class LadyBrown():
             self.sensor = 360 - self.sensor
         
         output = self.pid.calculate(self.target_rotation, self.sensor)
-        # print(sensor.wallEncoder.angle(), output)
+        if abs(self.pid.error) > 40: self.pid.integral = 0
+        print(sensor.wallEncoder.angle(), output)
+        print(sensor.wallEncoder.angle(), output)
+        print(sensor.wallEncoder.angle(), output)
 
         # debug data
         # data = {
