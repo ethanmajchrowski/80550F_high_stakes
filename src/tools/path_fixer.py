@@ -96,7 +96,8 @@ def calculate_curvature(path) -> list:
 
 ap2 = []
 for path in ap:
-    ap2.append(calculate_curvature(path))
+    if path:
+        ap2.append(calculate_curvature(path))
 
 print(ap2)
 print(f"{len(ap2)} paths ({len(str(ap2))} chars long) processed.")
