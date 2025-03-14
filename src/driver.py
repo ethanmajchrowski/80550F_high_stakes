@@ -57,8 +57,7 @@ def log(msg: Any, level = LogLevel.INFO):
         Thread(threaded_log, (msg, level))
 
 class PacketTiming:
-    CONTROLLER = 40
-    CONTROLLER_2 = 50
+    CONTROLLER = 50
     BRAIN = 20
 
 class PacketManager():
@@ -104,7 +103,7 @@ class PacketManager():
         return True
 
 do_logging = True
-packet_mgr = PacketManager(PacketTiming.CONTROLLER_2)
+packet_mgr = PacketManager(PacketTiming.CONTROLLER)
 packet_mgr.start()
 
 brain = Brain()
@@ -167,15 +166,17 @@ class sensor():
 
     wallEncoder = Rotation(Ports.PORT20)
     # DISTANCE SENSORS
-    intakeDistance = Distance(Ports.PORT9)
+    intakeDistance = Distance(Ports.PORT21)
 
     wallLeftDistance = Distance(Ports.PORT6)
-    wallBackDistance = Distance(Ports.PORT20)
+    wallBackDistance = Distance(Ports.PORT1)
     wallFrontDistance = Distance(Ports.PORT9)
     wallRightDistance = Distance(Ports.PORT19)
 
+    # elevationDistance = Distance(Ports.PORT20) # unplugged
+
     # MISC SENSORS
-    intakeColor = Optical(Ports.PORT10)
+    intakeColor = Optical(Ports.PORT14)
     imu = Inertial(Ports.PORT11)
 
 lmg = MotorGroup(motor.leftA, motor.leftB, motor.leftC)
@@ -205,6 +206,14 @@ sensor.intakeColor.set_light_power(100, PERCENT)
 ####################
 
 # global functions (no I/O)
+def calibrate_lady_brown():
+    log("calibrating lady brown")
+
+    # motor.ladyBrown.spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
+    sensor.wallEncoder.set_position(0)
+
+    log("lady brown calibration complete")
+
 def calibrate_imu():
     log("calibrating IMU")
 
@@ -213,7 +222,264 @@ def calibrate_imu():
         sleep(10, TimeUnits.MSEC)
 
     log("IMU calibration complete")
+
+def dist(p1, p2):
+    x1, y1 = p1
+    x2, y2 = p2
+    return math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
+
+def gauss(mu = 0, sigma = 1):
+    u1 = random()
+    u2 = random()
+
+    z = math.sqrt(-2.0 * math.log(u1)) * math.cos(2.0 * math.pi * u2)
+    return mu + sigma * z
+
+def sign(num):
+    if num == 0: return 0
+    if num < 0: return -1
+    else: return 1
 # classes
+
+class PurePursuit():
+    def __init__(self, look_ahead_dist, finish_margin, 
+                 path: list[tuple[float, float, float]], checkpoints) -> None:
+        """
+        Init variables. Robot position is able to be passed in from another source, like a GPS sensor or odometry algorithm.
+        Arguments:
+            path (list[tuple[float, float]])
+
+        """
+        self.path = path
+        self.look_dist = look_ahead_dist
+        self.finish_margin = finish_margin
+        self.last_found_point = 0
+
+        self.path_complete = False
+
+        self.checkpoints = checkpoints
+        if len(self.checkpoints) != 0:
+            log("Setup path with checkpoints")
+            self.checkpoint_index = 0
+            self.current_checkpoint = checkpoints[self.checkpoint_index]
+            self.checkpoints_complete = False
+        else:
+            self.checkpoints_complete = True
+
+    def goal_search(self, current_pos):
+        """
+        Run every time you want to update your goal position. 
+        Returns the point along our path that is look_dist away from the robot
+        and that is closest to the end of the path.
+        """
+        goal = self.path[self.last_found_point+1][:2]
+        curvature = 0.0
+
+        # Iterate over every un-crossed point in our path.
+        #if we are close to the finish point, regardless of what has happened, finish the path
+        try:
+            if dist(current_pos, self.path[len(self.path)-1][:2]) < self.finish_margin:
+                self.path_complete = True      
+            else:
+                # Iterate from our current point to the next checkpoint, or the end of the path.
+                # Once we reach that checkpoint, move the checkpoint to the next and keep going.
+                if self.checkpoints_complete:
+                    end = len(self.path)-1
+                else:
+                    end = self.current_checkpoint
+                
+                start = self.last_found_point
+                
+                for i in range(start, end):
+                    # step 1: line and circle intersection
+                    h, k = current_pos
+                    point1 = self.path[i][:2]
+                    point2 = self.path[i+1][:2]
+                    ax, ay = point1[:2]
+                    bx, by = point2[:2]
+                    
+                    m = (by - ay) / (bx - ax) # slope of line between point a and b
+                    b = m*(-ax) + ay # y-intercept of line
+                    r = self.look_dist
+                    # quadratic terms
+                    A = (m*m) + 1
+                    B = (2*m*(b-k)-(2*h))
+                    C = ((h*h) + ((b-k)*(b-k)) - (r*r))
+
+                    discriminant = (B*B) - (4*A*C)
+                    if discriminant >= 0:
+                        sol1_x = (-B + math.sqrt(discriminant)) / (2*A)
+                        sol1_y = m*sol1_x + b
+
+                        sol2_x = (-B - math.sqrt(discriminant)) / (2*A)
+                        sol2_y = m*sol2_x + b
+
+                        sol1 = (sol1_x, sol1_y)
+                        sol2 = (sol2_x, sol2_y)
+
+                        minX, minY = min(ax, bx), min(ay, by)
+                        maxX, maxY = max(ax, bx), max(ay, by)
+
+                        # general check to see if either point is on the line 
+                        if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) or ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
+                            sol1_distance = dist(sol1, point2)
+                            sol2_distance = dist(sol2, point2)
+
+                            if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) and ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
+                                # both solutions are within bounds, so we need to compare and decide which is better
+                                # choose based on distance to pt2
+
+                                if sol1_distance < sol2_distance:
+                                    goal = sol1
+                                else:
+                                    goal = sol2
+                            else:
+                                if (minX < sol1_x < maxX) and (minY < sol1_y < maxY):
+                                    # solution 1 is within bounds
+                                    goal = sol1
+                                else:
+                                    goal = sol2
+                            
+                            # we have a goal solution at this point in time
+                            # we can now get that solutions completion of the line segment
+                            # this lets us linearly interpolate between the curvature of point[i] and point[i+1]
+                            segment_length = dist(self.path[i][:2], self.path[i+1][:2])
+                            if goal == sol1: completed_length = sol1_distance
+                            else: completed_length = sol2_distance
+
+                            percent = (1 - (completed_length/segment_length))
+                            if len(self.path[i]) >= 3: # we check this to make sure it works with a legacy path
+                                curvature = (self.path[i][2] * (1 - percent) + self.path[i+1][2] * percent)
+                            
+                        # first, check if the robot is not close to the end point in the path
+                        distance_to_end = dist(current_pos, self.path[len(self.path)-1][:2])
+                        if (distance_to_end < self.look_dist) and self.checkpoints_complete:
+                            goal = self.path[len(self.path)-1]
+                        else:
+                            # update last_found_point
+                            # only keep the goal if the goal point is closer to the target than our robot
+                            if dist(goal[:2], self.path[self.last_found_point+1][:2]) < dist(current_pos, self.path[self.last_found_point+1][:2]):
+                                # found point is closer to the target than we are, so we keep it
+                                goal = goal
+                            else:
+                                self.last_found_point = i 
+
+                    if not self.checkpoints_complete:
+                        if (self.last_found_point + 5 >= self.current_checkpoint):
+                            log("Checkpoint {} reached!".format(self.checkpoint_index))
+                            # If we are done with our checkpoints,
+                            if (self.checkpoint_index+1) >= len(self.checkpoints):
+                                self.checkpoints_complete = True
+                                log("Path done with checkpoints")
+                            else:
+                                # Set the current checkpoint to the next checkpoint in the checkpoints list
+                                log("Path next checkpoint")
+                                self.checkpoint_index += 1
+                                self.current_checkpoint = self.checkpoints[self.checkpoint_index]
+        except ZeroDivisionError:
+            log("Pather tried to divide by zero", LogLevel.FATAL)
+    
+        # data = {
+        #     "ix" : self.last_found_point,
+        #     "ip": goal
+        #     # "look_ahead": path_handler.look_dist
+        # }
+        # packet_mgr.add_packet("pix", data)
+        # print("Last: {}. Target: {}, {}".format(self.last_found_point, goal[0], goal[1]))
+
+        return goal[:2], curvature
+
+class DeltaPositioning():
+    def __init__(self, leftEnc: Rotation | Motor, rightEnc: Rotation | Motor, 
+                 driftEnc: Rotation | Motor, imu: Inertial) -> None:
+        """Odometry based on tracking wheels."""
+        self.last_time = brain.timer.time()
+        self.leftEnc = leftEnc
+        self.rightEnc = rightEnc
+        self.driftEnc = driftEnc
+
+        self.leftEnc.reset_position()
+        self.rightEnc.reset_position()
+        self.driftEnc.reset_position()
+
+        self.imu = imu
+
+        self.last_left_encoder = 0
+        self.last_right_encoder = 0
+        self.last_drift_encoder = 0
+        self.last_heading = 0
+
+        # formula:
+        # wheel diamter * pi
+        # convert to mm
+        # multiply by motor to wheel ratio
+        # self.circumference = 219.46 * (3/4)
+        external_gear_ratio = 1 # fraction
+        wheel_diameter = 2 # inches
+        self.circumference = (wheel_diameter * 3.14159) * 25.4 * external_gear_ratio
+
+        drift_dist = 80
+        self.drift_circumference = 2 * 3.14159 * drift_dist
+        self.drift_accum = 0
+
+    def update(self) -> list[float]:
+        """Call constantly to update position."""
+
+        h = self.imu.heading()
+        h_rad = math.radians(h)
+
+        # change in left & right encoders (degrees)
+        dl = self.leftEnc.position() - self.last_left_encoder
+        dr = self.rightEnc.position() - self.last_right_encoder
+        d_drift = self.driftEnc.position() - self.last_drift_encoder
+        # change in heading
+        dh = h - self.last_heading
+
+        # get change in encode wheel in distance
+        dl = (dl / 360) * self.circumference
+        dr = (dr / 360) * self.circumference
+        d_drift = (d_drift / 360) * self.circumference
+
+        # average the position of left & right to get the center of the robot
+        dNet = (dl + dr) / 2 
+
+        # To determine if this is actually drift or just IMU error, we compare the angle error
+        # of the drift wheel to the IMU
+        drift_angle = (d_drift / self.drift_circumference) * 360
+        angle_error = round(abs(dh - drift_angle), 3)
+        # print(round(angle_error, 2))
+        threshold = 2 + 0.5*abs(dh)
+
+        encoder_sign = sign(dl) * sign(dr)
+
+        if encoder_sign == 1:
+            # possibly drifting
+            if angle_error > threshold:
+                self.drift_accum += abs(d_drift)
+        else:
+            self.drift_accum *= 0.95
+
+        # print(self.drift_accum > 10, encoder_sign,angle_error > threshold, round(self.drift_accum, 2), round(dh, 2), threshold)
+        if abs(self.drift_accum) > 1:
+            # print("difting!")
+            # we are drifting
+            drift_x = d_drift * math.sin(math.radians(h + 90))
+            drift_y = d_drift * math.cos(math.radians(h + 90))
+        else:
+            # print("not difting!")
+            drift_x, drift_y = 0, 0
+
+        dx = (dNet * math.sin(h_rad))# + drift_x
+        dy = (dNet * math.cos(h_rad))# + drift_y
+
+        # print(round(dh, 2), round(dl, 2), round(dr, 2), round(d_drift, 2))
+
+        self.last_time = brain.timer.time()
+        self.last_heading = self.imu.heading()
+        self.last_right_encoder = self.rightEnc.position()
+        self.last_left_encoder = self.leftEnc.position()
+        self.last_drift_encoder = self.driftEnc.position()
+        return [dx, dy]
 
 class MultipurposePID:
     def __init__(self, KP, KD, KI, KI_MAX, MIN = None) -> None:
@@ -255,6 +521,7 @@ class MultipurposePID:
 
         if self.kI != 0:
             self.integral += self.error
+
             if self.integral > 0:
                 self.integral = min(self.integral, 5 / self.kI)
             else:
@@ -278,11 +545,325 @@ class MultipurposePID:
         self.last_error = self.error
         wait(DELAY, MSEC)
         return output
+    
+class Laser:
+    def __init__(self, sensor: Distance, offset) -> None:
+        """
+        Create a MCL laser with offsets for build location.
+
+        Arguments:
+        x_offset: offset from the forwards/backwards axis of the robot. forwards on the robot is positive
+        y_offset: offset from the center of the robot left/right. right on the robot is positive.
+        distance_offset: distance LOCAL to the sensor forwards/backwards. Away from the center is positive.
+        """
+        self.offset = offset
+        self.sensor = sensor
+        # self.forward_offset = distance_offset
+
+        # self.distance = math.sqrt((x_offset**2) + (y_offset**2))
+        # self.angle = math.degrees(math.atan2(y_offset, x_offset))
+    
+    def get_distance(self):
+        return self.sensor.object_distance() + self.offset
+
+class MCL:
+    def __init__(self):
+        self.num_lasers = 4
+
+        self.field_size = 3600
+        self.num_particles = 100
+        self.avg_score = 0
+        self.avg_pos = [0, 0]
+
+        self.simulation = set()
+
+    def update_avg_position(self):
+        """Returns the average position of all the points in the simulation set."""
+        avg_x, avg_y = self.avg_pos
+        for point in self.simulation:
+            #* linear average
+            # avg_x = (avg_x + point[1][0]) / 2
+            # avg_y = (avg_y + point[1][1]) / 2
+
+            #! weighted average based on score ( not working?)
+            # if point[0] > 2000: continue
+            # print(point)
+            if self.avg_score:
+                weight = point[0] / self.avg_score * 1.8
+            else:
+                weight = 0
+
+            weight = round(weight, 3) * 5
+            if 1-weight < 0:
+                weight = 1
+            
+            # print(weight)
+
+            avg_x = (avg_x * (weight)) + (point[1][0] * (1-weight))
+            avg_y = (avg_y * (weight)) + (point[1][1] * (1-weight))
+            # print(avg_x, avg_y, weight, 1-weight)
+        
+        self.avg_pos = [avg_x, avg_y]
+        return((avg_x, avg_y))
+
+    def redistribute(self, angle, target, lasers, clear = True, count = None):
+        """
+        Used to continue the algorithm. Resets the current simulation and evenly distributes the points across the map.
+        """
+        if count is None:
+            count = self.num_particles
+        
+        if clear:
+            self.simulation = set()
+        num = int(math.sqrt(count))
+        dist = self.field_size / num
+
+        for x in range(num):
+            for y in range(num):
+                pos = (int(dist*x - 1800 + 5), int(dist*y - 1800 + 5))
+
+                self.simulate_robot(pos, angle, target, lasers)
+
+    def simulate_robot(self, pos: list | tuple, angle, target: list[int], lasers: list):
+        """
+        Returns the error score of a simulated robot at the given pos / angle.
+        Compares to the given target lasers, a list of 4 integers.
+        If a laser is over 2.5m, it should be handled as None.
+        Target list of lasers should move counter clockwise starting at 0*, and have the same length as num_lasers
+        """
+        score = 0
+        for i in range(self.num_lasers):
+            corrected_angle = (angle + i*(360//self.num_lasers) + 90) % 360
+            dist = self.simulate_laser(pos, corrected_angle, lasers[i])
+            # None checking (if a sim laser is out of range, the same real lasers should also be out of range)
+            if target[i] is None:
+                if dist > 2500:
+                    # this means that our found distance is correct (out of range, so keep going)
+                    continue 
+                else:
+                    # one of our points is technically within range, but it should be none
+                    # return
+                    score = 9000
+                    break
+
+            # linear error from the target
+            error = abs(target[i] - dist)
+            score += error
+        
+        self.simulation.add((score, pos))
+
+    def motion_offset(self, motion):
+        dx, dy = motion
+        ns = set()
+        for point in self.simulation:
+            x = point[1][0] + dx + gauss(0, 2)
+            y = point[1][1] - dy - gauss(0, 2)
+            if -1800 <= x <= 1800 and -1800 <= y <= 1800:
+                ns.add((point[0], (x, y)))
+        self.simulation = ns.copy()
+        del ns
+
+    def resample(self, tolerance, angle, target, lasers):
+        """Iterate through our simulated points and destroy they ones with high error.
+        Re-run robot simulation with some noise"""
+        angle = angle % 360
+
+        survived = set()
+        avg_score = 0
+        for point in self.simulation:
+            avg_score = (avg_score + point[0]) / 2
+        self.avg_score = avg_score
+        for point in self.simulation:
+            if point[0] < avg_score:
+                if random() > 0.2:
+                    survived.add(point)
+        
+        if len(survived) != 0:
+            children = self.num_particles // len(survived)
+
+            self.simulation = survived.copy()
+            for point in survived:
+                for i in range(children):
+                    pos = (point[1][0] + (gauss()) * 50, point[1][1] + (gauss()) * 50)
+                    self.simulate_robot(pos, angle, target, lasers)
+
+            # # add in small number of distributed points
+            # self.redistribute(angle, target, 100, False)
+
+            # print(f"Number of points: {len(self.simulation)}")
+    
+    def simulate_laser(self, pos: list | tuple, angle, laser: Laser):
+        """
+        Fire a laser in the direction of the angle at the given pos.
+        Returns the distance that the laser gives from the wall.
+        """
+        # Get the equation of the laser based on slope.
+        # We can then plug in the coordinate of the wall to get the pos that it hit.
+        angle %= 360
+        r_angle = math.radians(angle)
+        x, y = pos
+
+        west_intersect = None
+        east_intersect = None
+        north_intersect = None
+        south_intersect = None
+
+        sin_out = math.sin(r_angle)
+        cos_out = math.cos(r_angle)
+
+        # get the x/y offset based off the lasers position on the robot
+        # we need to have the simulated lasers at that position, not in the center of the robot
+        # x = x - (laser.distance*math.cos(math.radians((laser.angle + angle - 90) % 360)))
+        # y = y + (laser.distance*math.sin(math.radians((laser.angle + angle - 90) % 360)))
+
+        # using an equation we can find the intersection with a certain coordinate
+        # this can give us the intersection with the wall from this simulated position
+        if cos_out != 0:
+            west_intersect = (-1800, y - (((1800 + x) / cos_out) * sin_out))
+            east_intersect = (1800, y + (((1800 - x) / cos_out) * sin_out))
+        if sin_out != 0:
+            north_intersect = (x + (((1800 - y) / sin_out) * cos_out), 1800)
+            south_intersect = (x - (((1800 + y) / sin_out) * cos_out), -1800)
+
+        points = [west_intersect, east_intersect, north_intersect, south_intersect]
+        valid_points = []
+        # start be excluding the points outside of our bounds
+        # because of the order of points, valid_points[0] will be west or east
+        # and valid_points[1] will be north or south
+        for point in points:
+            if point is not None:
+                if (-1800 <= point[0] <= 1800) and (-1800 <= point[1] <= 1800):
+                    valid_points.append((round(point[0]), round(point[1])))
+        
+        # sort by point Y - coordinate
+        valid_points.sort(key=lambda x: x[1], reverse=True)
+        # now determine which point we are looking at via angle
+        # if we are looking up, we take the pos that has a higher y coordinate
+        if len(valid_points) == 0:
+            return 9999
+        if 0 < angle <= 180: laser_point = valid_points[0]
+        else: laser_point = valid_points[1]
+
+        return int(dist(laser_point, pos))
+
+class MCL_Handler:
+    def __init__(self) -> None:
+        self.front = Laser(sensor.wallBackDistance, 60)
+        self.left = Laser(sensor.wallLeftDistance, 0)
+        self.back = Laser(sensor.wallFrontDistance, 180)
+        self.right = Laser(sensor.wallRightDistance, 345)
+        self.all_directions = [self.front, self.left, self.back, self.right]
+        self.lasers = [None, None, None, None]
+        self.prev_pos = [0.0, 0.0]
+
+        # self.sim_center_offset = (60, 165)
+        # self.sim_center_offset = math.sqrt(self.sim_center_offset[0]**2 + self.sim_center_offset[1]**2)
+        self.sim_center_distance = 175.5
+        self.sim_center_angle = 290
+
+        print("ange : " + str(self.sim_center_angle))
+
+        self.mcl = MCL()
+
+        self.is_running = False
+
+    def start(self):
+        self.mcl.redistribute(sensor.imu.heading(), self.lasers, self.all_directions)
+        self.thread = Thread(self.main)
+        self.is_running = True
+
+    def main(self):
+        while True:
+            if self.is_running:
+                # print("start")
+                self.loop()
+                # print("end")
+                sleep(35, TimeUnits.MSEC)
+
+    def filter_lasers(self):
+        # filter each laser and distance it
+        # get distance and add in distance from the center of the robot
+        fd = self.front.get_distance()
+        ld = self.left.get_distance()
+        bd = self.back.get_distance()
+        rd = self.right.get_distance()
+        if fd >= 9000:
+            self.lasers[0] = None
+        elif self.lasers[0] is not None:
+            self.lasers[0] = (self.lasers[0] * 0.9 + fd * 0.1)
+        else:
+            if fd < 300:
+                # don't change anything because we have a ring in the intake
+                #TODO change this to not simulate the front laser if we have a ring in the intake
+                # self.lasers[0] = self.lasers[0]
+                self.lasers[0] = fd
+                # pass
+            else:
+                self.lasers[0] = fd
+
+        if ld >= 9000:
+            self.lasers[1] = None
+        elif self.lasers[1] is not None:
+            self.lasers[1] = (self.lasers[1] * 0.9 + ld * 0.1)
+        else:
+            self.lasers[1] = ld
+
+        if bd >= 9000:
+            self.lasers[2] = None
+        elif self.lasers[2] is not None:
+            self.lasers[2] = (self.lasers[2] * 0.9 + bd * 0.1)
+        else:
+            self.lasers[2] = bd
+
+        if rd >= 9000:
+            self.lasers[3] = None
+        elif self.lasers[3] is not None:
+            self.lasers[3] = (self.lasers[3] * 0.9 + rd * 0.1) # type: ignore
+        else:
+            self.lasers[3] = rd # type: ignore
+
+    def loop(self):
+        self.mcl.resample(1000, sensor.imu.heading(), self.lasers, [self.front, self.left, self.back, self.right])
+        self.mcl.redistribute(sensor.imu.heading(), self.lasers, [self.front, self.left, self.back, self.right], False, 20)
+        # print(len(self.mcl.simulation))
+        out_x, out_y = self.mcl.update_avg_position()
+        # print("")
+        # print(self.mcl.simulation)
+        out_x = (0.6 * self.prev_pos[0]) + (0.4 * out_x)
+        out_y = (0.6 * self.prev_pos[1]) + (0.4 * out_y)
+
+        self.prev_pos = (out_x, out_y)
+
+        # Adjust the calculated center to our robot center based on the offset of the sim center
+        # and robot heading.
+        # self.sim_center_distance = 175.5
+        # self.sim_center_angle = 290
+        out_x = self.prev_pos[0] + self.sim_center_distance * math.sin(math.radians((self.sim_center_angle + 180 + sensor.imu.heading()) % 360))
+        out_y = self.prev_pos[1] + self.sim_center_distance * math.cos(math.radians((self.sim_center_angle + 180 + sensor.imu.heading()) % 360))
+
+        data = {
+            "x": round(out_x / 25.4, 2),
+            "y": round(-out_y / 25.4, 2),
+            "theta": round(math.radians(sensor.imu.heading()), 2)
+        }
+        # packet_mgr.add_packet("odometry", data)
+        # print("out: {}, {}".format(out_x, out_y))
+        # print("raw: {}, {}".format(*self.prev_pos))
+
+        data = {
+            "f": self.lasers[0],
+            "l": self.lasers[1],
+            "b": self.lasers[2],
+            "r": self.lasers[3]
+        }
+        # packet_mgr.add_packet("lsr", data)
+        sleep(35, MSEC)
 
 class Robot():
     def __init__(self) -> None:
         self.color_sort_controller = ColorSortController(parent=self)
 
+        self.autonomous_controller = Autonomous(parent=self)
         self.driver_controller = Driver(parent=self)
 
         self.LB_PID = LadyBrown(motor.ladyBrown)
@@ -294,6 +875,384 @@ class Robot():
     def driver(self) -> None:
         log("Starting driver")
         self.driver_controller.run()
+    
+    def autonomous(self) -> None:
+        log("Starting autonomous")
+        self.autonomous_controller.run()
+
+class AutonomousCommands:
+    @staticmethod
+    def kill_motors(brake = BrakeType.COAST):
+        motor.leftA.stop(brake)
+        motor.leftB.stop(brake)
+        motor.leftC.stop(brake)
+
+        motor.rightA.stop(brake)
+        motor.rightB.stop(brake)
+        motor.rightC.stop(brake)
+
+class AutonomousFlags:
+    intake_halt_tolerance = 60
+    intake_auto_halt = False
+    intake_flex_auto_halt = False
+    drop_after_auto_halt = False
+    raise_after_auto_halt = False
+    last_intake_command = 0.0
+    intake_anti_jam = False
+
+# robot states
+class Autonomous():
+    def __init__(self, parent: Robot) -> None:
+        """
+        Setup autonomous. Runs at start of program!
+        """
+        self.robot = parent
+
+        self.positioning_algorithm = DeltaPositioning(sensor.leftEncoder, sensor.rightEncoder, sensor.driftEncoder, sensor.imu)
+        self.path_controller = PurePursuit
+
+        self.mcl_controller = MCL_Handler()
+        self.run_mcl = False
+        self.run_mcl_lasers = True
+
+        self.intake_jam_windup = 0
+        self.last_intake_turn = 0
+
+        self.fwd_speed = 8
+
+        drivetrain.set_timeout(1.5, TimeUnits.SECONDS)
+        drivetrain.set_turn_threshold(5)
+        drivetrain.set_turn_constant(0.6)
+
+        log("Autonomous object setup")
+    
+    def autonomous_setup(self) -> None:
+        """
+        Call at start of auton. Sets up the coordinates n stuff for the loaded path.
+        """
+        # if pos_override is not None:
+        try:
+            sensor.imu.set_heading(self.autonomous_data["start_heading"])
+            self.robot.heading = (self.autonomous_data["start_heading"])
+            self.robot.pos = list(self.autonomous_data["start_pos"])
+            log("Set initial heading and position to ({}, {}, {}).".format(self.robot.pos[0], self.robot.pos[1], self.robot.heading))
+        except:
+            log("Couldn't set initial heading / pos! Likely because load_path hasn't been run yet.", LogLevel.WARNING)
+        
+        log("Starting autonomous threads.")
+        self.pos_thread = Thread(self.position_thread)
+        self.background_thread = Thread(self.background)
+        log("Autonomous threads started.")
+
+        log("Disabling Lady Brown PID", LogLevel.WARNING)
+        self.robot.LB_PID.enabled = False
+
+        self.start_time = brain.timer.system()
+
+    def load_path(self, module_filename: str) -> None:
+        """
+        Loads autonomous data into object variables for later use.
+
+        Args:
+            module_filename: The filename of the imported auton, without any file extensions.
+        """
+        log("Loading module {}".format(module_filename))
+        try:
+            log("Importing module...")
+            auton_module = __import__("module.{}".format(module_filename), None, None, ["run"])
+
+            log("Importing sequence...")
+            self.sequence = getattr(auton_module, "run")
+            
+            log("Importing data...")
+            gen_data = getattr(auton_module, "gen_data")
+            self.autonomous_data = gen_data()
+
+            log("Loaded data into {} autonomous object".format(self))
+        except:
+            log("Auton not recognized!", LogLevel.ERROR)
+            raise ImportError("Can't find auton file")
+    
+    def autonomous_cleanup(self) -> None:
+        """
+        Runs at end of autonomous. Do not modify.
+        """
+        self.end_time = brain.timer.system()
+        elapsed_time = self.end_time - self.start_time
+        log("Auton complete. Time taken: {}".format(elapsed_time), LogLevel.INFO)
+    
+    def position_thread(self):
+        while True:
+            self.robot.heading = sensor.imu.heading()
+            dx, dy = self.positioning_algorithm.update()
+
+            if self.run_mcl:
+                self.mcl_controller.mcl.motion_offset((dx, dy))
+            else:
+                self.robot.pos[0] += dx
+                self.robot.pos[1] += dy
+            
+            if self.run_mcl_lasers:
+                self.mcl_controller.filter_lasers()
+
+            sleep(20, TimeUnits.MSEC)
+            # print(self.robot.pos)
+            # sleep(100, TimeUnits.MSEC)
+    
+    def run(self) -> None:
+        """
+        Runs autonomous. Do not modify.
+        """
+        log("Running autonomous")
+        self.autonomous_setup()
+
+        self.sequence(globals())
+        
+        self.autonomous_cleanup()
+
+    def test(self) -> None:
+        """
+        Run a test version of autonomous. This is NOT run in competition!
+        """
+        log("Running autonomous TEST", LogLevel.WARNING)
+        self.run()
+        # self.autonomous_setup()
+
+        
+        # self.autonomous_cleanup()
+    
+    def background(self) -> None:
+        """
+        Starts at beginning of auton. Stops at end.
+        """
+        log("Starting background thread.")
+
+        while True:
+            self.listeners()
+            self.robot.color_sort_controller.sense()
+
+            sleep(35, MSEC)
+
+    def listeners(self) -> None:
+        auto_flags = AutonomousFlags
+
+        # Auto halt intake when we get a ring
+        if auto_flags.intake_auto_halt:
+            if sensor.intakeDistance.object_distance() < auto_flags.intake_halt_tolerance:
+                motor.intakeChain.stop(BrakeType.BRAKE)
+                auto_flags.intake_auto_halt = False 
+                log("Auto halted intake")
+
+                if auto_flags.drop_after_auto_halt:
+                    pneumatic.intake.set(False)
+                if auto_flags.raise_after_auto_halt:
+                    pneumatic.intake.set(True)
+
+        if auto_flags.intake_flex_auto_halt:
+            if sensor.intakeDistance.object_distance() < auto_flags.intake_halt_tolerance:
+                auto_flags.intake_flex_auto_halt = False
+                motor.intakeFlex.stop(BrakeType.COAST)
+
+        if auto_flags.intake_anti_jam:
+            if motor.intakeChain.command():
+                intake_pos = motor.intakeChain.position()
+                intake_change = intake_pos - self.last_intake_turn
+                self.last_intake_turn = intake_pos
+                # print(intake_pos, intake_change)
+                if abs(intake_change) < 5:
+                    self.intake_jam_windup += 1
+                else:
+                    self.intake_jam_windup = 0
+                
+                if self.intake_jam_windup > 45:
+                    log("Intake jam!", LogLevel.WARNING)
+                    command = motor.intakeChain.command(VelocityUnits.PERCENT)
+                    brain.timer.event(motor.intakeChain.spin, 500, (DirectionType.FORWARD, command, VelocityUnits.PERCENT))
+
+                    motor.intakeChain.stop()
+                    motor.intakeChain.spin(DirectionType.REVERSE, 40, VelocityUnits.PERCENT)
+                    self.intake_jam_windup = 0
+    
+    def path(self, path, events=[], checkpoints=[], backwards = False,
+             look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
+             heading_authority=2.0, max_turn_volts = 8,
+             hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
+             K_curvature_speed = 0.0, K_curvature_look_ahead = 0.0, a_curvature_exp = 0.1,
+             max_curvature_speed = 3.0, min_look_ahead = 300, a_curvature_speed_exp = 0.1,
+             speed_ramp_time = 1, min_start_voltage: int | float = 4, 
+             slowdown_distance = 0, min_slow_voltage: int | float = 4) -> None:
+        """
+        Runs a path. Halts program execution until finished.
+        
+        Arguments:
+            path (Iterable): List of points that will be followed.
+            K_curvature_speed (float): Constant that defines the weight 
+                that the path curvature will be multiplied by (usually more than 1, curvature is often small).
+            K_curvature_look_ahead (float): Constant the defines the weight that the look
+                ahead distance will shrink based on path curvature
+            max_curvature_speed (float): Most volts that the curvature will be allowed to change on the motors.
+            min_look_ahead (int): Minimum look ahead that we will look on the path (curvature based look ahead)
+        """
+        log("Running path")
+        if timeout is not None:
+            # determine when we will stop trying to drive the path and just complete it
+            time_end = brain.timer.system() + timeout
+
+        # intialize the path controller object for this path only
+        path_handler = self.path_controller(look_ahead_dist, finish_margin, path, checkpoints)
+        # create the heading PID with this path's settings
+        heading_pid = MultipurposePID(hPID_KP, hPID_KD, hPID_KI, hPID_KI_MAX, hPID_MIN_OUT)
+        # reference the robot from the controller
+        robot = self.robot
+
+        # setup local path variables
+        done = path_handler.path_complete
+        waiting = False
+        wait_stop = 0
+
+        prev_curvature = 0
+        prev_speed_curvature = 0
+
+        prev_time = brain.timer.system()
+        start_time = prev_time
+
+        # start driving this path
+        while not done:
+            current_time = brain.timer.system()
+            dt = current_time - prev_time
+            prev_time = current_time
+
+            elapsed_time = current_time - start_time
+
+            target_point, curvature = path_handler.goal_search(robot.pos)
+            dx, dy = target_point[0] - robot.pos[0], target_point[1] - robot.pos[1] # type: ignore
+            heading_to_target = math.degrees(math.atan2(dx, dy))
+            distance_to_end = dist(self.robot.pos, path[-1][:2])
+
+            if dx < 0:
+                heading_to_target = 360 + heading_to_target
+
+            # logic to handle the edge case of the target heading rolling over
+            heading_error = self.robot.heading - heading_to_target
+            rollover = False
+
+            if backwards:
+                if heading_error > 180:
+                    heading_error -= 180
+                else:
+                    heading_error += 180
+
+            if heading_error > 180:
+                heading_error = 360 - heading_error
+                rollover = True
+            if heading_error < -180:
+                heading_error = -360 - heading_error
+                rollover = True
+
+            heading_output = heading_pid.calculate(0, heading_error)
+
+            # Curvature exponential smoothing ((x * 1-a) + (y * a))
+            if curvature < 0.05: curvature = 0
+            curvature = (prev_curvature * (1-a_curvature_exp)) + (curvature * a_curvature_exp)
+            # avoid unnecessary calculations if these are off (0.0)
+            if K_curvature_speed != 0.0:
+                dynamic_forwards_speed = min(max_curvature_speed, curvature * K_curvature_speed)
+                dynamic_forwards_speed = (prev_speed_curvature * (1-a_curvature_speed_exp) + (dynamic_forwards_speed * a_curvature_speed_exp))
+                prev_speed_curvature = dynamic_forwards_speed
+            else: dynamic_forwards_speed = 0
+            
+            if K_curvature_look_ahead != 0.0:
+                path_handler.look_dist = look_ahead_dist - min(curvature * K_curvature_look_ahead, min_look_ahead)
+
+            # forwards speed linear acceleration
+            if elapsed_time < speed_ramp_time:
+                forwards_speed = min_start_voltage + (self.fwd_speed - min_start_voltage) * (elapsed_time / speed_ramp_time)
+            else:
+                forwards_speed = self.fwd_speed
+
+            # if close to end, slow down
+            if distance_to_end < slowdown_distance:
+                forwards_speed = min_slow_voltage + (self.fwd_speed - min_slow_voltage) * (distance_to_end / slowdown_distance)
+
+            if backwards:
+                forwards_speed *= -1
+
+            # Do some stuff that lowers the authority of turning, no idea if this is reasonable
+            heading_output *= heading_authority
+            if heading_output > max_turn_volts: heading_output = max_turn_volts
+            if heading_output < -max_turn_volts: heading_output = -max_turn_volts
+            # if we rollover, fix it
+            if rollover:
+                heading_output *= -1
+            if not waiting:
+                left_speed = forwards_speed - dynamic_forwards_speed + heading_output
+                right_speed = forwards_speed - dynamic_forwards_speed - heading_output
+    
+                motor.leftA.spin(FORWARD, left_speed, VOLT)
+                motor.leftB.spin(FORWARD, left_speed, VOLT)
+                motor.leftC.spin(FORWARD, left_speed, VOLT)
+
+                motor.rightA.spin(FORWARD, right_speed, VOLT)
+                motor.rightB.spin(FORWARD, right_speed, VOLT)
+                motor.rightC.spin(FORWARD, right_speed, VOLT)
+            else:
+                if brain.timer.system() >= wait_stop:
+                    waiting = False
+
+            for event in events:
+                if dist(robot.pos, event[1]) < event_look_ahead_dist:
+                    log(str(event))
+                    if type(event[2]) == str:
+                        if event[2] == "wait_function":
+                            if not event[4]:
+                                # This tells us to wait
+                                # format: ["description", (x, y), EventWaitType(), duration, completed]
+                                waiting = True
+                                wait_stop = brain.timer.system() + event[3]
+
+                                # make sure we dont get stuck in a waiting loop
+                                event[4] = True
+
+                                AutonomousCommands.kill_motors()
+                        else:
+                            # this is a variable change
+                            # format: ["speed down", (0, 1130), "speed", 3.5]
+                            if hasattr(self, event[2]):
+                                setattr(self, event[2], event[3])
+                                log("Event updated {} to {}".format(event[2], event[3]))
+                            else:
+                                log("Event couldn't find attribute {}".format(event[2]), LogLevel.FATAL)
+                                raise AttributeError("No attribute found {}".format(event[2]))
+                    elif callable(event[2]):
+                        # Call the function (at index 2) with the unpacked (*) args (at index 3)
+                        try:
+                            event[2](*event[3])
+                            log("Event ran {}({})".format(event[2], event[3]))
+                        except:
+                            log("Event couldn't find function {}".format(event[2]), LogLevel.FATAL)
+                            raise NameError("Function not defined")
+
+            done = path_handler.path_complete
+            if done:
+                log("Path complete")
+
+            if timeout is not None:
+                if brain.timer.system() > time_end:
+                    done = True
+
+                    motor.leftA.stop()
+                    motor.leftB.stop()
+                    motor.leftC.stop()
+                    motor.rightA.stop()
+                    motor.rightB.stop()
+                    motor.rightC.stop()
+
+                    log("Path timed out", LogLevel.WARNING)
+
+            if not done:
+                sleep(20, MSEC)
+            else:
+                AutonomousCommands.kill_motors(BRAKE)
 
 class ControllerFunctions():
     @staticmethod
@@ -345,11 +1304,19 @@ class ControllerFunctions():
     def zero_lady_brown():
         log("Zeroed wall stake rotation sensor")
         sensor.wallEncoder.set_position(0)
-
+    
     @staticmethod
     def elevation_bar():
         log("Toggled elevation bar pneumatics")
+        flags.elevating = True
+        motor.ladyBrown.spin(DirectionType.FORWARD, 90, VelocityUnits.PERCENT)
+        sleep(200, TimeUnits.MSEC)
         pneumatic.elevatoinBarLift.set(not pneumatic.elevatoinBarLift.value())
+        pneumatic.doinker.set(True)
+        sleep(600, TimeUnits.MSEC)
+        motor.ladyBrown.stop(BrakeType.HOLD)
+        sleep(1000, TimeUnits.MSEC)
+        flags.elevating = False
 
 class Driver():
     def __init__(self, parent: Robot) -> None:
@@ -390,10 +1357,10 @@ class Driver():
         """
         Runs every loop cycle
         """
-        if flags.elevating:
-            self.elevation_loop()
-        else:
-            self.driver_loop()
+        # if flags.elevating:
+        #     self.elevation_loop()
+        # else:
+        self.driver_loop()
 
     def drive_controls(self) -> None:
         turnVolts = (control.DRIVE_TURN_AXIS.position() * 0.12) * 0.9
@@ -417,31 +1384,35 @@ class Driver():
         elif (control.INTAKE_OUT_HOLD.pressing()):
             motor.intakeFlex.spin(REVERSE, 100, PERCENT)
             motor.intakeChain.spin(REVERSE, 100, PERCENT)
-        else:
+        elif not flags.elevating:
             motor.intakeFlex.stop()
             motor.intakeChain.stop()
     
     def lady_brown_controls(self) -> None:
         # WALL STAKES MOTORS
         if control.LB_MANUAL_UP.pressing():
-            if not sensor.wallEncoder.angle() > 200:
-                motor.ladyBrown.spin(FORWARD, 80, PERCENT)
+            if not 200 < sensor.wallEncoder.angle() < 355:
+                motor.ladyBrown.spin(FORWARD, 100, PERCENT)
                 self.robot.LB_PID.enabled = False
             else:
                 motor.ladyBrown.stop(BRAKE)
         elif control.LB_MANUAL_DOWN.pressing():
             if not (sensor.wallEncoder.angle() < 5 or sensor.wallEncoder.angle() > 350): # arm is lowered
-                motor.ladyBrown.spin(REVERSE, 40, PERCENT)
+                motor.ladyBrown.spin(REVERSE, 90, PERCENT)
                 self.robot.LB_PID.enabled = False
             else:
                 motor.ladyBrown.stop(BRAKE)
-        elif not self.robot.LB_PID.enabled:
+        elif not self.robot.LB_PID.enabled and not flags.elevating:
             motor.ladyBrown.stop(BRAKE)
 
     def driver_loop(self) -> None:
         self.drive_controls()
         self.intake_controls()
         self.lady_brown_controls()
+
+        if flags.elevating and self.robot.LB_PID.enabled:
+            self.robot.LB_PID.enabled = False
+            print("stopped PID")
 
         self.robot.color_sort_controller.sense()
 
@@ -543,10 +1514,10 @@ class Driver():
 
 # control objects
 class LadyBrown():
-    POS_LOAD = 20
-    POS_ELEVATION_UNWIND = 110
+    POS_LOAD = 25
+    POS_ELEVATION = 190
     def __init__(self, wall_motor) -> None:
-        self.pid = MultipurposePID(0.15, 0.5, 0.007, 2, None)
+        self.pid = MultipurposePID(0.3, 0.5, 0.01, 2, None)
         self.enabled = False
         self.autostop = False
         self.threshold = 5
@@ -569,7 +1540,7 @@ class LadyBrown():
         """
         Run PID to try and unwinch the winches and prep for next ladder
         """
-        self.target_rotation = LadyBrown.POS_ELEVATION_UNWIND
+        self.target_rotation = LadyBrown.POS_ELEVATION
         self.autostop = True
         self.enabled = False
 
@@ -600,9 +1571,10 @@ class LadyBrown():
             self.sensor = 360 - self.sensor
         
         output = self.pid.calculate(self.target_rotation, self.sensor)
+        if abs(self.pid.error) > 40: self.pid.integral = 0
         # print(sensor.wallEncoder.angle(), output)
 
-        # debug data
+        # # debug data
         # data = {
         #     "o": str(round(output, 2)),
         #     "error": str(round(self.target_rotation-self.sensor, 2)),
@@ -638,10 +1610,12 @@ class ColorSortController():
     def __init__(self, parent: Robot) -> None:
         self.robot = parent
         
-        self.queued_sort = False
+        self.ejecting = False
         self.eject_next_ring = False
+        self.give_up_threshold = 20
 
         self.blue_hue = 100
+        self.red_hue = 20
 
         self.wait_time_ms = 210
         self.hold_time_ms = 150
@@ -651,59 +1625,49 @@ class ColorSortController():
         Run to detect if we have an incorrectly colored disk.
         If so, queue an eject of the next dist to the top of the intake.
         """
-        # If we eject blue, 
-        if ((flags.color_setting == "eject_blue") and
-        sensor.intakeColor.hue() > self.blue_hue and 
-        sensor.intakeColor.is_near_object() and 
-        not self.eject_next_ring):
+        if not flags.color_setting == ColorSort.NONE and not self.ejecting:
+            # Color flagging
+            if sensor.intakeColor.is_near_object() and not self.eject_next_ring:
+                if sensor.intakeColor.hue() < self.red_hue:
+                    if flags.color_setting == ColorSort.EJECT_RED:
+                        self.eject_next_ring = True
+                        log("Queued [red] ring to eject. Hue: {}".format(sensor.intakeColor.hue()))
+                
+                if sensor.intakeColor.hue() > self.blue_hue:
+                    if flags.color_setting == ColorSort.EJECT_BLUE:
+                        self.eject_next_ring = True
+                        log("Queued [blue] ring to eject. Hue: {}".format(sensor.intakeColor.hue()))
 
-            self.eject_next_ring = True
-            log("Found [blue] ring to eject.")
+            if self.eject_next_ring:
+                self.give_up_threshold -= 1
+                
+                if self.give_up_threshold <= 0:
+                    self.eject_next_ring = False
+                    log("Color sort timed out!")
+            else:
+                self.give_up_threshold = 20
+
+            # color flag is on, now ring is up intake
+            if ((sensor.intakeDistance.object_distance() < 70) and (self.eject_next_ring)):
+                log("Ejecting ring!")
+
+                self.allow_intake_input = False
+                self.eject_next_ring = False
+                self.ejecting = True
+                command = motor.intakeChain.command(VelocityUnits.PERCENT)
+
+                sleep(60, TimeUnits.MSEC)
+                motor.intakeChain.spin(REVERSE, 70, PERCENT)
+                brain.timer.event(self.stop_eject, 650, (command,))
+
+    def stop_eject(self, speed):
+        log("Done ejecting ring!")
         
-        if (flags.color_setting == "eject_red" and 
-        sensor.intakeColor.hue() < 18 and 
-        sensor.intakeColor.is_near_object()and 
-        not self.eject_next_ring):
-            
-            self.eject_next_ring = True
-            log("Found [red] ring to eject.")
-
-        if ((sensor.intakeDistance.object_distance() < 70) and 
-        (not self.queued_sort) and 
-        (self.eject_next_ring)):
-
-            self.allow_intake_input = False
-            motor.intakeChain.spin(FORWARD, 100, PERCENT)
-
-            brain.timer.event(self.intake_sorter, self.wait_time_ms)
-
-            self.queued_sort = True
-    
-    def intake_sorter(self) -> None:
-        # check if we are moving from manual --> auto or auto --> manual
-        if flags.allow_intake_input:
-            motor.intakeChain.stop(BRAKE)
-            # stop chain and don't let driver loop re-enable it until we're done with it
-            flags.allow_intake_input = False
-
-            # At this point, allow_intake_input will be false
-            # so the current code won't run in a loop
-            # schedule this again to re-enable to intake in ms
-            brain.timer.event(self.intake_sorter, self.hold_time_ms)
-            log("Ejecting ring.")
-        else:
-            # Re-enable intake
-            flags.allow_intake_input = True
-            # reset timing flags
-            self.queued_sort = False
-            self.eject_next_ring = False
-
-class PayloadManager():
-    def __init__(self) -> None:
-        self.queue = []
-    
-    def add_packet(self, topic, payload):
-        pass
+        if speed > 0: motor.intakeChain.spin(FORWARD, speed, VelocityUnits.PERCENT)
+        else: motor.intakeChain.spin(REVERSE, speed, VelocityUnits.PERCENT)
+        
+        self.allow_intake_input = True
+        self.ejecting = False
 
 class flags():
     """
@@ -722,50 +1686,11 @@ def pull_data(data: dict, robot: Robot):
     """
     pass
 
-def null_function():
-    pass
-
-def odom_packets(robot: Robot):
-    while True:
-        data = {
-            "x": round(robot.pos[0] / 25.4, 2),
-            "y": round(robot.pos[1] / 25.4, 2),
-            "theta": round(math.radians(sensor.imu.heading()), 2)
-        }
-        packet_mgr.add_packet("odometry", data)
-        sleep(35, MSEC)
-
-def start_odom_packets(robot: Robot):
-    Thread(odom_packets, (robot,))
-
-# run file
-foxglove_log = True
 log("Battery at {}".format(brain.battery.capacity()))
-def main():
-    sd_fail = False
-    try:
-        with open("cfg/config.json", 'r') as f:
-            data = load(f)
-        log("SUCCESS LOADING SD CARD")
-    except:
-        sd_fail = True
-        log("ERROR LOADING SD CARD DATA", LogLevel.FATAL)
 
-    if not sd_fail:
-        robot = Robot()
-        robot.LB_PID.thread = Thread(robot.LB_PID.run)
-        # Load autonomous into robot
-        pull_data(data, robot) # send data from SD data (local scope) into robot object & subobjects
-        # when connected to the field, do everything normally
-
-        # calibrate_imu()
-
-        brain.screen.clear_screen(Color.CYAN)
-        brain.screen.render()
-
-        robot.driver_controller.run()
-    else:
-        log("Robot object not created. (SD Load Error)", LogLevel.FATAL)
-        raise ImportError("SD Card not inserted")
-
-main()
+do_logging = False
+foxglove_log = False
+robot = Robot()
+robot.LB_PID.thread = Thread(robot.LB_PID.run)
+brain.screen.clear_screen(Color.CYAN)
+robot.driver_controller.run()
