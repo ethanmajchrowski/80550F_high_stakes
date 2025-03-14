@@ -3,3 +3,5 @@ src/laser_filter.py
 src/unused/COM_reader.py
 src/serial_testing.py
 .VSCodeCounter/*
+__init__.py
+.gitignore

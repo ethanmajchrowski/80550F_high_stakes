@@ -1,6 +1,6 @@
 import os
 from math import pi, atan2, sin, dist
-# import pyperclip
+import pyperclip
 
 def get_latest_file(download_path):
     """Gets the most recently downloaded file in the specified directory."""
@@ -99,7 +99,7 @@ for path in ap:
     ap2.append(calculate_curvature(path))
 
 print(ap2)
-print(f"{len(ap2)} paths processed.")
+print(f"{len(ap2)} paths ({len(str(ap2))} chars long) processed.")
 # print(path)
-# pyperclip.copy(str(path))
-# print("Copied to clipboard!")
+pyperclip.copy(str(ap2))
+print("Copied to clipboard!")
