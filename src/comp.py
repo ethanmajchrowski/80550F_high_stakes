@@ -1707,8 +1707,10 @@ def start_odom_packets(robot: Robot):
 # run file
 foxglove_log = True
 do_logging = True
+robot: Robot
 log("Battery at {}".format(brain.battery.capacity()))
 def main():
+    global robot
     sd_fail = False
     try:
         with open("cfg/config.json", 'r') as f:
