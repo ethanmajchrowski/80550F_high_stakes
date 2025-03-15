@@ -900,6 +900,7 @@ class AutonomousFlags:
     raise_after_auto_halt = False
     last_intake_command = 0.0
     intake_anti_jam = False
+    intake_auto_stop_type = BrakeType.BRAKE
 
 # robot states
 class Autonomous():
@@ -1083,7 +1084,7 @@ class Autonomous():
         # Auto halt intake when we get a ring
         if auto_flags.intake_auto_halt:
             if sensor.intakeDistance.object_distance() < auto_flags.intake_halt_tolerance:
-                motor.intakeChain.stop(BrakeType.BRAKE)
+                motor.intakeChain.stop(AutonomousFlags.intake_auto_stop_type)
                 auto_flags.intake_auto_halt = False 
                 log("Auto halted intake")
 
