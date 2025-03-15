@@ -1323,7 +1323,7 @@ class ControllerFunctions():
     def wallstake_macro():
         log("Driving off wall stake")
         flags.disable_drive = True
-        drivetrain.drive_for(DirectionType.FORWARD, 2, DistanceUnits.IN, 80, VelocityUnits.PERCENT)
+        drivetrain.drive_for(DirectionType.FORWARD, 1.6, DistanceUnits.IN, 80, VelocityUnits.PERCENT)
         flags.disable_drive = False
 
 class Driver():
