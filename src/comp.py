@@ -123,6 +123,7 @@ class control():
     LB_MANUAL_DOWN =                con.buttonL2
     MANUAL_ELEVATION_PNEUMATICS =   con.buttonUp
     LB_MACRO_HOME =                 con.buttonDown
+    BACK_OFF_ALLIANCE_STAKE =       con.buttonX
 
 class control_2():
     ELEVATION_PRIMARY_PNEUMATICS =  con_2.buttonUp
@@ -1015,54 +1016,54 @@ class Autonomous():
         Run a test version of autonomous. This is NOT run in competition!
         """
         log("Running autonomous TEST", LogLevel.WARNING)
-        # self.run()
-        self.autonomous_setup()
+        self.run()
+        # self.autonomous_setup()
 
-        paths = [[(1547.38, 312.87, 0), (1521.81, 399.14, 0.17), (1489.72, 483.18, 0.19), (1450.73, 564.24, 0.25), (1403.02, 640.48, 0.31), (1345.13, 709.18, 0.39), (1276.14, 766.61, 0.53), (1195.49, 805.97, 0.6), (1107.42, 822.31, 0.52), (1017.82, 817.44, 0.49), (931.39, 792.98, 0.34), (849.59, 755.75, 0.25), (772.43, 709.61, 0.19), (699.42, 657.11, 0.14), (629.82, 600.06, 0.14), (564.03, 538.65, 0.09), (500.91, 474.55, 0.05)], [(576.13, 492.17, 0), (519.41, 562.01, 0.17), (457.62, 627.42, 0.16), (400.96, 697.07, 0.68), (368.38, 780.51, 0.5), (355.3, 869.47, 0.22), (351.03, 959.34, 0.1), (350.89, 1049.34, 0.06), (353.18, 1139.31, 0.03), (356.82, 1229.23, 0.45), (377.48, 1313.89, 0.83), (429.9, 1386.95, 0.5), (496.87, 1446.09, 2.12), (574.27, 1419.97, 1.55), (615.64, 1340.3, 0.14), (651.98, 1257.99, 0.61), (708.21, 1189.65, 1.74), (796.68, 1189.56, 0.24), (886.17, 1199.11, 0.01), (975.7, 1208.29, 0.03), (1065.35, 1216.29, 0.05), (1155.15, 1222.19, 0.1), (1245.11, 1223.86, 0.3), (1334.32, 1213.4, 0.77), (1413.5, 1173.89, 1.44), (1449.62, 1093.29, 0.84), (1452.67, 1003.49, 0.26), (1445.1, 913.84, 0.1), (1433.62, 824.58, 0.03), (1421.04, 735.46, 0.0), (1408.38, 646.36, 0.02), (1396.37, 557.16, 0.02), (1385.3, 467.85, 0.02), (1375.04, 378.44, 0.03), (1365.98, 288.89, 0.03), (1358.25, 199.23, 0.02), (1351.15, 109.51, 0.05), (1346.0, 19.66, 0.01), (1341.06, -70.2, 0.08), (1339.38, -160.16, 0.05), (1339.75, -250.16, 0.06), (1337.67, -340.12, 0.04), (1334.14, -430.05, 0.1), (1326.44, -519.71, 0.06), (1316.36, -609.11, 0.08), (1303.07, -698.12, 0.14), (1284.0, -786.08, 0.13), (1259.74, -872.7, 0.17), (1229.09, -957.23, 0.21), (1190.67, -1038.51, 0.25), (1143.27, -1114.89, 0.32), (1085.43, -1183.67, 0.37), (1017.0, -1241.9, 0.34), (940.57, -1289.16, 0.36), (857.45, -1323.38, 0.26), (770.83, -1347.56, 0.22), (682.23, -1363.17, 0.14), (592.81, -1373.25, 0.07), (503.09, -1380.32, 0.01), (413.33, -1386.88, 0.05)], [(377.5, -1376.02, 0), (432.04, -1304.46, 0.22), (493.34, -1238.62, 0.14), (558.77, -1176.83, 0.03), (623.32, -1114.13, 0.28), (679.53, -1044.02, 0.4), (722.07, -964.88, 0.39), (750.12, -879.44, 0.27), (767.59, -791.19, 0.19), (777.58, -701.77, 0.13), (782.52, -611.92, 0.12)], [(640.55, -640.55, 0), (631.85, -551.0, 0.22), (632.24, -461.08, 0.31), (645.01, -372.1, 0.34), (671.18, -286.07, 0.24), (706.44, -203.28, 0.03), (740.54, -120.01, 0.28), (763.83, -33.18, 0.37), (772.2, 56.32, 0.31)]]
-        sensor.imu.set_heading(150)
-        self.robot.pos = [1560.0, 330.0]
+        # paths = [[(-1547.38, 312.87, 0), (-1521.81, 399.14, 0.17), (-1489.72, 483.18, 0.19), (-1450.73, 564.24, 0.25), (-1403.02, 640.48, 0.31), (-1345.13, 709.18, 0.39), (-1276.14, 766.61, 0.53), (-1195.49, 805.97, 0.6), (-1107.42, 822.31, 0.52), (-1017.82, 817.44, 0.49), (-931.39, 792.98, 0.34), (-849.59, 755.75, 0.25), (-772.43, 709.61, 0.19), (-699.42, 657.11, 0.14), (-629.82, 600.06, 0.14), (-564.03, 538.65, 0.09), (-500.91, 474.55, 0.05)], [(-576.13, 492.17, 0), (-519.38, 561.98, 0.18), (-457.26, 627.08, 0.12), (-398.82, 695.32, 0.6), (-360.99, 776.59, 0.49), (-341.78, 864.43, 0.22), (-331.39, 953.8, 0.11), (-325.36, 1043.59, 0.07), (-322.06, 1133.53, 0.04), (-320.25, 1223.51, 0.47), (-335.94, 1308.08, 1.05), (-392.22, 1378.26, 0.42), (-460.32, 1436.52, 1.45), (-544.65, 1440.57, 1.85), (-598.85, 1370.02, 0.49), (-636.61, 1288.33, 0.21), (-681.77, 1210.83, 1.6), (-762.78, 1185.9, 0.88), (-852.26, 1195.55, 0.01), (-941.79, 1204.81, 0.02), (-1031.38, 1213.31, 0.04), (-1121.11, 1220.17, 0.09), (-1211.02, 1223.57, 0.18), (-1300.87, 1219.85, 0.54), (-1386.76, 1194.8, 1.32), (-1441.23, 1126.25, 1.14), (-1453.39, 1037.58, 0.42), (-1448.48, 947.76, 0.13), (-1438.16, 858.37, 0.05), (-1425.83, 769.22, 0.01), (-1413.16, 680.12, 0.01), (-1400.92, 590.95, 0.02), (-1389.37, 501.7, 0.02), (-1378.63, 412.34, 0.04), (-1369.41, 322.82, 0.02), (-1360.93, 233.22, 0.03), (-1353.84, 143.5, 0.03), (-1347.87, 53.71, 0.03), (-1342.93, -36.16, 0.03), (-1339.25, -126.07, 0.1), (-1339.61, -216.07, 0.02), (-1339.01, -306.05, 0.07), (-1335.48, -395.98, 0.06), (-1329.47, -485.75, 0.05), (-1321.35, -575.38, 0.13), (-1308.18, -664.41, 0.09), (-1291.23, -752.76, 0.12), (-1269.49, -840.03, 0.16), (-1241.67, -925.54, 0.2), (-1206.32, -1008.22, 0.24), (-1162.12, -1086.48, 0.29), (-1108.17, -1158.33, 0.32), (-1044.41, -1221.65, 0.4), (-970.29, -1272.46, 0.33), (-889.49, -1311.82, 0.31), (-803.95, -1339.48, 0.23), (-715.92, -1358.02, 0.16), (-626.75, -1369.99, 0.1), (-537.09, -1377.81, 0.03), (-447.32, -1384.26, 0.02)], [(-377.5, -1376.02, 0), (-432.04, -1304.46, 0.22), (-493.34, -1238.62, 0.14), (-558.77, -1176.83, 0.03), (-623.32, -1114.13, 0.28), (-679.53, -1044.02, 0.4), (-722.07, -964.88, 0.39), (-750.12, -879.44, 0.27), (-767.59, -791.19, 0.19), (-777.58, -701.77, 0.13), (-782.52, -611.92, 0.12)], [(-640.55, -640.55, 0), (-631.85, -551.0, 0.22), (-632.24, -461.08, 0.31), (-645.01, -372.1, 0.34), (-671.18, -286.07, 0.24), (-706.44, -203.28, 0.03), (-740.54, -120.01, 0.28), (-763.83, -33.18, 0.37), (-772.2, 56.32, 0.31)]]
+        # sensor.imu.set_heading(210)
+        # self.robot.pos = [-1560.0, 330.0]
         
-        # ladder touch
-        # doinker
+        # # ladder touch
+        # # doinker
 
-        flags.color_setting = ColorSort.EJECT_RED
-        motor.ladyBrown.spin(DirectionType.FORWARD, 80, VelocityUnits.PERCENT)
-        sleep(400, TimeUnits.MSEC)
+        # flags.color_setting = ColorSort.EJECT_BLUE
+        # motor.ladyBrown.spin(DirectionType.FORWARD, 80, VelocityUnits.PERCENT)
+        # sleep(400, TimeUnits.MSEC)
 
-        self.fwd_speed = 7
-        brain.timer.event(motor.ladyBrown.spin, 800, (DirectionType.REVERSE, 80, VelocityUnits.PERCENT))
-        self.path(paths[0], backwards=True, speed_ramp_time=400, slowdown_distance=600)
-        motor.ladyBrown.stop(BrakeType.COAST)
-        pneumatic.mogo.set(True)
-        drivetrain.turn_for(TurnType.LEFT, 50, RotationUnits.DEG, 100, VelocityUnits.PERCENT)
+        # self.fwd_speed = 7
+        # brain.timer.event(motor.ladyBrown.spin, 800, (DirectionType.REVERSE, 80, VelocityUnits.PERCENT))
+        # self.path(paths[0], backwards=True, speed_ramp_time=400, slowdown_distance=600)
+        # motor.ladyBrown.stop(BrakeType.COAST)
+        # pneumatic.mogo.set(True)
+        # drivetrain.turn_for(TurnType.RIGHT, 50, RotationUnits.DEG, 100, VelocityUnits.PERCENT)
 
-        motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-        motor.intakeFlex.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-        self.fwd_speed = 5
-        self.path(paths[1], speed_ramp_time=400, heading_authority=1.7, event_look_ahead_dist=200, 
-        events=[
-            ["intake", (1200.0, 825.0), pneumatic.intake.set, (True,)],
-            ["drop", (1190.0, -840.0), pneumatic.mogo.set, (False,)],
-            ["turn off color sort", (1190.0, -840.0), "flags", "color_setting", ColorSort.NONE],
-            ["lower", (1200.0, -500.0), pneumatic.intake.set, (False,)],
-            ["autostop for last ring", (1000.0, -1100.0), "AutonomousFlags", "intake_auto_halt", True],
-            ["speed to launch", (1240.0, 1146.0), "fwd_speed", 7],
-            ["slow for stack", (1400.0, 644.9), "fwd_speed", 4.5],
-        ],
-        checkpoints=[12,],
-        )
+        # motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+        # motor.intakeFlex.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+        # self.fwd_speed = 5
+        # self.path(paths[1], speed_ramp_time=400, heading_authority=1.7, event_look_ahead_dist=200, 
+        # events=[
+        #     ["intake", (-1200.0, 825.0), pneumatic.intake.set, (True,)],
+        #     ["drop", (-1190.0, -840.0), pneumatic.mogo.set, (False,)],
+        #     ["turn off color sort", (-1190.0, -840.0), "flags", "color_setting", ColorSort.NONE],
+        #     ["lower", (-1200.0, -500.0), pneumatic.intake.set, (False,)],
+        #     ["autostop for last ring", (-1000.0, -1100.0), "AutonomousFlags", "intake_auto_halt", True],
+        #     ["speed to launch", (-1240.0, 1146.0), "fwd_speed", 7],
+        #     ["slow for stack", (-1400.0, 644.9), "fwd_speed", 4.5],
+        # ],
+        # checkpoints=[12,],
+        # )
 
-        self.fwd_speed = 7
-        self.path(paths[2], backwards=True, speed_ramp_time=400)
-        pneumatic.mogo.set(True)
+        # self.fwd_speed = 7
+        # self.path(paths[2], backwards=True, speed_ramp_time=400)
+        # pneumatic.mogo.set(True)
 
-        sleep(150, TimeUnits.MSEC)
-        motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-        drivetrain.turn_for(TurnType.LEFT, 160, RotationUnits.DEG, 80, VelocityUnits.PERCENT)
-        self.fwd_speed = 5.5
-        self.path(paths[3], speed_ramp_time=400, timeout=800)
+        # sleep(150, TimeUnits.MSEC)
+        # motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+        # drivetrain.turn_for(TurnType.RIGHT, 160, RotationUnits.DEG, 80, VelocityUnits.PERCENT)
+        # self.fwd_speed = 5.5
+        # self.path(paths[3], speed_ramp_time=400, timeout=800)
 
-        self.autonomous_cleanup()
+        # self.autonomous_cleanup()
     
     def background(self) -> None:
         """
@@ -1374,6 +1375,13 @@ class ControllerFunctions():
         sleep(1000, TimeUnits.MSEC)
         flags.elevating = False
 
+    @staticmethod
+    def wallstake_macro():
+        log("Driving off wall stake")
+        flags.disable_drive = True
+        drivetrain.drive_for(DirectionType.FORWARD, 2, DistanceUnits.IN, 80, VelocityUnits.PERCENT)
+        flags.disable_drive = False
+
 class Driver():
     def __init__(self, parent: Robot) -> None:
         """
@@ -1397,8 +1405,8 @@ class Driver():
         control.MOGO_GRABBER_TOGGLE.pressed(ControllerFunctions.switch_mogo)
         control.INTAKE_HEIGHT_TOGGLE.pressed(ControllerFunctions.switch_intake_height)
         control.LB_MACRO_HOME.pressed(self.robot.LB_PID.home)
-        control_2.ZERO_ROT_SENSOR.pressed(ControllerFunctions.zero_lady_brown)
         control.MANUAL_ELEVATION_PNEUMATICS.pressed(ControllerFunctions.elevation_bar)
+        control.BACK_OFF_ALLIANCE_STAKE.pressed(ControllerFunctions.wallstake_macro)
 
     def run(self) -> None:
         """
@@ -1462,7 +1470,8 @@ class Driver():
             motor.ladyBrown.stop(BRAKE)
 
     def driver_loop(self) -> None:
-        self.drive_controls()
+        if not flags.disable_drive:
+            self.drive_controls()
         self.intake_controls()
         self.lady_brown_controls()
 
@@ -1735,6 +1744,7 @@ class flags():
     allow_intake_input = True
     elevating = False
     wall_setpoint = 1
+    disable_drive = False
 
 def pull_data(data: dict, robot: Robot):
     """
@@ -1764,7 +1774,7 @@ do_logging = True
 robot: Robot
 log("Battery at {}".format(brain.battery.capacity()))
 def main():
-    global robot
+    global robot, do_logging
     sd_fail = False
     try:
         with open("cfg/config.json", 'r') as f:
@@ -1791,13 +1801,15 @@ def main():
         # when connected to the field, do everything normally
         if comp.is_field_control() or comp.is_competition_switch():
             log("Connected to field or comp switch.")
+            
             comp = Competition(robot.driver, robot.autonomous)
 
             calibrate_imu()
 
             brain.screen.clear_screen(Color.GREEN)
 
-            log("Ready for match!")
+            log("Ready for match! Disabling log messages.")
+            do_logging = False
         # not connected to field, auton test is on
         elif data["config"]["auton_test"]:
             calibrate_imu()

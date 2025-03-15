@@ -123,6 +123,7 @@ class control():
     LB_MANUAL_DOWN =                con.buttonL2
     MANUAL_ELEVATION_PNEUMATICS =   con.buttonUp
     LB_MACRO_HOME =                 con.buttonDown
+    BACK_OFF_ALLIANCE_STAKE =       con.buttonX
 
 class control_2():
     ELEVATION_PRIMARY_PNEUMATICS =  con_2.buttonUp
@@ -1318,6 +1319,13 @@ class ControllerFunctions():
         sleep(1000, TimeUnits.MSEC)
         flags.elevating = False
 
+    @staticmethod
+    def wallstake_macro():
+        log("Driving off wall stake")
+        flags.disable_drive = True
+        drivetrain.drive_for(DirectionType.FORWARD, 2, DistanceUnits.IN, 80, VelocityUnits.PERCENT)
+        flags.disable_drive = False
+
 class Driver():
     def __init__(self, parent: Robot) -> None:
         """
@@ -1341,8 +1349,8 @@ class Driver():
         control.MOGO_GRABBER_TOGGLE.pressed(ControllerFunctions.switch_mogo)
         control.INTAKE_HEIGHT_TOGGLE.pressed(ControllerFunctions.switch_intake_height)
         control.LB_MACRO_HOME.pressed(self.robot.LB_PID.home)
-        control_2.ZERO_ROT_SENSOR.pressed(ControllerFunctions.zero_lady_brown)
         control.MANUAL_ELEVATION_PNEUMATICS.pressed(ControllerFunctions.elevation_bar)
+        control.BACK_OFF_ALLIANCE_STAKE.pressed(ControllerFunctions.wallstake_macro)
 
     def run(self) -> None:
         """
@@ -1406,7 +1414,8 @@ class Driver():
             motor.ladyBrown.stop(BRAKE)
 
     def driver_loop(self) -> None:
-        self.drive_controls()
+        if not flags.disable_drive:
+            self.drive_controls()
         self.intake_controls()
         self.lady_brown_controls()
 
@@ -1679,6 +1688,7 @@ class flags():
     allow_intake_input = True
     elevating = False
     wall_setpoint = 1
+    disable_drive = False
 
 def pull_data(data: dict, robot: Robot):
     """
