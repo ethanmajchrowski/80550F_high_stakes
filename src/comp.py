@@ -216,10 +216,13 @@ def calibrate_lady_brown():
     log("lady brown calibration complete")
 
 def calibrate_imu():
-    log("calibrating IMU")
+    log("calibrating IMU. Minimum calibration time 2 seconds.")
+    min_duration = brain.timer.system() + 2000
+    calibrating = True
 
     sensor.imu.calibrate()
-    while sensor.imu.is_calibrating():
+    while calibrating:
+        calibrating = sensor.imu.is_calibrating() and brain.timer.system() < 2000
         sleep(10, TimeUnits.MSEC)
 
     log("IMU calibration complete")
