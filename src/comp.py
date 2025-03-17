@@ -1027,43 +1027,6 @@ class Autonomous():
         # ladder touch
         # doinker
 
-        flags.color_setting = ColorSort.EJECT_BLUE
-        AutonomousFlags.intake_auto_stop_type = BrakeType.COAST
-        motor.ladyBrown.spin(DirectionType.FORWARD, 80, VelocityUnits.PERCENT)
-        sleep(400, TimeUnits.MSEC)
-
-        self.fwd_speed = 7
-        brain.timer.event(motor.ladyBrown.spin, 800, (DirectionType.REVERSE, 80, VelocityUnits.PERCENT))
-        self.path(paths[0], backwards=True, speed_ramp_time=400, slowdown_distance=600)
-        motor.ladyBrown.stop(BrakeType.COAST)
-        pneumatic.mogo.set(True)
-        drivetrain.turn_for(TurnType.RIGHT, 50, RotationUnits.DEG, 100, VelocityUnits.PERCENT)
-
-        motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-        motor.intakeFlex.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-        self.fwd_speed = 5
-        self.path(paths[1], speed_ramp_time=400, heading_authority=1.7, event_look_ahead_dist=200, 
-        events=[
-            ["intake", (-1200.0, 825.0), pneumatic.intake.set, (True,)],
-            ["drop", (-1190.0, -840.0), pneumatic.mogo.set, (False,)],
-            ["turn off color sort", (-1190.0, -840.0), "flags", "color_setting", ColorSort.NONE],
-            ["lower", (-1200.0, -500.0), pneumatic.intake.set, (False,)],
-            ["autostop for last ring", (-1000.0, -1100.0), "AutonomousFlags", "intake_auto_halt", True],
-            ["speed to launch", (-1240.0, 1146.0), "fwd_speed", 7],
-            ["slow for stack", (-1400.0, 644.9), "fwd_speed", 4.5],
-        ],
-        checkpoints=[12,],
-        )
-
-        self.fwd_speed = 7
-        self.path(paths[2], backwards=True, speed_ramp_time=400)
-        pneumatic.mogo.set(True)
-
-        sleep(150, TimeUnits.MSEC)
-        motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
-        drivetrain.turn_for(TurnType.RIGHT, 160, RotationUnits.DEG, 80, VelocityUnits.PERCENT)
-        self.fwd_speed = 5.5
-        self.path(paths[3], speed_ramp_time=400, timeout=800)
 
         self.autonomous_cleanup()
     
