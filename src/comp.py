@@ -1370,6 +1370,7 @@ class ControllerFunctions():
         flags.elevating = True
         motor.ladyBrown.spin(DirectionType.FORWARD, 90, VelocityUnits.PERCENT)
         sleep(200, TimeUnits.MSEC)
+        pneumatic.mogo.set(False)
         pneumatic.elevatoinBarLift.set(not pneumatic.elevatoinBarLift.value())
         pneumatic.doinker.set(True)
         sleep(600, TimeUnits.MSEC)
