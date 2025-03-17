@@ -5,3 +5,4 @@ src/serial_testing.py
 .VSCodeCounter/*
 __init__.py
 .gitignore
+src/foxglove_demo.py
