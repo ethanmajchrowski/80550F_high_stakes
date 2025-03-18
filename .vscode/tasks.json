@@ -1,0 +1,13 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Select download program",
+            "type": "shell",
+            "command": "& C:/Users/ethan/AppData/Local/Programs/Python/Python313/python.exe c:/Users/ethan/Documents/vex-vscode-projects/80550F_high_stakes/src/tools/download_selector.py",
+            "problemMatcher": []
+        }
+    ]
+}
