@@ -1805,7 +1805,7 @@ def main():
                 brain.screen.clear_screen(Color.RED)
 
             log("Ready for match! Disabling log messages.")
-            # do_logging = False
+            do_logging = False
         # not connected to field, auton test is on
         elif data["config"]["auton_test"]:
             calibrate_imu()
