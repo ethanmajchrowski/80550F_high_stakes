@@ -8,7 +8,7 @@ def gen_data():
 def run(main):
     drivetrain = main["drivetrain"]
     DirectionType = main["DirectionType"]
-    DsitanceUnits = main["DsitanceUnits"]
+    DistanceUnits = main["DistanceUnits"]
     VelocityUnits = main["VelocityUnits"]
 
-    drivetrain.drive_for(DirectionType.FORWARD, 500, DsitanceUnits.MM, 40, VelocityUnits.PERCENT, True)
+    drivetrain.drive_for(DirectionType.FORWARD, 500, DistanceUnits.MM, 40, VelocityUnits.PERCENT, True)
