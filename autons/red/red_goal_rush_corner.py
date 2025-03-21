@@ -40,7 +40,7 @@ def run(main):
 
     flags.color_setting = ColorSort.EJECT_BLUE
     controller.fwd_speed = 11
-    controller.path(paths[0])
+    controller.path(paths[0], finish_margin=85)
     pneumatic.doinker.set(True)
 
     motor.ladyBrown.set_stopping(BrakeType.HOLD)

@@ -41,11 +41,12 @@ def run(main):
     sleep(400, TimeUnits.MSEC)
 
     controller.fwd_speed = 7
-    brain.timer.event(motor.ladyBrown.spin, 800, (DirectionType.REVERSE, 80, VelocityUnits.PERCENT))
     controller.path(paths[0], backwards=True, speed_ramp_time=400, slowdown_distance=600)
-    motor.ladyBrown.stop(BrakeType.COAST)
+    
+    motor.ladyBrown.spin(DirectionType.REVERSE, 80, VelocityUnits.PERCENT)
     pneumatic.mogo.set(True)
     drivetrain.turn_for(TurnType.LEFT, 50, RotationUnits.DEG, 100, VelocityUnits.PERCENT)
+    motor.ladyBrown.stop(BrakeType.COAST)
 
     motor.intakeChain.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     motor.intakeFlex.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
