@@ -1066,8 +1066,25 @@ class Autonomous():
                 if function[1] is None: events = []
                 self.path(function[3], events, {k: v for k, v in function[2]})
             elif ID == 3:
-                # set flag
-                pass
+                # set flag [3, (('intake_auto_halt', True),)]
+                for flag_name, value in function[1]:
+                    if hasattr(flags, flag_name):
+                        if type(getattr(flags, flag_name)) == type(value):
+                            if do_logging: old_value = getattr(flags, flag_name)
+                            setattr(flags, flag_name, value)
+                            if do_logging: log(f"[{i}] Set {flag_name} flag to {value} from {old_value}")
+                        else:
+                            log(f"[{i}] Mismatch flag type {flag_name} type {type(value)} cannot override {type(getattr(flags, flag_name))}", LogLevel.WARNING)
+                    elif hasattr(AutonomousFlags, flag_name):
+                        if type(getattr(AutonomousFlags, flag_name)) == type(value):
+                            if do_logging: old_value = getattr(flags, flag_name)
+                            setattr(AutonomousFlags, flag_name, value)
+                            if do_logging: log(f"[{i}] Set {flag_name} flag to {value} from {old_value}")
+                        else:
+                            log(f"[{i}] Mismatch flag type {flag_name} type {type(value)} cannot override {type(getattr(AutonomousFlags, flag_name))}", LogLevel.WARNING)
+                    else:
+                        log(f"[{i}] Flag {flag_name} not found.", LogLevel.WARNING)
+                            
             elif ID == 4:
                 # wait time [4, 500]
                 sleep(function[1])
