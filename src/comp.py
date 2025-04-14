@@ -1053,17 +1053,20 @@ class Autonomous():
                 if hasattr(motor, function[1]): # if motor name is in motor class
                     if function[2] == 0:
                         getattr(motor, function[1]).stop(getattr(BrakeType, function[3]))
+                        log(f"[{i}] Stop motor {function[1]}, mode {function[3]}")
                     else:
                         volt = function[3]
                         if function[2] == -1: volt *= -1
                         getattr(motor, function[1]).spin(DirectionType.FORWARD, volt, VOLT)
+                        log(f"[{i}] Spin motor {function[1]} at {volt} volts")
                 else:
-                    log(f"No motor named {function[1]} in command {i}", LogLevel.WARNING)
+                    log(f"[{i}] No motor named {function[1]}", LogLevel.WARNING)
             elif ID == 2: 
                 # run path
                 # [2, None,   (('fwd_volt', 5.0), ('checkpoints', [15])), [(0.0, 0.0), (1.4, 50.0), ...]]
                 #  ID Events  Custom_args[name, value]                    points
                 if function[1] is None: events = []
+                log(f"[{i}] Running path.")
                 self.path(function[3], events, {k: v for k, v in function[2]})
             elif ID == 3:
                 # set flag [3, (('intake_auto_halt', True),)]
@@ -1087,13 +1090,15 @@ class Autonomous():
                             
             elif ID == 4:
                 # wait time [4, 500]
+                log(f"[{i}] Sleeping {function[1]}msec")
                 sleep(function[1])
             elif ID == 5:
                 # pneumatic
                 if hasattr(pneumatic, function[2]):
                     getattr(pneumatic, function[2]).set(function[1])
+                    log(f"[{i}] Set pneumatic {function[2]} to {function[1]}")
                 else:
-                    log(f"No pneumatic named {function[2]} in command {i}", LogLevel.WARNING)
+                    log(f"[{i}] No pneumatic named {function[2]}", LogLevel.WARNING)
     
     def background(self) -> None:
         """
