@@ -139,23 +139,23 @@ class control_2():
     ZERO_ROT_SENSOR =               con_2.buttonLeft
 
 class motor():
-    leftA = Motor( Ports.PORT3, GearSetting.RATIO_6_1, True) # stacked top
-    leftB = Motor(Ports.PORT12, GearSetting.RATIO_6_1, True) # rear
-    leftC = Motor( Ports.PORT4, GearSetting.RATIO_6_1, True) # front
+    leftA = Motor( Ports.PORT14, GearSetting.RATIO_6_1, False) # stacked top
+    leftB = Motor(Ports.PORT15, GearSetting.RATIO_6_1, False) # rear
+    leftC = Motor( Ports.PORT16, GearSetting.RATIO_6_1, False) # front
 
-    rightA = Motor(Ports.PORT18, GearSetting.RATIO_6_1, False) # stacked top
-    rightB = Motor(Ports.PORT16, GearSetting.RATIO_6_1, False) # rear
-    rightC = Motor(Ports.PORT15, GearSetting.RATIO_6_1, False) # front
+    rightA = Motor(Ports.PORT11, GearSetting.RATIO_6_1, True) # stacked top
+    rightB = Motor(Ports.PORT12, GearSetting.RATIO_6_1, True) # rear
+    rightC = Motor(Ports.PORT13, GearSetting.RATIO_6_1, True) # front
 
-    intakeChain = Motor(Ports.PORT10, GearSetting.RATIO_6_1, False)
-    intakeFlex = Motor(Ports.PORT5, GearSetting.RATIO_6_1, True)
-    ladyBrown = Motor(Ports.PORT7, GearSetting.RATIO_18_1, True)
+    intakeChain = Motor(Ports.PORT19, GearSetting.RATIO_6_1, False)
+    intakeFlex = Motor(Ports.PORT1, GearSetting.RATIO_6_1, True)
+    ladyBrown = Motor(Ports.PORT18, GearSetting.RATIO_18_1,  False)
 
 # PNEUMATICS
 class pneumatic():
-    mogo = DigitalOut(brain.three_wire_port.a)
-    doinker = DigitalOut(brain.three_wire_port.h)
-    elevatoinBarLift = DigitalOut(brain.three_wire_port.d)
+    mogo = DigitalOut(brain.three_wire_port.e)
+    doinker = DigitalOut(brain.three_wire_port.f)
+    doinker_left = DigitalOut(brain.three_wire_port.h)
     intake = DigitalOut(brain.three_wire_port.g)
 
 #### SENSORS
@@ -165,7 +165,7 @@ class sensor():
     rightEncoder = Rotation(Ports.PORT17)
     driftEncoder = Rotation(Ports.PORT13)
 
-    wallEncoder = Rotation(Ports.PORT20)
+    wallEncoder = Rotation(Ports.PORT17)
     # DISTANCE SENSORS
     intakeDistance = Distance(Ports.PORT21)
 
@@ -627,7 +627,6 @@ class ControllerFunctions():
         motor.ladyBrown.spin(DirectionType.FORWARD, 90, VelocityUnits.PERCENT)
         sleep(200, TimeUnits.MSEC)
         pneumatic.mogo.set(False)
-        pneumatic.elevatoinBarLift.set(not pneumatic.elevatoinBarLift.value())
         pneumatic.doinker.set(True)
         sleep(600, TimeUnits.MSEC)
         motor.ladyBrown.stop(BrakeType.HOLD)
