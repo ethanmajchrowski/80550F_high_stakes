@@ -973,6 +973,8 @@ class Autonomous():
         if type(sequence) == str:
             if hasattr(AutonomousRoutines, sequence):
                 self.sequence = getattr(AutonomousRoutines, sequence)
+            else:
+                log(f"Autonomous {sequence} not found in AutonomousRoutines wrapper")
         elif type(sequence) == list:
             self.sequence = sequence
         
