@@ -912,6 +912,9 @@ class AutonomousFlags:
     lady_brown_autostop = False
 
 # robot states
+class AutonomousRoutines:
+    test = [[0,{'pos':[-1200,0],'angle':0}],[2,None,(('fwd_volt',7.0),),[(-1203.0,2.0),(-1202.8,52.0),(-1202.6,102.0),(-1202.3,152.0),(-1201.9,202.0),(-1201.4,252.0),(-1200.8,302.0),(-1199.9,352.0),(-1198.8,402.0),(-1197.3,451.9),(-1195.4,501.9),(-1192.8,551.8),(-1189.6,601.7),(-1185.3,651.6),(-1179.9,701.3),(-1172.9,750.8),(-1164.0,800.0),(-1152.4,848.6),(-1137.6,896.3),(-1118.5,942.5),(-1094.3,986.2),(-1064.3,1026.2),(-1028.6,1061.1),(-988.0,1090.3),(-943.9,1113.7),(-897.4,1132.1),(-849.5,1146.4),(-800.8,1157.5),(-751.5,1166.1),(-702.0,1172.8),(-652.2,1177.9),(-602.4,1181.9),(-552.5,1185.0),(-502.6,1187.3),(-452.6,1189.1),(-402.6,1190.4),(-352.6,1191.3),(-302.6,1192.0),(-252.6,1192.4),(-202.6,1192.7),(-152.6,1192.9),(-102.6,1193.0),(-52.6,1193.0),(-2.6,1193.0),(12.0,1193.0)]]]
+
 class Autonomous():
     def __init__(self, parent: Robot) -> None:
         """
@@ -941,11 +944,10 @@ class Autonomous():
         """
         Call at start of auton. Sets up the coordinates n stuff for the loaded path.
         """
-        # if pos_override is not None:
         try:
-            sensor.imu.set_heading(self.autonomous_data["start_heading"])
-            self.robot.heading = (self.autonomous_data["start_heading"])
-            self.robot.pos = list(self.autonomous_data["start_pos"])
+            sensor.imu.set_heading(self.initial_pose["angle"])
+            self.robot.heading = (self.initial_pose["angle"])
+            self.robot.pos = list(self.initial_pose["pos"])
             log("Set initial heading and position to ({}, {}, {}).".format(self.robot.pos[0], self.robot.pos[1], self.robot.heading))
         except:
             log("Couldn't set initial heading / pos! Likely because load_path hasn't been run yet.", LogLevel.WARNING)
@@ -961,39 +963,21 @@ class Autonomous():
 
         self.start_time = brain.timer.system()
 
-    def load_path(self, module_filename: str) -> None:
+    def load_path(self, sequence: str | list) -> None:
         """
-        Loads autonomous data into object variables for later use.
+        Loads autonomous data into object for later use.
 
         Args:
-            module_filename: The filename of the imported auton, without any file extensions.
+            sequence: The name or sequenced to be used to load. 
         """
-        log("LOAD [{}]".format(module_filename))
-        try:
-            log("Importing module...")
-            auton_module = __import__("module.{}".format(module_filename), None, None, ["run"])
-
-            log("Importing sequence...")
-            original_function = getattr(auton_module, "run")  # Reference
-
-            # Create a new function that copies run
-            def backup_run():
-                return original_function(globals())
-
-            self.sequence = backup_run  # Now it's independent of auton_module
-
-            log("Importing data...")
-            gen_data = getattr(auton_module, "gen_data")
-            self.autonomous_data = gen_data()
-
-            brain.screen.set_cursor(1,1)
-            brain.screen.set_font(FontType.MONO30)
-            brain.screen.print("Loaded autonomous off of SD card")
-
-            log("Loaded data into Autonomous")
-        except:
-            log("Auton not recognized!", LogLevel.ERROR)
-            raise ImportError("Can't find auton file")
+        if type(sequence) == str:
+            if hasattr(AutonomousRoutines, sequence):
+                self.sequence = getattr(AutonomousRoutines, sequence)
+        elif type(sequence) == list:
+            self.sequence = sequence
+        
+        # [0,{'pos':[-1200,0],'angle':0}]
+        self.initial_pose: dict = self.sequence[0][1]
     
     def autonomous_cleanup(self) -> None:
         """
@@ -1029,7 +1013,7 @@ class Autonomous():
         self.autonomous_setup()
         motor.ladyBrown.stop()
 
-        self.sequence()
+        self.read_sequence()
         
         self.autonomous_cleanup()
         # self.test()
@@ -1040,6 +1024,27 @@ class Autonomous():
         """
         log("Running autonomous TEST", LogLevel.WARNING)
         self.run()
+
+    def read_sequence(self) -> None:
+        """
+        Runs commands within a sequence.
+        """
+        """
+        POSE = 0
+        MOTOR = 1
+        PATH = 2
+        FLAG = 3
+        """
+        for function in self.sequence:
+            if function[0] == 1: 
+                # spin or stop motor
+                pass
+            elif function[0] == 2: 
+                # run path
+                pass
+            elif function[0] == 3:
+                # set flag
+                pass
     
     def background(self) -> None:
         """
@@ -1107,14 +1112,7 @@ class Autonomous():
                 if sensor.intakeColor.hue() > ColorSortController.BLUE:
                     motor.intakeChain.stop(BrakeType.COAST)
     
-    def path(self, path, events=[], checkpoints=[], backwards = False,
-             look_ahead_dist=350, finish_margin=100, event_look_ahead_dist=75, timeout=None,
-             heading_authority=2.0, max_turn_volts = 8,
-             hPID_KP = 0.1, hPID_KD = 0.01, hPID_KI = 0, hPID_KI_MAX = 0, hPID_MIN_OUT = None,
-             K_curvature_speed = 0.0, K_curvature_look_ahead = 0.0, a_curvature_exp = 0.1,
-             max_curvature_speed = 3.0, min_look_ahead = 300, a_curvature_speed_exp = 0.1,
-             speed_ramp_time = 1, min_start_voltage: int | float = 4, 
-             slowdown_distance = 0, min_slow_voltage: int | float = 4) -> None:
+    def path(self, path, events=[], custom_args: dict = {}) -> None:
         """
         Runs a path. Halts program execution until finished.
         
@@ -1127,15 +1125,43 @@ class Autonomous():
             max_curvature_speed (float): Most volts that the curvature will be allowed to change on the motors.
             min_look_ahead (int): Minimum look ahead that we will look on the path (curvature based look ahead)
         """
+        params = {
+            "backwards": False,
+            "look_ahead_dist": 350,
+            "finish_margin": 100,
+            "event_look_ahead_dist": 75,
+            "timeout": None,
+            "heading_authority": 2.0,
+            "max_turn_volts": 8,
+            "hPID_KP": 0.1,
+            "hPID_KD": 0.01,
+            "hPID_KI": 0,
+            "hPID_KI_MAX": 0,
+            "hPID_MIN_OUT": None,
+            "K_curvature_speed": 0.0,
+            "K_curvature_look_ahead": 0.0,
+            "a_curvature_exp": 0.1,
+            "max_curvature_speed": 3.0,
+            "min_look_ahead": 300,
+            "a_curvature_speed_exp": 0.1,
+            "speed_ramp_time": 1,
+            "min_start_voltage": 4,
+            "slowdown_distance": 0,
+            "min_slow_voltage": 4,
+            "checkpoints": []
+        }
+        # merge params with a dictionary of key/value pairs if the key is in params
+        params.update({k: v for k, v in custom_args.keys() if k in params})
+        
         log("Running path")
-        if timeout is not None:
+        if params['timeout'] is not None:
             # determine when we will stop trying to drive the path and just complete it
-            time_end = brain.timer.system() + timeout
+            time_end = brain.timer.system() + params['timeout']
 
         # intialize the path controller object for this path only
-        path_handler = self.path_controller(look_ahead_dist, finish_margin, path, checkpoints)
+        path_handler = self.path_controller(params['look_ahead_dist'], params['finish_margin'], path, params['checkpoints'])
         # create the heading PID with this path's settings
-        heading_pid = MultipurposePID(hPID_KP, hPID_KD, hPID_KI, hPID_KI_MAX, hPID_MIN_OUT)
+        heading_pid = MultipurposePID(params['hPID_KP'], params['hPID_KD'], params['hPID_KI'], params['hPID_KI_MAX'], params['hPID_MIN_OUT'])
         # reference the robot from the controller
         robot = self.robot
 
@@ -1170,7 +1196,7 @@ class Autonomous():
             heading_error = self.robot.heading - heading_to_target
             rollover = False
 
-            if backwards:
+            if params['backwards']:
                 if heading_error > 180:
                     heading_error -= 180
                 else:
@@ -1187,41 +1213,55 @@ class Autonomous():
 
             # Curvature exponential smoothing ((x * 1-a) + (y * a))
             if curvature < 0.05: curvature = 0
-            curvature = (prev_curvature * (1-a_curvature_exp)) + (curvature * a_curvature_exp)
+            curvature = (prev_curvature * (1 - params["a_curvature_exp"])) + (curvature * params["a_curvature_exp"])
+
             # avoid unnecessary calculations if these are off (0.0)
-            if K_curvature_speed != 0.0:
-                dynamic_forwards_speed = min(max_curvature_speed, curvature * K_curvature_speed)
-                dynamic_forwards_speed = (prev_speed_curvature * (1-a_curvature_speed_exp) + (dynamic_forwards_speed * a_curvature_speed_exp))
+            if params["K_curvature_speed"] != 0.0:
+                dynamic_forwards_speed = min(params["max_curvature_speed"], curvature * params["K_curvature_speed"])
+                dynamic_forwards_speed = (
+                    prev_speed_curvature * (1 - params["a_curvature_speed_exp"]) +
+                    (dynamic_forwards_speed * params["a_curvature_speed_exp"])
+                )
                 prev_speed_curvature = dynamic_forwards_speed
-            else: dynamic_forwards_speed = 0
-            
-            if K_curvature_look_ahead != 0.0:
-                path_handler.look_dist = look_ahead_dist - min(curvature * K_curvature_look_ahead, min_look_ahead)
+            else:
+                dynamic_forwards_speed = 0
+
+            if params["K_curvature_look_ahead"] != 0.0:
+                path_handler.look_dist = (
+                    params["look_ahead_dist"] -
+                    min(curvature * params["K_curvature_look_ahead"], params["min_look_ahead"])
+                )
 
             # forwards speed linear acceleration
-            if elapsed_time < speed_ramp_time:
-                forwards_speed = min_start_voltage + (self.fwd_speed - min_start_voltage) * (elapsed_time / speed_ramp_time)
+            if elapsed_time < params["speed_ramp_time"]:
+                forwards_speed = params["min_start_voltage"] + (
+                    self.fwd_speed - params["min_start_voltage"]
+                ) * (elapsed_time / params["speed_ramp_time"])
             else:
                 forwards_speed = self.fwd_speed
 
             # if close to end, slow down
-            if distance_to_end < slowdown_distance:
-                forwards_speed = min_slow_voltage + (self.fwd_speed - min_slow_voltage) * (distance_to_end / slowdown_distance)
+            if distance_to_end < params["slowdown_distance"]:
+                forwards_speed = params["min_slow_voltage"] + (
+                    self.fwd_speed - params["min_slow_voltage"]
+                ) * (distance_to_end / params["slowdown_distance"])
 
-            if backwards:
+            if params["backwards"]:
                 forwards_speed *= -1
 
             # Do some stuff that lowers the authority of turning, no idea if this is reasonable
-            heading_output *= heading_authority
-            if heading_output > max_turn_volts: heading_output = max_turn_volts
-            if heading_output < -max_turn_volts: heading_output = -max_turn_volts
+            heading_output *= params["heading_authority"]
+            if heading_output > params["max_turn_volts"]: heading_output = params["max_turn_volts"]
+            if heading_output < -params["max_turn_volts"]: heading_output = -params["max_turn_volts"]
+
             # if we rollover, fix it
             if rollover:
                 heading_output *= -1
+
             if not waiting:
                 left_speed = forwards_speed - dynamic_forwards_speed + heading_output
                 right_speed = forwards_speed - dynamic_forwards_speed - heading_output
-    
+
                 motor.leftA.spin(FORWARD, left_speed, VOLT)
                 motor.leftB.spin(FORWARD, left_speed, VOLT)
                 motor.leftC.spin(FORWARD, left_speed, VOLT)
@@ -1234,20 +1274,14 @@ class Autonomous():
                     waiting = False
 
             for event in events:
-                if dist(robot.pos, event[1]) < event_look_ahead_dist:
-                    # "tag", (x, y), ""
+                if dist(robot.pos, event[1]) < params["event_look_ahead_dist"]:
                     log(str(event))
                     if type(event[2]) == str:
                         if event[2] == "wait_function":
                             if not event[4]:
-                                # This tells us to wait
-                                # format: ["description", (x, y), EventWaitType(), duration, completed]
                                 waiting = True
                                 wait_stop = brain.timer.system() + event[3]
-
-                                # make sure we dont get stuck in a waiting loop
                                 event[4] = True
-
                                 AutonomousCommands.kill_motors()
                         elif event[2] == "flags":
                             if hasattr(flags, event[3]):
@@ -1262,8 +1296,6 @@ class Autonomous():
                             else:
                                 log("AutonomousFlags does not have attribute {}".format(event[3]), LogLevel.WARNING)
                         else:
-                            # this is a variable change
-                            # format: ["speed down", (0, 1130), "speed", 3.5]
                             if hasattr(self, event[2]):
                                 setattr(self, event[2], event[3])
                                 log("Event updated {} to {}".format(event[2], event[3]))
@@ -1271,7 +1303,6 @@ class Autonomous():
                                 log("Event couldn't find attribute {}".format(event[2]), LogLevel.FATAL)
                                 raise AttributeError("No attribute found {}".format(event[2]))
                     elif callable(event[2]):
-                        # Call the function (at index 2) with the unpacked (*) args (at index 3)
                         try:
                             event[2](*event[3])
                             log("Event ran {}({})".format(event[2], event[3]))
@@ -1283,18 +1314,17 @@ class Autonomous():
             if done:
                 log("Path complete")
 
-            if timeout is not None:
+            if params["timeout"] is not None:
                 if brain.timer.system() > time_end:
                     done = True
-
                     motor.leftA.stop()
                     motor.leftB.stop()
                     motor.leftC.stop()
                     motor.rightA.stop()
                     motor.rightB.stop()
                     motor.rightC.stop()
-
                     log("Path timed out", LogLevel.WARNING)
+
 
             if not done:
                 sleep(20, MSEC)
