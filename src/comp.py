@@ -1034,17 +1034,49 @@ class Autonomous():
         MOTOR = 1
         PATH = 2
         FLAG = 3
+        WAIT = 4
+        PNEUMATIC = 5
         """
+        if do_logging:
+            i = -1
+
         for function in self.sequence:
-            if function[0] == 1: 
+            if do_logging: i += 1
+            ID = function[0]
+            if ID == 1: 
                 # spin or stop motor
-                pass
-            elif function[0] == 2: 
+                # spin format: [1, 'intakeChain', 1,                    12.0]
+                #                   name,         direction (-1 or 1)   voltage
+                # stop format: [1, 'intakeChain', 0,    'COAST']
+                #                   name          stop  braketype
+
+                if hasattr(motor, function[1]): # if motor name is in motor class
+                    if function[2] == 0:
+                        getattr(motor, function[1]).stop(getattr(BrakeType, function[3]))
+                    else:
+                        volt = function[3]
+                        if function[2] == -1: volt *= -1
+                        getattr(motor, function[1]).spin(DirectionType.FORWARD, volt, VOLT)
+                else:
+                    log(f"No motor named {function[1]} in command {i}", LogLevel.WARNING)
+            elif ID == 2: 
                 # run path
-                pass
-            elif function[0] == 3:
+                # [2, None,   (('fwd_volt', 5.0), ('checkpoints', [15])), [(0.0, 0.0), (1.4, 50.0), ...]]
+                #  ID Events  Custom_args[name, value]                    points
+                if function[1] is None: events = []
+                self.path(function[3], events, {k: v for k, v in function[2]})
+            elif ID == 3:
                 # set flag
                 pass
+            elif ID == 4:
+                # wait time [4, 500]
+                sleep(function[1])
+            elif ID == 5:
+                # pneumatic
+                if hasattr(pneumatic, function[2]):
+                    getattr(pneumatic, function[2]).set(function[1])
+                else:
+                    log(f"No pneumatic named {function[2]} in command {i}", LogLevel.WARNING)
     
     def background(self) -> None:
         """
@@ -1114,34 +1146,49 @@ class Autonomous():
     
     def path(self, path, events=[], custom_args: dict = {}) -> None:
         """
-        Runs a path. Halts program execution until finished.
+        Runs a path. Halts program execution until finished or times out.
         
         Arguments:
             path (Iterable): List of points that will be followed.
-            K_curvature_speed (float): Constant that defines the weight 
-                that the path curvature will be multiplied by (usually more than 1, curvature is often small).
-            K_curvature_look_ahead (float): Constant the defines the weight that the look
-                ahead distance will shrink based on path curvature
-            max_curvature_speed (float): Most volts that the curvature will be allowed to change on the motors.
-            min_look_ahead (int): Minimum look ahead that we will look on the path (curvature based look ahead)
+            Events (Iterable): List of position based events
+            custom_args (Dict): Dictionary of custom arguments. These override their default counterpart found in params IF:
+                argument in params
+                AND
+                custom_args[argument] != params[argument]
         """
         params = {
+            # Runs path in reverse if true
             "backwards": False,
+            # mm distance to look ahead using pure pursuit
             "look_ahead_dist": 350,
+            # Distance from final coordinate within path that we will hald
             "finish_margin": 100,
+            # Triggers any events if this far away
             "event_look_ahead_dist": 75,
+            # Will finish early if the elapsed time has surpassed this if not None
             "timeout": None,
+            # How much the heading PID output is multiplied by. Arbitrary.
             "heading_authority": 2.0,
+            # 
             "max_turn_volts": 8,
+            # Heading PID P value
             "hPID_KP": 0.1,
+            # Heading PID D value
             "hPID_KD": 0.01,
+            # Heading PID I value
             "hPID_KI": 0,
+            # Heading PID I max value
             "hPID_KI_MAX": 0,
+            # Heading PID min out value
             "hPID_MIN_OUT": None,
+            # Constant that defines the weight that the path curvature will be multiplied by (usually more than 1, curvature is often small).
             "K_curvature_speed": 0.0,
+            # Constant the defines the weight that the look ahead distance will shrink based on path curvature
             "K_curvature_look_ahead": 0.0,
             "a_curvature_exp": 0.1,
+            # Most volts that the curvature will be allowed to change on the motors.
             "max_curvature_speed": 3.0,
+            # Minimum look ahead that we will look on the path (curvature based look ahead)
             "min_look_ahead": 300,
             "a_curvature_speed_exp": 0.1,
             "speed_ramp_time": 1,
