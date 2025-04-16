@@ -1084,6 +1084,18 @@ class Autonomous():
                         sleep(20, TimeUnits.MSEC)
                     log("[{}] Lady brown finished or timed out. Encoder at {} degrees.".format(i, sensor.wallEncoder.angle()))
                     motor.ladyBrown.stop(BrakeType.COAST)
+            elif ID == 7:
+                # [7,['RIGHT',90,80]]
+                args = function[1]
+                if hasattr(TurnType, args[0]):
+                    wait = False
+                    if len(args) == 4 and type(args[3]) == bool:
+                        wait = args[3]
+
+                    drivetrain.turn_for(getattr(TurnType, args[0]), angle=args[1], velocity=args[2], wait=wait)
+                    log("[{}] Turn {} for {} degrees at {}% velocity. Wait: {}".format(i, args[0], args[1], args[2], wait))
+                else:
+                    log("[{}] No turntype {}".format(i, args[0]), LogLevel.WARNING)
 
     def background(self) -> None:
         """
