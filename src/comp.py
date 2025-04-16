@@ -161,9 +161,7 @@ class pneumatic():
 #### SENSORS
 # ENCODERS
 class sensor():
-    leftEncoder = Rotation(Ports.PORT2)
-    rightEncoder = Rotation(Ports.PORT17)
-    driftEncoder = Rotation(Ports.PORT13)
+    groundEncoder = Rotation(Ports.PORT2)
 
     wallEncoder = Rotation(Ports.PORT17)
     # DISTANCE SENSORS
@@ -301,7 +299,6 @@ class PurePursuit():
                     point2 = self.path[i+1][:2]
                     ax, ay = point1[:2]
                     bx, by = point2[:2]
-                    print(point1, point2)
                     
                     m = (by - ay) / (bx - ax) # slope of line between point a and b
                     b = m*(-ax) + ay # y-intercept of line
@@ -398,23 +395,16 @@ class PurePursuit():
         return goal[:2], curvature
 
 class DeltaPositioning():
-    def __init__(self, leftEnc: Rotation | Motor, rightEnc: Rotation | Motor, 
-                 driftEnc: Rotation | Motor, imu: Inertial) -> None:
+    def __init__(self, enc: Rotation | Motor, imu: Inertial) -> None:
         """Odometry based on tracking wheels."""
         self.last_time = brain.timer.time()
-        self.leftEnc = leftEnc
-        self.rightEnc = rightEnc
-        self.driftEnc = driftEnc
+        self.enc = enc
 
-        self.leftEnc.reset_position()
-        self.rightEnc.reset_position()
-        self.driftEnc.reset_position()
+        self.enc.reset_position()
 
         self.imu = imu
 
-        self.last_left_encoder = 0
-        self.last_right_encoder = 0
-        self.last_drift_encoder = 0
+        self.last_encoder = 0
         self.last_heading = 0
 
         # formula:
@@ -437,45 +427,16 @@ class DeltaPositioning():
         h_rad = math.radians(h)
 
         # change in left & right encoders (degrees)
-        dl = self.leftEnc.position() - self.last_left_encoder
-        dr = self.rightEnc.position() - self.last_right_encoder
-        d_drift = self.driftEnc.position() - self.last_drift_encoder
+        d = self.enc.position() - self.last_encoder
         # change in heading
         dh = h - self.last_heading
 
         # get change in encode wheel in distance
-        dl = (dl / 360) * self.circumference
-        dr = (dr / 360) * self.circumference
-        d_drift = (d_drift / 360) * self.circumference
+        d = (d / 360) * self.circumference
 
         # average the position of left & right to get the center of the robot
-        dNet = (dl + dr) / 2 
-
-        # To determine if this is actually drift or just IMU error, we compare the angle error
-        # of the drift wheel to the IMU
-        drift_angle = (d_drift / self.drift_circumference) * 360
-        angle_error = round(abs(dh - drift_angle), 3)
-        # print(round(angle_error, 2))
-        threshold = 2 + 0.5*abs(dh)
-
-        encoder_sign = sign(dl) * sign(dr)
-
-        if encoder_sign == 1:
-            # possibly drifting
-            if angle_error > threshold:
-                self.drift_accum += abs(d_drift)
-        else:
-            self.drift_accum *= 0.95
-
-        # print(self.drift_accum > 10, encoder_sign,angle_error > threshold, round(self.drift_accum, 2), round(dh, 2), threshold)
-        if abs(self.drift_accum) > 1:
-            # print("difting!")
-            # we are drifting
-            drift_x = d_drift * math.sin(math.radians(h + 90))
-            drift_y = d_drift * math.cos(math.radians(h + 90))
-        else:
-            # print("not difting!")
-            drift_x, drift_y = 0, 0
+        # dNet = (dl + dr) / 2 
+        dNet = d
 
         dx = (dNet * math.sin(h_rad))# + drift_x
         dy = (dNet * math.cos(h_rad))# + drift_y
@@ -484,9 +445,7 @@ class DeltaPositioning():
 
         self.last_time = brain.timer.time()
         self.last_heading = self.imu.heading()
-        self.last_right_encoder = self.rightEnc.position()
-        self.last_left_encoder = self.leftEnc.position()
-        self.last_drift_encoder = self.driftEnc.position()
+        self.last_encoder = self.enc.position()
         return [dx, dy]
 
 class MultipurposePID:
@@ -914,7 +873,7 @@ class AutonomousFlags:
 
 # robot states
 class AutonomousRoutines:
-    test = [[0,{'pos':[0,0],'angle':0}],[1,'intakeChain',1,12.0],[4,1000],[1,'intakeChain',0,'COAST'],[5,True,'doinker'],[2,[],(('fwd_volt',3.0),('speed_ramp_time',1000)),[(0.0,0.0),(-0.0,50.0),(-0.0,100.0),(-0.1,150.0),(-0.2,200.0),(-0.3,250.0),(-0.5,300.0),(-0.8,350.0),(-1.2,400.0),(-1.6,450.0),(-2.2,500.0),(-3.1,550.0),(-4.1,600.0),(-5.4,650.0),(-6.9,699.9),(-8.6,749.9),(-10.3,799.9),(-12.2,849.8),(-14.0,899.8),(-15.8,949.8),(-17.0,982.0)]]]
+    test = [[0,{'pos':[0,0],'angle':0}],[1,'intakeChain',1,12.0],[4,1000],[1,'intakeChain',0,'COAST'],[5,True,'doinker'],[2,[],(('fwd_volt',3.0),('speed_ramp_time',1000),('timeout',2000),('backwards',True)),[(0.0,0.0),(-31.0,39.3),(-61.1,79.2),(-90.3,119.7),(-118.5,161.0),(-145.7,203.0),(-171.6,245.7),(-196.2,289.3),(-219.3,333.6),(-240.8,378.8),(-260.3,424.8),(-277.7,471.7),(-292.4,519.4),(-304.1,568.0),(-312.2,617.4),(-315.9,667.2),(-314.2,717.2),(-306.0,766.4),(-290.2,813.8),(-266.1,857.5),(-234.0,895.8),(-195.1,927.1),(-151.4,951.1),(-104.5,968.5),(-55.8,979.9),(-6.3,986.4),(1.0,987.0)]],[2,[],(),[(0.0,0.0),(1.4,50.0),(6.0,99.8),(14.0,149.1),(26.0,197.6),(42.3,244.9),(63.5,290.1),(90.0,332.5),(122.2,370.7),(160.0,403.3),(203.1,428.5),(250.4,444.5),(300.0,450.0),(349.6,444.5),(396.9,428.5),(440.0,403.3),(477.8,370.7),(510.0,332.5),(536.5,290.1),(557.7,244.9),(574.0,197.6),(586.0,149.1),(594.0,99.8),(598.6,50.0),(600.0,0.0)]]]
     blue_solo_AWP = [[0,{'pos':[1510,330],'angle':150}],[1,'ladyBrown',1,12.0],[4,700],[2,[],(('fwd_volt',7.0),('backwards',True),('speed_ramp_time',400),('slowdown_distance',300)),[(1512.0,328.0),(1485.3,370.3),(1458.1,412.2),(1430.1,453.6),(1401.2,494.5),(1371.4,534.6),(1340.3,573.7),(1307.7,611.7),(1273.4,648.0),(1236.9,682.2),(1197.8,713.3),(1155.6,740.1),(1110.1,760.8),(1061.9,773.5),(1012.1,777.1),(962.4,771.8),(914.0,759.4),(867.2,741.8),(821.9,720.6),(777.9,697.0),(734.7,671.8),(692.1,645.6),(649.9,618.8),(607.9,591.6),(566.0,564.4),(553.0,556.0)]],[5,True,'mogo']]
 
 class Autonomous():
@@ -924,7 +883,7 @@ class Autonomous():
         """
         self.robot = parent
 
-        self.positioning_algorithm = DeltaPositioning(sensor.leftEncoder, sensor.rightEncoder, sensor.driftEncoder, sensor.imu)
+        self.positioning_algorithm = DeltaPositioning(sensor.groundEncoder, sensor.imu)
         self.path_controller = PurePursuit
 
         self.mcl_controller = MCL_Handler()
@@ -983,7 +942,6 @@ class Autonomous():
         self.sequence = AutonomousRoutines.test
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        # [0,{'pos':[-1200,0],'angle':0}]
         self.initial_pose: dict = self.sequence[0][1]
     
     def autonomous_cleanup(self) -> None:
@@ -1109,7 +1067,20 @@ class Autonomous():
                     log("[{}] Set pneumatic {} to {}".format(i, function[2], function[1]))
                 else:
                     log("[{}] No pneumatic named {}".format(i, function[2]), LogLevel.WARNING)
-    
+            elif ID == 6:
+                # custom event
+                if function[1] == "alliance_wall_stake":
+                    log("[{}] Alliance wall stake macro".format(i))
+                    motor.ladyBrown.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
+                    end_timeout = brain.timer.system() + 700
+                    while sensor.wallEncoder.angle() < 190:
+                        if brain.timer.system() > end_timeout:
+                            log("[{}] Lady brown movement timed out!".format(i), LogLevel.WARNING)
+                            break
+                        sleep(20, TimeUnits.MSEC)
+                    log("[{}] Lady brown finished or timed out. Encoder at {} degrees.".format(i, sensor.wallEncoder.angle()))
+                    motor.ladyBrown.stop(BrakeType.COAST)
+
     def background(self) -> None:
         """
         Starts at beginning of auton. Stops at end.
@@ -1230,8 +1201,6 @@ class Autonomous():
             "checkpoints": []
         }
         # merge params with a dictionary of key/value pairs if the key is in params
-        print(custom_args)
-        print({k: v for k, v in custom_args.items() if k in params})
         params.update({k: v for k, v in custom_args.items() if k in params})
         
         log("Running path")
