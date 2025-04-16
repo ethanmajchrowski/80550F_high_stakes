@@ -301,6 +301,7 @@ class PurePursuit():
                     point2 = self.path[i+1][:2]
                     ax, ay = point1[:2]
                     bx, by = point2[:2]
+                    print(point1, point2)
                     
                     m = (by - ay) / (bx - ax) # slope of line between point a and b
                     b = m*(-ax) + ay # y-intercept of line
@@ -913,7 +914,8 @@ class AutonomousFlags:
 
 # robot states
 class AutonomousRoutines:
-    test = [[0,{'pos':[-1200,0],'angle':0}],[2,None,(('fwd_volt',7.0),),[(-1203.0,2.0),(-1202.8,52.0),(-1202.6,102.0),(-1202.3,152.0),(-1201.9,202.0),(-1201.4,252.0),(-1200.8,302.0),(-1199.9,352.0),(-1198.8,402.0),(-1197.3,451.9),(-1195.4,501.9),(-1192.8,551.8),(-1189.6,601.7),(-1185.3,651.6),(-1179.9,701.3),(-1172.9,750.8),(-1164.0,800.0),(-1152.4,848.6),(-1137.6,896.3),(-1118.5,942.5),(-1094.3,986.2),(-1064.3,1026.2),(-1028.6,1061.1),(-988.0,1090.3),(-943.9,1113.7),(-897.4,1132.1),(-849.5,1146.4),(-800.8,1157.5),(-751.5,1166.1),(-702.0,1172.8),(-652.2,1177.9),(-602.4,1181.9),(-552.5,1185.0),(-502.6,1187.3),(-452.6,1189.1),(-402.6,1190.4),(-352.6,1191.3),(-302.6,1192.0),(-252.6,1192.4),(-202.6,1192.7),(-152.6,1192.9),(-102.6,1193.0),(-52.6,1193.0),(-2.6,1193.0),(12.0,1193.0)]]]
+    test = [[0,{'pos':[0,0],'angle':0}],[1,'intakeChain',1,12.0],[4,1000],[1,'intakeChain',0,'COAST'],[5,True,'doinker'],[2,[],(('fwd_volt',3.0),('speed_ramp_time',1000)),[(0.0,0.0),(-0.0,50.0),(-0.0,100.0),(-0.1,150.0),(-0.2,200.0),(-0.3,250.0),(-0.5,300.0),(-0.8,350.0),(-1.2,400.0),(-1.6,450.0),(-2.2,500.0),(-3.1,550.0),(-4.1,600.0),(-5.4,650.0),(-6.9,699.9),(-8.6,749.9),(-10.3,799.9),(-12.2,849.8),(-14.0,899.8),(-15.8,949.8),(-17.0,982.0)]]]
+    blue_solo_AWP = [[0,{'pos':[1510,330],'angle':150}],[1,'ladyBrown',1,12.0],[4,700],[2,[],(('fwd_volt',7.0),('backwards',True),('speed_ramp_time',400),('slowdown_distance',300)),[(1512.0,328.0),(1485.3,370.3),(1458.1,412.2),(1430.1,453.6),(1401.2,494.5),(1371.4,534.6),(1340.3,573.7),(1307.7,611.7),(1273.4,648.0),(1236.9,682.2),(1197.8,713.3),(1155.6,740.1),(1110.1,760.8),(1061.9,773.5),(1012.1,777.1),(962.4,771.8),(914.0,759.4),(867.2,741.8),(821.9,720.6),(777.9,697.0),(734.7,671.8),(692.1,645.6),(649.9,618.8),(607.9,591.6),(566.0,564.4),(553.0,556.0)]],[5,True,'mogo']]
 
 class Autonomous():
     def __init__(self, parent: Robot) -> None:
@@ -974,9 +976,12 @@ class Autonomous():
             if hasattr(AutonomousRoutines, sequence):
                 self.sequence = getattr(AutonomousRoutines, sequence)
             else:
-                log(f"Autonomous {sequence} not found in AutonomousRoutines wrapper")
+                log("Autonomous {} not found in AutonomousRoutines wrapper".format(sequence))
         elif type(sequence) == list:
             self.sequence = sequence
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.sequence = AutonomousRoutines.test
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         # [0,{'pos':[-1200,0],'angle':0}]
         self.initial_pose: dict = self.sequence[0][1]
@@ -1055,52 +1060,55 @@ class Autonomous():
                 if hasattr(motor, function[1]): # if motor name is in motor class
                     if function[2] == 0:
                         getattr(motor, function[1]).stop(getattr(BrakeType, function[3]))
-                        log(f"[{i}] Stop motor {function[1]}, mode {function[3]}")
+                        log("[{}] Stop motor {}, mode {}".format(i, function[1], function[3]))
                     else:
                         volt = function[3]
                         if function[2] == -1: volt *= -1
                         getattr(motor, function[1]).spin(DirectionType.FORWARD, volt, VOLT)
-                        log(f"[{i}] Spin motor {function[1]} at {volt} volts")
+                        log("[{}] Spin motor {} at {} volts".format(i, function[1], volt))
                 else:
-                    log(f"[{i}] No motor named {function[1]}", LogLevel.WARNING)
-            elif ID == 2: 
+                    log("[{}] No motor named {}".format(i, function[1]), LogLevel.WARNING)
+            elif ID == 2:
                 # run path
-                # [2, None,   (('fwd_volt', 5.0), ('checkpoints', [15])), [(0.0, 0.0), (1.4, 50.0), ...]]
-                #  ID Events  Custom_args[name, value]                    points
-                if function[1] is None: events = []
-                log(f"[{i}] Running path.")
+                if function[1] is None: 
+                    events = []
+                else:
+                    events = function[1]
+                log("[{}] Running path.".format(i))
                 self.path(function[3], events, {k: v for k, v in function[2]})
             elif ID == 3:
-                # set flag [3, (('intake_auto_halt', True),)]
+                # set flag
                 for flag_name, value in function[1]:
                     if hasattr(flags, flag_name):
                         if type(getattr(flags, flag_name)) == type(value):
                             if do_logging: old_value = getattr(flags, flag_name)
                             setattr(flags, flag_name, value)
-                            if do_logging: log(f"[{i}] Set {flag_name} flag to {value} from {old_value}")
+                            if do_logging: log("[{}] Set {} flag to {} from {}".format(i, flag_name, value, old_value))
                         else:
-                            log(f"[{i}] Mismatch flag type {flag_name} type {type(value)} cannot override {type(getattr(flags, flag_name))}", LogLevel.WARNING)
+                            log("[{}] Mismatch flag type {} type {} cannot override {}".format(
+                                i, flag_name, type(value), type(getattr(flags, flag_name))), LogLevel.WARNING)
                     elif hasattr(AutonomousFlags, flag_name):
                         if type(getattr(AutonomousFlags, flag_name)) == type(value):
                             if do_logging: old_value = getattr(flags, flag_name)
                             setattr(AutonomousFlags, flag_name, value)
-                            if do_logging: log(f"[{i}] Set {flag_name} flag to {value} from {old_value}")
+                            if do_logging: log("[{}] Set {} flag to {} from {}".format(i, flag_name, value, old_value))
                         else:
-                            log(f"[{i}] Mismatch flag type {flag_name} type {type(value)} cannot override {type(getattr(AutonomousFlags, flag_name))}", LogLevel.WARNING)
+                            log("[{}] Mismatch flag type {} type {} cannot override {}".format(
+                                i, flag_name, type(value), type(getattr(AutonomousFlags, flag_name))), LogLevel.WARNING)
                     else:
-                        log(f"[{i}] Flag {flag_name} not found.", LogLevel.WARNING)
-                            
+                        log("[{}] Flag {} not found.".format(i, flag_name), LogLevel.WARNING)
+
             elif ID == 4:
-                # wait time [4, 500]
-                log(f"[{i}] Sleeping {function[1]}msec")
+                # wait time
+                log("[{}] Sleeping {}msec".format(i, function[1]))
                 sleep(function[1])
             elif ID == 5:
                 # pneumatic
                 if hasattr(pneumatic, function[2]):
                     getattr(pneumatic, function[2]).set(function[1])
-                    log(f"[{i}] Set pneumatic {function[2]} to {function[1]}")
+                    log("[{}] Set pneumatic {} to {}".format(i, function[2], function[1]))
                 else:
-                    log(f"[{i}] No pneumatic named {function[2]}", LogLevel.WARNING)
+                    log("[{}] No pneumatic named {}".format(i, function[2]), LogLevel.WARNING)
     
     def background(self) -> None:
         """
@@ -1222,7 +1230,9 @@ class Autonomous():
             "checkpoints": []
         }
         # merge params with a dictionary of key/value pairs if the key is in params
-        params.update({k: v for k, v in custom_args.keys() if k in params})
+        print(custom_args)
+        print({k: v for k, v in custom_args.items() if k in params})
+        params.update({k: v for k, v in custom_args.items() if k in params})
         
         log("Running path")
         if params['timeout'] is not None:
