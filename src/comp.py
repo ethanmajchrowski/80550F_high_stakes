@@ -175,8 +175,8 @@ class sensor():
     # elevationDistance = Distance(Ports.PORT20) # unplugged
 
     # MISC SENSORS
-    intakeColor = Optical(Ports.PORT14)
-    imu = Inertial(Ports.PORT11)
+    intakeColor = Optical(Ports.PORT4)
+    imu = Inertial(Ports.PORT3)
 
 lmg = MotorGroup(motor.leftA, motor.leftB, motor.leftC)
 rmg = MotorGroup(motor.rightA, motor.rightB, motor.rightC)
@@ -215,12 +215,12 @@ def calibrate_lady_brown():
 
 def calibrate_imu():
     log("calibrating IMU. Minimum calibration time 2 seconds.")
-    min_duration = brain.timer.system() + 2000
+    min_duration = brain.timer.system() + 2200
     calibrating = True
 
     sensor.imu.calibrate()
     while calibrating:
-        calibrating = sensor.imu.is_calibrating() and brain.timer.system() < 2000
+        calibrating = sensor.imu.is_calibrating() and brain.timer.system() < min_duration
         sleep(10, TimeUnits.MSEC)
 
     log("IMU calibration complete")
@@ -873,7 +873,7 @@ class AutonomousFlags:
 
 # robot states
 class AutonomousRoutines:
-    test = [[0,{'pos':[0,0],'angle':0}],[1,'intakeChain',1,12.0],[4,1000],[1,'intakeChain',0,'COAST'],[5,True,'doinker'],[2,[],(('fwd_volt',3.0),('speed_ramp_time',1000),('timeout',2000),('backwards',True)),[(0.0,0.0),(-31.0,39.3),(-61.1,79.2),(-90.3,119.7),(-118.5,161.0),(-145.7,203.0),(-171.6,245.7),(-196.2,289.3),(-219.3,333.6),(-240.8,378.8),(-260.3,424.8),(-277.7,471.7),(-292.4,519.4),(-304.1,568.0),(-312.2,617.4),(-315.9,667.2),(-314.2,717.2),(-306.0,766.4),(-290.2,813.8),(-266.1,857.5),(-234.0,895.8),(-195.1,927.1),(-151.4,951.1),(-104.5,968.5),(-55.8,979.9),(-6.3,986.4),(1.0,987.0)]],[2,[],(),[(0.0,0.0),(1.4,50.0),(6.0,99.8),(14.0,149.1),(26.0,197.6),(42.3,244.9),(63.5,290.1),(90.0,332.5),(122.2,370.7),(160.0,403.3),(203.1,428.5),(250.4,444.5),(300.0,450.0),(349.6,444.5),(396.9,428.5),(440.0,403.3),(477.8,370.7),(510.0,332.5),(536.5,290.1),(557.7,244.9),(574.0,197.6),(586.0,149.1),(594.0,99.8),(598.6,50.0),(600.0,0.0)]]]
+    test = [[0,{'pos':[0,0],'angle':90}],[2,[],(('fwd_volt',5.0),('heading_authority',2.5)),[(0.0,0.0),(50.0,0.9),(99.9,4.1),(149.5,10.1),(198.6,19.5),(246.7,33.2),(293.0,52.0),(336.4,76.8),(375.3,108.0),(408.3,145.5),(434.5,188.0),(454.1,234.0),(468.0,282.0),(477.4,331.1),(483.5,380.7),(487.3,430.5),(489.5,480.5),(491.0,530.5),(492.3,580.5),(494.0,630.4),(496.8,680.3),(501.2,730.1),(508.1,779.7),(518.0,828.7),(531.9,876.7),(550.5,923.1),(574.3,967.0),(603.6,1007.5),(638.0,1043.7),(676.8,1075.2),(719.1,1101.8),(763.9,1123.9),(810.6,1141.9),(858.4,1156.4),(907.1,1167.8),(956.3,1176.5),(1005.9,1183.0),(1055.7,1187.6),(1105.6,1190.5),(1155.6,1191.8),(1191.0,1192.0)]],[5,True,'mogo'],[6,'alliance_wall_stake'],[1,'intakeChain',1,12.0],[4,1000],[1,'intakeChain',0,'COAST']]
     blue_solo_AWP = [[0,{'pos':[1510,330],'angle':150}],[1,'ladyBrown',1,12.0],[4,700],[2,[],(('fwd_volt',7.0),('backwards',True),('speed_ramp_time',400),('slowdown_distance',300)),[(1512.0,328.0),(1485.3,370.3),(1458.1,412.2),(1430.1,453.6),(1401.2,494.5),(1371.4,534.6),(1340.3,573.7),(1307.7,611.7),(1273.4,648.0),(1236.9,682.2),(1197.8,713.3),(1155.6,740.1),(1110.1,760.8),(1061.9,773.5),(1012.1,777.1),(962.4,771.8),(914.0,759.4),(867.2,741.8),(821.9,720.6),(777.9,697.0),(734.7,671.8),(692.1,645.6),(649.9,618.8),(607.9,591.6),(566.0,564.4),(553.0,556.0)]],[5,True,'mogo']]
 
 class Autonomous():
@@ -988,7 +988,11 @@ class Autonomous():
         Run a test version of autonomous. This is NOT run in competition!
         """
         log("Running autonomous TEST", LogLevel.WARNING)
+        # self.aut-dyBrown.stop()
         self.run()
+        # while True:
+        #     log(str((robot.pos, robot.heading)))
+        #     sleep(35)
 
     def read_sequence(self) -> None:
         """
@@ -1198,7 +1202,8 @@ class Autonomous():
             "min_start_voltage": 4,
             "slowdown_distance": 0,
             "min_slow_voltage": 4,
-            "checkpoints": []
+            "checkpoints": [],
+            "fwd_volt": 5.0,
         }
         # merge params with a dictionary of key/value pairs if the key is in params
         params.update({k: v for k, v in custom_args.items() if k in params})
@@ -1285,15 +1290,15 @@ class Autonomous():
             # forwards speed linear acceleration
             if elapsed_time < params["speed_ramp_time"]:
                 forwards_speed = params["min_start_voltage"] + (
-                    self.fwd_speed - params["min_start_voltage"]
+                    params["fwd_volt"] - params["min_start_voltage"]
                 ) * (elapsed_time / params["speed_ramp_time"])
             else:
-                forwards_speed = self.fwd_speed
+                forwards_speed = params["fwd_volt"]
 
             # if close to end, slow down
             if distance_to_end < params["slowdown_distance"]:
                 forwards_speed = params["min_slow_voltage"] + (
-                    self.fwd_speed - params["min_slow_voltage"]
+                    params["fwd_volt"] - params["min_slow_voltage"]
                 ) * (distance_to_end / params["slowdown_distance"])
 
             if params["backwards"]:
@@ -1309,8 +1314,8 @@ class Autonomous():
                 heading_output *= -1
 
             if not waiting:
-                left_speed = forwards_speed - dynamic_forwards_speed + heading_output
-                right_speed = forwards_speed - dynamic_forwards_speed - heading_output
+                left_speed = -forwards_speed - dynamic_forwards_speed - heading_output
+                right_speed = -forwards_speed - dynamic_forwards_speed + heading_output
 
                 motor.leftA.spin(FORWARD, left_speed, VOLT)
                 motor.leftB.spin(FORWARD, left_speed, VOLT)
@@ -1833,7 +1838,7 @@ def start_odom_packets(robot: Robot):
     Thread(odom_packets, (robot,))
 
 # run file
-foxglove_log = False
+foxglove_log = True
 do_logging = True
 robot: Robot
 log("Battery at {}".format(brain.battery.capacity()))
@@ -1854,8 +1859,8 @@ def main():
 
         comp = Competition(null_function, null_function)
 
-        # if not (comp.is_field_control() or comp.is_competition_switch()):
-        #     brain.timer.event(start_odom_packets, 2000, (robot,))
+        if not (comp.is_field_control() or comp.is_competition_switch()):
+            brain.timer.event(start_odom_packets, 2000, (robot,))
 
         # Load autonomous into robot
         robot.autonomous_controller.load_path(data["autons"]["selected"])
