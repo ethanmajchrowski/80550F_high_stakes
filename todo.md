@@ -1,7 +1,8 @@
 **BUGS**
 1. [ ] 
 **TODO**
-- [ ] fix comp code ports and lady brown limits
-- [ ] fix tracking wheel logic
+- [x] fix comp code ports and lady brown limits
+- [x] fix tracking wheel logic
+- [ ] fix lady brown tuning
 **WANT TO DO**
 - [ ]
