@@ -49,6 +49,7 @@ def run(main):
 
     controller.fwd_speed = 7.5
     # drag goal back
+    motor.intakeFlex.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     controller.path(paths[1], backwards=True, finish_margin=200, look_ahead_dist=200)
 
     pneumatic.doinker.set(False)

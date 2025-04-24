@@ -91,7 +91,7 @@ def run(main):
     # recalibrate x and y since we're in the corner
     sleep(200, TimeUnits.MSEC)
     h = math.radians(sensor.imu.heading())
-    d1 = sensor.wallLeftDistance.object_distance()
+    d1 = sensor.wallLeftDistance.object_distance() * 1.02
     if d1 < 900:
         x = d1 * math.cos(h)
         left_offset = 172.6 * math.cos(math.radians(-10) + h)
@@ -103,7 +103,7 @@ def run(main):
     else:
         log("Couldn't calibrate left sensor!")
 
-    d2 = sensor.wallRightDistance.object_distance()
+    d2 = sensor.wallRightDistance.object_distance() * 1.02
     if d2 < 900:
         y = d2*math.sin(h)
         right_offset = 172.6 * math.sin(math.radians(-10) - h)
@@ -142,7 +142,7 @@ def run(main):
     theta_1 = h%90
     # print(theta_1)
     h = math.radians(h)
-    d1 = sensor.wallRightDistance.object_distance()
+    d1 = sensor.wallRightDistance.object_distance() * 1.02
     if d1 < 900:
         x = abs(d1 * math.sin(math.radians(theta_1)))
         left_offset = 172.6 * abs(math.sin(math.radians(theta_1 + 10)))
@@ -155,7 +155,7 @@ def run(main):
     else:
         log("Couldn't calibrate left sensor!")
 
-    d2 = sensor.wallLeftDistance.object_distance()
+    d2 = sensor.wallLeftDistance.object_distance() * 1.02
     if d2 < 900:
         y = abs(d2*math.cos(math.radians(theta_1)))
         right_offset = 172.6 * abs(math.cos(math.radians(theta_1-10)))
@@ -183,7 +183,7 @@ def run(main):
 
     #* Top right distance recalibration
     h = math.radians(sensor.imu.heading())
-    d1 = sensor.wallRightDistance.object_distance()
+    d1 = sensor.wallRightDistance.object_distance() * 1.02
     if d1 < 900:
         x = d1 * math.cos(h)
         left_offset = 172.6 * math.cos(math.radians(10) + h)
@@ -195,7 +195,7 @@ def run(main):
     else:
         log("Couldn't calibrate left sensor!")
 
-    d2 = sensor.wallFrontDistance.object_distance()
+    d2 = sensor.wallFrontDistance.object_distance() * 1.02
     if d2 < 900:
         y = d2*math.cos(h)
         offset = 210 * math.sin(math.radians(38) + h)
@@ -236,7 +236,7 @@ def run(main):
     sleep(200, TimeUnits.MSEC)
     #* Bottom right corner calibration
     h = math.radians((sensor.imu.heading()))
-    d1 = sensor.wallRightDistance.object_distance()
+    d1 = sensor.wallRightDistance.object_distance() * 1.02
     if d1 < 900:
         x = d1 * abs(math.cos(h))
         left_offset = 172.6 * abs(math.cos(math.radians(-10) - h))
@@ -249,7 +249,7 @@ def run(main):
     else:
         log("Couldn't calibrate right sensor!")
 
-    d2 = sensor.wallLeftDistance.object_distance()
+    d2 = sensor.wallLeftDistance.object_distance() * 1.02
     if d2 < 900:
         y = abs(d2*math.sin(h))
         right_offset = 172.6 * abs(math.sin(math.radians(-10) + h)) #! - h???

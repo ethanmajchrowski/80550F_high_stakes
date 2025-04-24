@@ -1360,7 +1360,7 @@ class ControllerFunctions():
         sleep(200, TimeUnits.MSEC)
         pneumatic.mogo.set(False)
         pneumatic.elevatoinBarLift.set(not pneumatic.elevatoinBarLift.value())
-        pneumatic.doinker.set(True)
+        # pneumatic.doinker.set(True)
         sleep(600, TimeUnits.MSEC)
         motor.ladyBrown.stop(BrakeType.HOLD)
         sleep(1000, TimeUnits.MSEC)
@@ -1557,7 +1557,7 @@ class Driver():
         # elevation_bar_lift.set(False)
         # sleep(100, MSEC)
 
-        control_2.DOINKER.pressed(ControllerFunctions.switch_doinker)
+        # control_2.DOINKER.pressed(ControllerFunctions.switch_doinker)
         control_2.PTO_TOGGLE.pressed(ControllerFunctions.toggle_PTO)
         control_2.ELEVATION_PRIMARY_PNEUMATICS.pressed(ControllerFunctions.manual_elevation)
         self.LB_braketype = BrakeType.COAST

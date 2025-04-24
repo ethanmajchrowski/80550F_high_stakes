@@ -1,6 +1,6 @@
 import os
 from math import pi, atan2, sin, dist
-import pyperclip
+# import pyperclip
 
 def get_latest_file(download_path):
     """Gets the most recently downloaded file in the specified directory."""
@@ -13,7 +13,7 @@ def get_latest_file(download_path):
     print(f"Parsing {latest_file}")
     return os.path.join(download_path, latest_file)
 
-with open(get_latest_file(r"C:\Users\ethan\Downloads"), "r") as f:
+with open(get_latest_file(r"C:\Users\bridg\Downloads"), "r") as f:
     data = f.readlines()
 
 #* READ SECTIONS THAT CORRESPOND TO EACH PATH
@@ -102,5 +102,5 @@ for path in ap:
 print(ap2)
 print(f"{len(ap2)} paths ({len(str(ap2))} chars long) processed.")
 # print(path)
-pyperclip.copy(str(ap2))
+# pyperclip.copy(str(ap2))
 print("Copied to clipboard!")
