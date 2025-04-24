@@ -30,10 +30,10 @@ def threaded_log(msg: Any, level):
         print("Log Error: couldn't convert msg to str")
         return
     
-    time_ms = brain.timer.system()
-    time_s = time_ms % 60000 // 1000
-    time_min = time_ms // 60000
-    time_ms -= (time_s * 1000) + (time_min * 60000)
+    time_abs_ms = brain.timer.system()
+    time_s = time_abs_ms % 60000 // 1000
+    time_min = time_abs_ms // 60000
+    time_ms = time_abs_ms - (time_s * 1000) + (time_min * 60000)
 
     time_str = "{minutes:02}:{seconds:02}.{milliseconds:03} ".format(
                 minutes=time_min, seconds=time_s, milliseconds=time_ms) # MM:SS.mS
@@ -50,7 +50,7 @@ def threaded_log(msg: Any, level):
     if foxglove_log:
         packet_mgr.add_packet("foxglove.Log", {"timestamp": {"sec": time_s, "nsec": time_ms * 1000000}, "message": msg, "level": foxglove_logLevel, "name": "main", "file": "main", "line": 0})
     else:
-        print("[{}] {}: {}".format(tag, time_ms + (time_s + time_min*60)*1000, msg))
+        print("[{}] {}: {}".format(tag, time_abs_ms, msg))
 
 def log(msg: Any, level = LogLevel.INFO):
     if do_logging:
@@ -214,13 +214,11 @@ def calibrate_lady_brown():
     log("lady brown calibration complete")
 
 def calibrate_imu():
-    log("calibrating IMU. Minimum calibration time 2 seconds.")
-    min_duration = brain.timer.system() + 2200
-    calibrating = True
+    log("calibrating IMU. Minimum calibration time 2.5 seconds.")
+    min_duration = brain.timer.system() + 2500
 
     sensor.imu.calibrate()
-    while calibrating:
-        calibrating = sensor.imu.is_calibrating() and brain.timer.system() < min_duration
+    while brain.timer.system() < min_duration:
         sleep(10, TimeUnits.MSEC)
 
     log("IMU calibration complete")
@@ -873,9 +871,9 @@ class AutonomousFlags:
 
 # robot states
 class AutonomousRoutines:
-    test = [[0,{'pos':[100,100],'angle':90}],[2,[],(('fwd_volt',5.0),('heading_authority',2.5)),[(0.0,0.0),(50.0,0.9),(99.9,4.1),(149.5,10.1),(198.6,19.5),(246.7,33.2),(293.0,52.0),(336.4,76.8),(375.3,108.0),(408.3,145.5),(434.5,188.0),(454.1,234.0),(468.0,282.0),(477.4,331.1),(483.5,380.7),(487.3,430.5),(489.5,480.5),(491.0,530.5),(492.3,580.5),(494.0,630.4),(496.8,680.3),(501.2,730.1),(508.1,779.7),(518.0,828.7),(531.9,876.7),(550.5,923.1),(574.3,967.0),(603.6,1007.5),(638.0,1043.7),(676.8,1075.2),(719.1,1101.8),(763.9,1123.9),(810.6,1141.9),(858.4,1156.4),(907.1,1167.8),(956.3,1176.5),(1005.9,1183.0),(1055.7,1187.6),(1105.6,1190.5),(1155.6,1191.8),(1191.0,1192.0)]],[5,True,'mogo'],[6,'alliance_wall_stake'],[1,'intakeChain',1,12.0],[4,1000],[1,'intakeChain',0,'COAST'],[7,['RIGHT',90,80]]]
-    red_positive_solo_AWP = [[0,{'pos':[-1568,-330],'angle':330}],[6,'alliance_wall_stake'],[1,'ladyBrown',-1,9.6],[2,[],(('fwd_volt',8.0),('backwards',True)),[(-1567.0,-333.0),(-1545.2,-378.0),(-1522.7,-422.7),(-1499.4,-466.9),(-1475.1,-510.6),(-1450.1,-553.9),(-1425.2,-597.3),(-1401.1,-641.1),(-1389.0,-664.0)]],[1,'ladyBrown',0,'COAST'],[7,['RIGHT',180,30]],[5,True,'doinker'],[1,'intakeChain',1,12.0],[2,[],(('fwd_volt',8.0),('speed_ramp_time',400),('slowdown_distance',150),('heading_authority',1.5),('look_ahead_dist',400)),[(-1562.0,-332.0),(-1538.6,-376.2),(-1515.8,-420.7),(-1493.4,-465.4),(-1471.2,-510.2),(-1449.1,-555.0),(-1426.6,-599.7),(-1403.7,-644.1),(-1380.0,-688.2),(-1355.3,-731.6),(-1329.2,-774.3),(-1301.6,-815.9),(-1272.1,-856.3),(-1240.6,-895.1),(-1206.9,-932.1),(-1171.1,-967.0),(-1133.1,-999.4),(-1093.1,-1029.4),(-1051.2,-1056.6),(-1007.6,-1081.2),(-962.7,-1103.2),(-916.6,-1122.6),(-869.6,-1139.6),(-821.9,-1154.4),(-773.5,-1167.1),(-724.7,-1178.0),(-675.6,-1187.1),(-626.1,-1194.7),(-576.5,-1200.8),(-526.8,-1205.7),(-476.9,-1209.3),(-427.0,-1211.9),(-377.0,-1213.5),(-327.0,-1214.2),(-277.0,-1214.1),(-227.0,-1213.1),(-177.0,-1211.5),(-127.1,-1209.3),(-122.0,-1209.0)]],[2,[],(('fwd_volt',7.0),('speed_ramp_time',400),('slowdown_distance',150),('backwards',True)),[(-133.0,-1209.0),(-182.9,-1211.2),(-232.9,-1214.0),(-282.8,-1217.5),(-332.5,-1222.0),(-382.2,-1228.2),(-431.4,-1236.9),(-479.8,-1249.3),(-527.5,-1264.2),(-575.5,-1278.4),(-623.9,-1290.7),(-672.8,-1301.2),(-721.9,-1310.5),(-771.3,-1318.7),(-806.0,-1324.0)]]]
+    red_positive_solo_AWP = [[0,{'pos':[-1550,-350],'angle':330}],[3,(('intake_anti_jam',True),)],[6,'alliance_wall_stake'],[1,'ladyBrown',-1,9.6],[2,[],(('fwd_volt',8.0),('backwards',True)),[(-1567.0,-333.0),(-1538.6,-374.2),(-1509.9,-415.1),(-1480.8,-455.7),(-1450.9,-495.9),(-1420.4,-535.4),(-1389.3,-574.6),(-1358.0,-613.6),(-1337.0,-640.0)]],[4,150],[1,'ladyBrown',0,'BRAKE'],[7,['RIGHT',160,30]],[5,True,'doinker_left'],[1,'intakeChain',1,12.0],[1,'intakeFlex',1,12.0],[3,(('intake_auto_halt',True),)],[2,[],(('fwd_volt',6.0),('speed_ramp_time',400),('slowdown_distance',300),('heading_authority',1.2),('look_ahead_dist',400)),[(-1563.0,-323.0),(-1529.7,-360.3),(-1496.5,-397.7),(-1463.3,-435.0),(-1430.0,-472.4),(-1396.8,-509.8),(-1363.6,-547.1),(-1330.3,-584.4),(-1296.9,-621.6),(-1263.4,-658.8),(-1229.8,-695.8),(-1196.0,-732.6),(-1161.9,-769.2),(-1127.5,-805.5),(-1092.7,-841.4),(-1057.5,-876.9),(-1021.7,-911.8),(-985.2,-945.9),(-947.8,-979.2),(-909.5,-1011.3),(-870.0,-1042.0),(-829.2,-1070.9),(-787.1,-1097.8),(-743.4,-1122.1),(-698.2,-1143.5),(-651.7,-1161.7),(-603.9,-1176.5),(-555.2,-1187.9),(-505.9,-1195.9),(-456.2,-1200.9),(-406.2,-1203.1),(-358.0,-1203.0)]],[1,'intakeFlex',-1,12.0],[2,[('set_pneumatic',{'pneumatic':'doinker_left','state':False},[-763,-1119])],(('fwd_volt',5.0),('speed_ramp_time',400),('slowdown_distance',250),('backwards',True)),[(-268.0,-1192.0),(-318.0,-1193.0),(-368.0,-1192.8),(-418.0,-1191.3),(-467.9,-1188.3),(-517.6,-1183.6),(-567.2,-1176.8),(-616.4,-1167.8),(-665.0,-1156.3),(-713.0,-1142.1),(-760.0,-1125.1),(-805.8,-1105.1),(-843.0,-1086.0)]],[4,100],[5,False,'doinker_left'],[7,['LEFT',160,100]],[4,200],[2,[],(('fwd_volt',5.0),('backwards',True)),[(-856.0,-1090.0),(-806.0,-1090.2),(-756.0,-1090.9),(-706.0,-1091.8),(-656.0,-1092.8),(-606.0,-1094.1),(-556.1,-1095.4),(-506.1,-1096.7),(-456.1,-1098.1),(-406.1,-1099.4),(-356.1,-1100.6),(-306.1,-1101.5),(-256.1,-1102.0),(-254.0,-1102.0)]],[5,True,'mogo'],[1,'intakeChain',1,12.0],[1,'intakeFlex',1,12.0],[2,[('set_flag',{'intake_auto_halt':True},[-597,-1238]),('set_pneumatic',{'pneumatic':'mogo','state':False},[-601,-1236])],(('fwd_volt',6.0),('speed_ramp_time',400),('timeout',2400),('look_ahead_dist',300)),[(-250.0,-1098.0),(-289.6,-1128.5),(-331.4,-1155.9),(-375.3,-1179.7),(-421.3,-1199.4),(-469.0,-1214.4),(-517.9,-1224.7),(-567.5,-1230.7),(-617.5,-1232.8),(-667.4,-1232.0),(-717.4,-1229.1),(-767.2,-1225.3),(-817.1,-1221.4),(-867.0,-1218.2),(-916.9,-1216.6),(-966.9,-1217.3),(-1016.8,-1220.7),(-1066.3,-1227.5),(-1115.3,-1237.7),(-1163.3,-1251.4),(-1210.3,-1268.6),(-1256.0,-1288.8),(-1300.3,-1312.0),(-1343.2,-1337.6),(-1384.7,-1365.5),(-1424.9,-1395.3),(-1463.7,-1426.7),(-1501.4,-1459.6),(-1537.9,-1493.7),(-1573.4,-1529.0),(-1607.9,-1565.1),(-1641.6,-1602.1),(-1674.3,-1639.9),(-1706.4,-1678.3),(-1737.7,-1717.3),(-1768.3,-1756.8),(-1770.0,-1759.0)]],[2,[],(('fwd_volt',5.0),('backwards',True),('speed_ramp_time',600),('min_start_voltage',2.0),('slowdown_distance',250)),[(-1768.0,-1787.0),(-1728.8,-1756.0),(-1688.2,-1726.8),(-1646.7,-1698.9),(-1604.6,-1672.0),(-1562.1,-1645.7),(-1519.3,-1619.8),(-1476.3,-1594.2),(-1433.4,-1568.6),(-1390.4,-1543.0),(-1347.6,-1517.1),(-1305.0,-1491.0),(-1262.6,-1464.5),(-1220.5,-1437.5),(-1178.8,-1410.0),(-1137.5,-1381.8),(-1096.7,-1352.8),(-1056.5,-1323.1),(-1017.0,-1292.5),(-978.2,-1261.0),(-940.2,-1228.4),(-903.2,-1194.9),(-867.1,-1160.2),(-832.3,-1124.4),(-798.6,-1087.4),(-766.4,-1049.2),(-735.6,-1009.8),(-706.4,-969.2),(-678.9,-927.5),(-653.2,-884.5),(-629.5,-840.6),(-607.7,-795.5),(-588.0,-749.6),(-570.4,-702.8),(-555.0,-655.2),(-541.8,-607.0),(-530.6,-558.3),(-521.6,-509.1),(-514.7,-459.6),(-509.8,-409.8),(-506.9,-359.9),(-506.0,-331.0)]],[5,True,'mogo'],[1,'intakeChain',1,12.0],[1,'intakeChain',1,12.0],[5,True,'intake'],[7,['RIGHT',75,0]],[2,[('set_pneumatic',{'pneumatic':'intake','state':False},[-949,231])],(('fwd_volt',5.0),('speed_ramp_time',300),('slowdown_distance',200),('timeout',3750),('checkpoints',[18])),[(-491.0,-323.0),(-541.0,-322.8),(-591.0,-323.3),(-641.0,-324.0),(-691.0,-324.3),(-741.0,-324.0),(-791.0,-322.6),(-840.9,-319.8),(-890.6,-314.8),(-940.0,-307.2),(-988.8,-296.0),(-1036.2,-280.2),(-1081.2,-258.5),(-1122.1,-229.8),(-1156.5,-193.7),(-1182.7,-151.2),(-1199.9,-104.4),(-1209.1,-55.3),(-1211.7,-5.4),(-1211.0,20.0),(-1206.2,69.7),(-1194.7,118.3),(-1173.5,163.5),(-1140.5,200.8),(-1097.2,225.4),(-1048.8,237.2),(-998.9,239.6),(-949.1,235.7),(-899.7,227.7),(-850.9,216.9),(-802.5,204.3),(-754.5,190.5),(-706.6,176.0),(-658.9,161.2),(-611.0,146.6),(-563.0,132.7),(-519.0,121.0)]],[1,'intakeChain',0,'COAST'],[1,'intakeFlex',0,'COAST']]
     blue_solo_AWP = [[0,{'pos':[1510,330],'angle':150}],[1,'ladyBrown',1,12.0],[4,700],[2,[],(('fwd_volt',7.0),('backwards',True),('speed_ramp_time',400),('slowdown_distance',300)),[(1512.0,328.0),(1485.3,370.3),(1458.1,412.2),(1430.1,453.6),(1401.2,494.5),(1371.4,534.6),(1340.3,573.7),(1307.7,611.7),(1273.4,648.0),(1236.9,682.2),(1197.8,713.3),(1155.6,740.1),(1110.1,760.8),(1061.9,773.5),(1012.1,777.1),(962.4,771.8),(914.0,759.4),(867.2,741.8),(821.9,720.6),(777.9,697.0),(734.7,671.8),(692.1,645.6),(649.9,618.8),(607.9,591.6),(566.0,564.4),(553.0,556.0)]],[5,True,'mogo']]
+    red_ring_side = [[0,{'pos':[0,0],'angle':0}]]
 
 class Autonomous():
     def __init__(self, parent: Robot) -> None:
@@ -894,10 +892,46 @@ class Autonomous():
         self.intake_jam_windup = 0
         self.last_intake_turn = 0
 
+        class c_drivetrain:
+            @staticmethod
+            def turn_for(direction, deg: int, vel: float = 1.35, thresh: int = 5):
+                turned_deg = 0
+                if direction == TurnType.LEFT:
+                    deg *= -1
+
+                last_heading = sensor.imu.rotation()
+                pid = MultipurposePID(0.09, 0.035, 0.0, 0)
+
+                while abs(turned_deg - deg) > thresh:
+                    d_h = sensor.imu.rotation() - last_heading
+                    turned_deg += d_h
+                    output = pid.calculate(deg, turned_deg) * -vel
+                                        
+                    motor.leftA.spin(FORWARD, output, VOLT)
+                    motor.leftB.spin(FORWARD, output, VOLT)
+                    motor.leftC.spin(FORWARD, output, VOLT)
+
+                    motor.rightA.spin(REVERSE, output, VOLT)
+                    motor.rightB.spin(REVERSE, output, VOLT)
+                    motor.rightC.spin(REVERSE, output, VOLT)
+                    
+                    last_heading = sensor.imu.rotation()
+                    sleep(20, MSEC)
+                
+                sleep(20, MSEC)
+                motor.leftA.stop(BRAKE)
+                motor.leftB.stop(BRAKE)
+                motor.leftC.stop(BRAKE)
+                motor.rightA.stop(BRAKE)
+                motor.rightB.stop(BRAKE)
+                motor.rightC.stop(BRAKE)
+
+        self.drivetrain = c_drivetrain
+
         self.fwd_speed = 8
 
         drivetrain.set_timeout(1.5, TimeUnits.SECONDS)
-        drivetrain.set_turn_threshold(10)
+        drivetrain.set_turn_threshold(50)
         drivetrain.set_turn_constant(0.1)
 
         log("Autonomous object setup")
@@ -942,7 +976,6 @@ class Autonomous():
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.sequence = AutonomousRoutines.red_positive_solo_AWP
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
         self.initial_pose: dict = self.sequence[0][1]
     
     def autonomous_cleanup(self) -> None:
@@ -1007,19 +1040,18 @@ class Autonomous():
         WAIT = 4
         PNEUMATIC = 5
         """
-        if do_logging:
-            i = -1
+        i = -1
 
         for function in self.sequence:
-            if do_logging: i += 1
+            i += 1
             ID = function[0]
+
             if ID == 1: 
                 # spin or stop motor
                 # spin format: [1, 'intakeChain', 1,                    12.0]
                 #                   name,         direction (-1 or 1)   voltage
                 # stop format: [1, 'intakeChain', 0,    'COAST']
                 #                   name          stop  braketype
-
                 if hasattr(motor, function[1]): # if motor name is in motor class
                     if function[2] == 0:
                         getattr(motor, function[1]).stop(getattr(BrakeType, function[3]))
@@ -1052,7 +1084,7 @@ class Autonomous():
                                 i, flag_name, type(value), type(getattr(flags, flag_name))), LogLevel.WARNING)
                     elif hasattr(AutonomousFlags, flag_name):
                         if type(getattr(AutonomousFlags, flag_name)) == type(value):
-                            if do_logging: old_value = getattr(flags, flag_name)
+                            if do_logging: old_value = getattr(AutonomousFlags, flag_name)
                             setattr(AutonomousFlags, flag_name, value)
                             if do_logging: log("[{}] Set {} flag to {} from {}".format(i, flag_name, value, old_value))
                         else:
@@ -1089,18 +1121,13 @@ class Autonomous():
                 # [7,['RIGHT',90,80]]
                 args = function[1]
                 if hasattr(TurnType, args[0]):
-                    wait = True
-                    if len(args) == 4 and type(args[3]) == bool:
-                        wait = args[3]
-
-                    drivetrain.turn_for(getattr(TurnType, args[0]), 
-                                        args[1], 
-                                        RotationUnits.DEG, args[2], 
-                                        VelocityUnits.PERCENT, wait=wait)
-                    log("[{}] Turn {} for {} degrees at {}% velocity. Wait: {}".format(i, args[0], args[1], args[2], wait))
+                    if len(args) == 3:
+                        self.drivetrain.turn_for(getattr(TurnType, args[0]), args[1])
+                        log("[{}] Turn {} for {} degrees.".format(i, args[0], args[1]))
                 else:
                     log("[{}] No turntype {}".format(i, args[0]), LogLevel.WARNING)
-
+            # print("{}, seq {}".format(brain.timer.system(), i))
+            sleep(20)
     def background(self) -> None:
         """
         Starts at beginning of auton. Stops at end.
@@ -1246,6 +1273,7 @@ class Autonomous():
 
         prev_time = brain.timer.system()
         start_time = prev_time
+        completed_events = set()
 
         # start driving this path
         while not done:
@@ -1263,7 +1291,6 @@ class Autonomous():
             if dx < 0:
                 heading_to_target = 360 + heading_to_target
 
-            # logic to handle the edge case of the target heading rolling over
             heading_error = self.robot.heading - heading_to_target
             rollover = False
 
@@ -1273,6 +1300,7 @@ class Autonomous():
                 else:
                     heading_error += 180
 
+            # logic to handle the edge case of the target heading rolling over
             if heading_error > 180:
                 heading_error = 360 - heading_error
                 rollover = True
@@ -1344,42 +1372,32 @@ class Autonomous():
                 if brain.timer.system() >= wait_stop:
                     waiting = False
 
-            for event in events:
-                if dist(robot.pos, event[1]) < params["event_look_ahead_dist"]:
-                    log(str(event))
-                    if type(event[2]) == str:
-                        if event[2] == "wait_function":
-                            if not event[4]:
-                                waiting = True
-                                wait_stop = brain.timer.system() + event[3]
-                                event[4] = True
-                                AutonomousCommands.kill_motors()
-                        elif event[2] == "flags":
-                            if hasattr(flags, event[3]):
-                                setattr(flags, event[3], event[4])
-                                log("Changed flags {} to {}".format(event[3], event[4]))
-                            else:
-                                log("Flags does not have attribute {}".format(event[3]), LogLevel.WARNING)
-                        elif event[2] == "AutonomousFlags":
-                            if hasattr(AutonomousFlags, event[3]):
-                                setattr(AutonomousFlags, event[3], event[4])
-                                log("Changed AutonomousFlags {} to {}".format(event[3], event[4]))
-                            else:
-                                log("AutonomousFlags does not have attribute {}".format(event[3]), LogLevel.WARNING)
-                        else:
-                            if hasattr(self, event[2]):
-                                setattr(self, event[2], event[3])
-                                log("Event updated {} to {}".format(event[2], event[3]))
-                            else:
-                                log("Event couldn't find attribute {}".format(event[2]), LogLevel.FATAL)
-                                raise AttributeError("No attribute found {}".format(event[2]))
-                    elif callable(event[2]):
-                        try:
-                            event[2](*event[3])
-                            log("Event ran {}({})".format(event[2], event[3]))
-                        except:
-                            log("Event couldn't find function {}".format(event[2]), LogLevel.FATAL)
-                            raise NameError("Function not defined")
+            if events:
+                for i in range(len(events)):
+                    event = events[i]
+                    if i not in completed_events:
+                        # event = ('set_flag', {'intake_auto_halt': True}, [-1229, -1455])
+                        if dist(robot.pos, event[2]) < params["event_look_ahead_dist"]:
+                            # [('set_flag', {'intake_auto_halt': True}, [-1229, -1455])]
+                            if event[0] == 'set_flag':
+                                for key in event[1]:
+                                    if hasattr(AutonomousFlags, key):
+                                        setattr(AutonomousFlags, key, event[1][key])
+                                        log("[Event] Set AutonomousFlag {} to {}".format(key, event[1][key]))
+                                    elif hasattr(flags, key):
+                                        setattr(flags, key, event[1][key])
+                                        log("[Event] Set flag {} to {}".format(key, event[1][key]))
+                                    else:
+                                        log("[Event] No flag found for key {}".format(key))
+                            # ('set_pneumatic', {'pneumatic': 'mogo', 'state': False}, [0, 0])
+                            elif event[0] == 'set_pneumatic':
+                                if hasattr(pneumatic, event[1]['pneumatic']):
+                                    getattr(pneumatic, event[1]['pneumatic']).set(event[1]['state'])
+                                    log("[Event] Set {} pneumatic to {}".format(event[1]['pneumatic'], event[1]['state']))
+                                else:
+                                    log("[Event] No {} pneumatic found".format(event[1]['pneumatic']))
+                            
+                            completed_events.add(i)
 
             done = path_handler.path_complete
             if done:
@@ -1744,6 +1762,8 @@ def null_function():
     pass
 
 def odom_packets(robot: Robot):
+    if not foxglove_log:
+        return
     while True:
         data = {
             "x": round(robot.pos[0] / 25.4, 2),
@@ -1778,8 +1798,8 @@ def main():
 
         comp = Competition(null_function, null_function)
 
-        # if not (comp.is_field_control() or comp.is_competition_switch()):
-        #     brain.timer.event(start_odom_packets, 2000, (robot,))
+        if not (comp.is_field_control() or comp.is_competition_switch()):
+            brain.timer.event(start_odom_packets, 2000, (robot,))
 
         # Load autonomous into robot
         robot.autonomous_controller.load_path(data["autons"]["selected"])
@@ -1812,7 +1832,7 @@ def main():
         else:
             log("Default to driver (no auton test, no field control)", LogLevel.WARNING)
 
-            calibrate_imu()
+            # calibrate_imu()
 
             brain.screen.clear_screen(Color.CYAN)
 
