@@ -1572,11 +1572,12 @@ class Driver():
 
 # control objects
 class LadyBrown():
-    POS_LOAD = 25
+    POS_LOAD = 28
     POS_ELEVATION = 190
     def __init__(self, wall_motor) -> None:
         # self.pid = MultipurposePID(0.3, 0.5, 0.01, 2, None)
-        self.pid = MultipurposePID(0.035, 0.05, 0.004, 2, None)
+        # self.pid = MultipurposePID(0.035, 0.05, 0.004, 2, None)
+        self.pid = MultipurposePID(0.25, 0.1, 0, 2, None)
         self.enabled = False
         self.autostop = False
         self.threshold = 5
@@ -1595,12 +1596,12 @@ class LadyBrown():
         self.target_rotation = LadyBrown.POS_LOAD
         self.enabled = True
 
-        timeout = brain.timer.system() + 2000
-        if self.sensor.position() < 350:
-            while self.sensor.position() > 120 and brain.timer.system() < timeout:
-                print("forcing home")
-                self.motor.spin(DirectionType.REVERSE, 60, VelocityUnits.PERCENT)
-        self.motor.stop(BrakeType.COAST)
+        # timeout = brain.timer.system() + 2000
+        # if self.sensor.position() < 350:
+        #     while self.sensor.position() > 120 and brain.timer.system() < timeout:
+        #         print("forcing home")
+        #         self.motor.spin(DirectionType.REVERSE, 60, VelocityUnits.PERCENT)
+        # self.motor.stop(BrakeType.COAST)
 
         self.in_range = True
         log("Homing lady brown")
@@ -1640,9 +1641,9 @@ class LadyBrown():
             angle = 360 - angle
         
         output = self.pid.calculate(self.target_rotation, angle)
-        if abs(self.pid.error) > 40: 
-            self.pid.integral = 0
-            output *= 4
+        # if abs(self.pid.error) > 40: 
+        #     self.pid.integral = 0
+        #     output *= 4
         # print(sensor.wallEncoder.angle(), output)
 
         # # debug data
