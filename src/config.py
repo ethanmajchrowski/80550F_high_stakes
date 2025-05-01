@@ -18,7 +18,7 @@ import sys
 sd_fail = False
 # load config data from SD card
 try:
-    with open("cfg/config.json", 'r') as f:
+    with open("config.json", 'r') as f:
         data = load(f)
 except:
     sd_fail = True
@@ -113,18 +113,6 @@ LB_enable_PID = False
 if calibrate_imu:
     imu.calibrate()
 
-if not sd_fail:
-    enable_macro_lady_brown = data["config"]["enable_macro_lady_brown"]
-else:
-    enable_macro_lady_brown = False
-
-if enable_macro_lady_brown:
-    print("calibrating wall stake")
-    motors["misc"]["wall_stake"].spin_for(REVERSE, 1000, MSEC, 20, PERCENT)
-    sleep(100, MSEC) # sleep to allow motor to spin to idle
-    wallEnc.set_position(0)
-    print(wallEnc.position())
-
 while imu.is_calibrating() and calibrate_imu:
     wait(5)
 
@@ -157,13 +145,6 @@ Over Under Settings:
     drivetrain.set_turn_constant(0.28)
     drivetrain.set_turn_threshold(0.25)
 """
-
-# Set initial color sort from SD card
-if not sd_fail:
-    color_setting = data["config"]["initial_color_sorting"]["selected"]
-else:
-    color_setting = "none"
-
 # Turn on intake color sensor LED for consistency
 intakeColor.set_light_power(100, PERCENT)
 #endregion Devices####################
@@ -217,7 +198,7 @@ class Config_GUI:
         scr = brain.screen
 
         # OS error 5?????
-        f = open('cfg/config.json', 'r')
+        f = open('config.json', 'r')
         data = load(f)
         f.close()
         
@@ -276,7 +257,7 @@ class Config_GUI:
                 # # sort list by temperature (comment out for sorting by dictionary group)
                 # self.display_list.sort(key=lambda motor: motor[2])
                 self.page = 0
-                self.max_page = len(self.display_list) // 4
+                self.max_page = (len(self.display_list) // 4) - 1
 
         elif self.state == "auton":
             # button press
@@ -366,7 +347,7 @@ class Config_GUI:
         button(">", 480-120, 200, 120, 40)
 
         # save data
-        with open("cfg/config.json", "w") as f:
+        with open("config.json", "w") as f:
             dump(data, f)
 
         scr.render()
