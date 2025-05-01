@@ -1,10 +1,10 @@
 {"autons": 
 {"selected": "red_goal_rush_ladder", "options": 
 [ 
-"blue_positive_solo_AWP", 
-"red_positive_solo_AWP", 
-"red_neg_AWP",
-"blue_neg_AWP",
+"blue_solo_AWP", 
+"red_solo_AWP", 
+"red_ring_side",
+"blue_ring_side",
 
 "blue_goal_rush", 
 "red_goal_rush", 
