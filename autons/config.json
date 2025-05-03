@@ -7,10 +7,6 @@
 "blue_ring_side",
 
 "blue_goal_rush", 
-"red_goal_rush", 
-
-"red_6_ring", 
-"blue_6_ring", 
-"drive_forward",
- "skills"
+"red_goal_rush",  
+"drive_forward"
 ]}, "config": {"auton_test": true}}
