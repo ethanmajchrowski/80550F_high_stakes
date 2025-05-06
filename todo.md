@@ -4,10 +4,12 @@
 - [x] fix comp code ports and lady brown limits
 - [x] fix tracking wheel logic
 - [x] fix lady brown tuning
-- [ ] ensure auton selector works properly and add in auton names
-- [ ] finish up solo AWP + flip to blue
-- [ ] ring side
-- [ ] goal rush
-- [ ] update driver program
+- [x] ensure auton selector works properly and add in auton names
+- [x] finish up solo AWP + flip to blue
+- [x] ring side
+- [x] goal rush
+- [x] update driver program
+- [ ] driver fix lady brown controls
+- [ ] auton color sort not working
 **WANT TO DO**
 - [ ]
