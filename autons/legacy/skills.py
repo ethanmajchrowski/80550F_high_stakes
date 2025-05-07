@@ -138,34 +138,34 @@ def run(main):
     sleep(200, TimeUnits.MSEC)
 
     #* Top left corner recalibration
-    h = sensor.imu.heading()
-    theta_1 = h%90
+    # h = sensor.imu.heading()
+    # theta_1 = h%90
     # print(theta_1)
-    h = math.radians(h)
-    d1 = sensor.wallRightDistance.object_distance() * 1.02
-    if d1 < 900:
-        x = abs(d1 * math.sin(math.radians(theta_1)))
-        left_offset = 172.6 * abs(math.sin(math.radians(theta_1 + 10)))
-        print("Right offset: {}, x: {}".format(left_offset, x))
-        x = -1785 + x + left_offset
+    # h = math.radians(h)
+    # d1 = sensor.wallRightDistance.object_distance()
+    # if d1 < 900:
+    #     x = abs(d1 * math.sin(math.radians(theta_1)))
+    #     left_offset = 172.6 * abs(math.sin(math.radians(theta_1 + 10)))
+    #     print("Right offset: {}, x: {}".format(left_offset, x))
+    #     x = -1785 + x + left_offset
 
-        diff = x - controller.robot.pos[0]
-        log("Recalibrate x pos from {} to {}. Diff: {}".format(controller.robot.pos[0], x, diff))
-        controller.robot.pos[0] = x
-    else:
-        log("Couldn't calibrate left sensor!")
+    #     diff = x - controller.robot.pos[0]
+    #     log("Recalibrate x pos from {} to {}. Diff: {}".format(controller.robot.pos[0], x, diff))
+    #     controller.robot.pos[0] = x
+    # else:
+    #     log("Couldn't calibrate left sensor!")
 
-    d2 = sensor.wallLeftDistance.object_distance() * 1.02
-    if d2 < 900:
-        y = abs(d2*math.cos(math.radians(theta_1)))
-        right_offset = 172.6 * abs(math.cos(math.radians(theta_1-10)))
-        print("Left offset: {}, y: {}".format(right_offset, y))
-        y = 1785 - y - right_offset
-        diff = y - controller.robot.pos[1]
-        log("Recalibrate y pos from {} to {}. Diff: {}".format(controller.robot.pos[1], y, diff))
-        controller.robot.pos[1] = y
-    else:
-        log("Couldn't calibrate right distance!")
+    # d2 = sensor.wallLeftDistance.object_distance()
+    # if d2 < 900:
+    #     y = abs(d2*math.cos(math.radians(theta_1)))
+    #     right_offset = 172.6 * abs(math.cos(math.radians(theta_1-10)))
+    #     print("Left offset: {}, y: {}".format(right_offset, y))
+    #     y = 1785 - y - right_offset
+    #     diff = y - controller.robot.pos[1]
+    #     log("Recalibrate y pos from {} to {}. Diff: {}".format(controller.robot.pos[1], y, diff))
+    #     controller.robot.pos[1] = y
+    # else:
+    #     log("Couldn't calibrate right distance!")
 
     motor.intakeFlex.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     # extake to ensure we aren't caught on the goal
@@ -182,31 +182,31 @@ def run(main):
     motor.intakeChain.stop(BrakeType.COAST)
 
     #* Top right distance recalibration
-    h = math.radians(sensor.imu.heading())
-    d1 = sensor.wallRightDistance.object_distance() * 1.02
-    if d1 < 900:
-        x = d1 * math.cos(h)
-        left_offset = 172.6 * math.cos(math.radians(10) + h)
-        x = 1785 - x - left_offset
+    # h = math.radians(sensor.imu.heading())
+    # d1 = sensor.wallRightDistance.object_distance()
+    # if d1 < 900:
+    #     x = d1 * math.cos(h)
+    #     left_offset = 172.6 * math.cos(math.radians(10) + h)
+    #     x = 1785 - x - left_offset
 
-        diff = x - controller.robot.pos[0]
-        log("Recalibrate x pos from {} to {}. Diff: {}".format(controller.robot.pos[0], x, diff))
-        controller.robot.pos[0] = x
-    else:
-        log("Couldn't calibrate left sensor!")
+    #     diff = x - controller.robot.pos[0]
+    #     log("Recalibrate x pos from {} to {}. Diff: {}".format(controller.robot.pos[0], x, diff))
+    #     controller.robot.pos[0] = x
+    # else:
+    #     log("Couldn't calibrate left sensor!")
 
-    d2 = sensor.wallFrontDistance.object_distance() * 1.02
-    if d2 < 900:
-        y = d2*math.cos(h)
-        offset = 210 * math.sin(math.radians(38) + h)
-        y = 1785 - y - offset
-        diff = y - controller.robot.pos[1]
-        log("Recalibrate y pos from {} to {}. Diff: {}".format(controller.robot.pos[1], y, diff))
-        controller.robot.pos[1] = y
-    else:
-        log("Couldn't calibrate right distance!")
-    log("R: {} F: {}".format(d1, d2))   
-    log("Recalibrated to {}".format(controller.robot.pos))
+    # d2 = sensor.wallFrontDistance.object_distance()
+    # if d2 < 900:
+    #     y = d2*math.cos(h)
+    #     offset = 210 * math.sin(math.radians(38) + h)
+    #     y = 1785 - y - offset
+    #     diff = y - controller.robot.pos[1]
+    #     log("Recalibrate y pos from {} to {}. Diff: {}".format(controller.robot.pos[1], y, diff))
+    #     controller.robot.pos[1] = y
+    # else:
+    #     log("Couldn't calibrate right distance!")
+    # log("R: {} F: {}".format(d1, d2))   
+    # log("Recalibrated to {}".format(controller.robot.pos))
 
     main["AutonomousFlags"].intake_auto_halt = False
     main["AutonomousFlags"].intake_flex_auto_halt = False
@@ -233,33 +233,33 @@ def run(main):
     controller.path(paths[11], backwards=True, timeout=1200)
     pneumatic.mogo.set(False)
 
-    sleep(200, TimeUnits.MSEC)
-    #* Bottom right corner calibration
-    h = math.radians((sensor.imu.heading()))
-    d1 = sensor.wallRightDistance.object_distance() * 1.02
-    if d1 < 900:
-        x = d1 * abs(math.cos(h))
-        left_offset = 172.6 * abs(math.cos(math.radians(-10) - h))
-        # print("left offset: {}".format(left_offset))
-        x = 1785 - x - left_offset
+    # sleep(200, TimeUnits.MSEC)
+    # #* Bottom right corner calibration
+    # h = math.radians((sensor.imu.heading()))
+    # d1 = sensor.wallRightDistance.object_distance()
+    # if d1 < 900:
+    #     x = d1 * abs(math.cos(h))
+    #     left_offset = 172.6 * abs(math.cos(math.radians(-10) - h))
+    #     # print("left offset: {}".format(left_offset))
+    #     x = 1785 - x - left_offset
 
-        diff = x - controller.robot.pos[0]
-        log("Recalibrate x pos from {} to {}. Diff: {}".format(controller.robot.pos[0], x, diff))
-        controller.robot.pos[0] = x
-    else:
-        log("Couldn't calibrate right sensor!")
+    #     diff = x - controller.robot.pos[0]
+    #     log("Recalibrate x pos from {} to {}. Diff: {}".format(controller.robot.pos[0], x, diff))
+    #     controller.robot.pos[0] = x
+    # else:
+    #     log("Couldn't calibrate right sensor!")
 
-    d2 = sensor.wallLeftDistance.object_distance() * 1.02
-    if d2 < 900:
-        y = abs(d2*math.sin(h))
-        right_offset = 172.6 * abs(math.sin(math.radians(-10) + h)) #! - h???
-        y = -1785 + y + right_offset
-        diff = y - controller.robot.pos[1]
-        log("Recalibrate y pos from {} to {}. Diff: {}".format(controller.robot.pos[1], y, diff))
-        controller.robot.pos[1] = y
-    else:
-        log("Couldn't calibrate left distance!")
-    log(controller.robot.pos)
+    # d2 = sensor.wallLeftDistance.object_distance()
+    # if d2 < 900:
+    #     y = abs(d2*math.sin(h))
+    #     right_offset = 172.6 * abs(math.sin(math.radians(-10) + h)) #! - h???
+    #     y = -1785 + y + right_offset
+    #     diff = y - controller.robot.pos[1]
+    #     log("Recalibrate y pos from {} to {}. Diff: {}".format(controller.robot.pos[1], y, diff))
+    #     controller.robot.pos[1] = y
+    # else:
+    #     log("Couldn't calibrate left distance!")
+    # log(controller.robot.pos)
 
     motor.intakeChain.spin(DirectionType.REVERSE, 100, VelocityUnits.PERCENT)
     motor.intakeFlex.spin(DirectionType.REVERSE, 100, VelocityUnits.PERCENT)
