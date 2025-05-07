@@ -141,15 +141,6 @@ def run(main):
     # h = sensor.imu.heading()
     # theta_1 = h%90
     # print(theta_1)
-<<<<<<< HEAD:autons/no_color/skills.py
-    h = math.radians(h)
-    d1 = sensor.wallRightDistance.object_distance() * 1.02
-    if d1 < 900:
-        x = abs(d1 * math.sin(math.radians(theta_1)))
-        left_offset = 172.6 * abs(math.sin(math.radians(theta_1 + 10)))
-        print("Right offset: {}, x: {}".format(left_offset, x))
-        x = -1785 + x + left_offset
-=======
     # h = math.radians(h)
     # d1 = sensor.wallRightDistance.object_distance()
     # if d1 < 900:
@@ -157,7 +148,6 @@ def run(main):
     #     left_offset = 172.6 * abs(math.sin(math.radians(theta_1 + 10)))
     #     print("Right offset: {}, x: {}".format(left_offset, x))
     #     x = -1785 + x + left_offset
->>>>>>> origin/auton-gui-support:autons/legacy/skills.py
 
     #     diff = x - controller.robot.pos[0]
     #     log("Recalibrate x pos from {} to {}. Diff: {}".format(controller.robot.pos[0], x, diff))
@@ -165,19 +155,6 @@ def run(main):
     # else:
     #     log("Couldn't calibrate left sensor!")
 
-<<<<<<< HEAD:autons/no_color/skills.py
-    d2 = sensor.wallLeftDistance.object_distance() * 1.02
-    if d2 < 900:
-        y = abs(d2*math.cos(math.radians(theta_1)))
-        right_offset = 172.6 * abs(math.cos(math.radians(theta_1-10)))
-        print("Left offset: {}, y: {}".format(right_offset, y))
-        y = 1785 - y - right_offset
-        diff = y - controller.robot.pos[1]
-        log("Recalibrate y pos from {} to {}. Diff: {}".format(controller.robot.pos[1], y, diff))
-        controller.robot.pos[1] = y
-    else:
-        log("Couldn't calibrate right distance!")
-=======
     # d2 = sensor.wallLeftDistance.object_distance()
     # if d2 < 900:
     #     y = abs(d2*math.cos(math.radians(theta_1)))
@@ -189,7 +166,6 @@ def run(main):
     #     controller.robot.pos[1] = y
     # else:
     #     log("Couldn't calibrate right distance!")
->>>>>>> origin/auton-gui-support:autons/legacy/skills.py
 
     motor.intakeFlex.spin(DirectionType.FORWARD, 100, VelocityUnits.PERCENT)
     # extake to ensure we aren't caught on the goal
@@ -206,21 +182,12 @@ def run(main):
     motor.intakeChain.stop(BrakeType.COAST)
 
     #* Top right distance recalibration
-<<<<<<< HEAD:autons/no_color/skills.py
-    h = math.radians(sensor.imu.heading())
-    d1 = sensor.wallRightDistance.object_distance() * 1.02
-    if d1 < 900:
-        x = d1 * math.cos(h)
-        left_offset = 172.6 * math.cos(math.radians(10) + h)
-        x = 1785 - x - left_offset
-=======
     # h = math.radians(sensor.imu.heading())
     # d1 = sensor.wallRightDistance.object_distance()
     # if d1 < 900:
     #     x = d1 * math.cos(h)
     #     left_offset = 172.6 * math.cos(math.radians(10) + h)
     #     x = 1785 - x - left_offset
->>>>>>> origin/auton-gui-support:autons/legacy/skills.py
 
     #     diff = x - controller.robot.pos[0]
     #     log("Recalibrate x pos from {} to {}. Diff: {}".format(controller.robot.pos[0], x, diff))
@@ -228,20 +195,6 @@ def run(main):
     # else:
     #     log("Couldn't calibrate left sensor!")
 
-<<<<<<< HEAD:autons/no_color/skills.py
-    d2 = sensor.wallFrontDistance.object_distance() * 1.02
-    if d2 < 900:
-        y = d2*math.cos(h)
-        offset = 210 * math.sin(math.radians(38) + h)
-        y = 1785 - y - offset
-        diff = y - controller.robot.pos[1]
-        log("Recalibrate y pos from {} to {}. Diff: {}".format(controller.robot.pos[1], y, diff))
-        controller.robot.pos[1] = y
-    else:
-        log("Couldn't calibrate right distance!")
-    log("R: {} F: {}".format(d1, d2))   
-    log("Recalibrated to {}".format(controller.robot.pos))
-=======
     # d2 = sensor.wallFrontDistance.object_distance()
     # if d2 < 900:
     #     y = d2*math.cos(h)
@@ -254,7 +207,6 @@ def run(main):
     #     log("Couldn't calibrate right distance!")
     # log("R: {} F: {}".format(d1, d2))   
     # log("Recalibrated to {}".format(controller.robot.pos))
->>>>>>> origin/auton-gui-support:autons/legacy/skills.py
 
     main["AutonomousFlags"].intake_auto_halt = False
     main["AutonomousFlags"].intake_flex_auto_halt = False
@@ -281,17 +233,6 @@ def run(main):
     controller.path(paths[11], backwards=True, timeout=1200)
     pneumatic.mogo.set(False)
 
-<<<<<<< HEAD:autons/no_color/skills.py
-    sleep(200, TimeUnits.MSEC)
-    #* Bottom right corner calibration
-    h = math.radians((sensor.imu.heading()))
-    d1 = sensor.wallRightDistance.object_distance() * 1.02
-    if d1 < 900:
-        x = d1 * abs(math.cos(h))
-        left_offset = 172.6 * abs(math.cos(math.radians(-10) - h))
-        # print("left offset: {}".format(left_offset))
-        x = 1785 - x - left_offset
-=======
     # sleep(200, TimeUnits.MSEC)
     # #* Bottom right corner calibration
     # h = math.radians((sensor.imu.heading()))
@@ -301,7 +242,6 @@ def run(main):
     #     left_offset = 172.6 * abs(math.cos(math.radians(-10) - h))
     #     # print("left offset: {}".format(left_offset))
     #     x = 1785 - x - left_offset
->>>>>>> origin/auton-gui-support:autons/legacy/skills.py
 
     #     diff = x - controller.robot.pos[0]
     #     log("Recalibrate x pos from {} to {}. Diff: {}".format(controller.robot.pos[0], x, diff))
@@ -309,19 +249,6 @@ def run(main):
     # else:
     #     log("Couldn't calibrate right sensor!")
 
-<<<<<<< HEAD:autons/no_color/skills.py
-    d2 = sensor.wallLeftDistance.object_distance() * 1.02
-    if d2 < 900:
-        y = abs(d2*math.sin(h))
-        right_offset = 172.6 * abs(math.sin(math.radians(-10) + h)) #! - h???
-        y = -1785 + y + right_offset
-        diff = y - controller.robot.pos[1]
-        log("Recalibrate y pos from {} to {}. Diff: {}".format(controller.robot.pos[1], y, diff))
-        controller.robot.pos[1] = y
-    else:
-        log("Couldn't calibrate left distance!")
-    log(controller.robot.pos)
-=======
     # d2 = sensor.wallLeftDistance.object_distance()
     # if d2 < 900:
     #     y = abs(d2*math.sin(h))
@@ -333,7 +260,6 @@ def run(main):
     # else:
     #     log("Couldn't calibrate left distance!")
     # log(controller.robot.pos)
->>>>>>> origin/auton-gui-support:autons/legacy/skills.py
 
     motor.intakeChain.spin(DirectionType.REVERSE, 100, VelocityUnits.PERCENT)
     motor.intakeFlex.spin(DirectionType.REVERSE, 100, VelocityUnits.PERCENT)
