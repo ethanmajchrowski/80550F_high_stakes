@@ -1,14 +1,3 @@
-# Filename: comp.py
-# Devices & variables last updated:
-	# 2025-01-31 14:05:11.676754
-####################
-#region Devices
-# ██████  ███████ ██    ██ ██  ██████ ███████ ███████ 
-# ██   ██ ██      ██    ██ ██ ██      ██      ██      
-# ██   ██ █████   ██    ██ ██ ██      █████   ███████ 
-# ██   ██ ██       ██  ██  ██ ██      ██           ██ 
-# ██████  ███████   ████   ██  ██████ ███████ ███████ 
-
 from vex import *
 from json import load, dumps
 from random import random
@@ -23,6 +12,12 @@ class LogLevel():
     UNKNOWN = 0
 
 def threaded_log(msg: Any, level):
+    """
+    Handle the display of a log with format.
+    Arguments:
+        msg: Any to convert to string
+        level: LogLevel with serverity
+    """
     tag = str()
     try:
         str(msg)
@@ -54,32 +49,43 @@ def threaded_log(msg: Any, level):
 
 def log(msg: Any, level = LogLevel.INFO):
     if do_logging:
+        # thread the log so that it doesn't clog the main process
         Thread(threaded_log, (msg, level))
 
 class PacketTiming:
+    """
+    Namespace class with msec timings to not drop packets.
+    """
     CONTROLLER = 50
     BRAIN = 20
 
 class PacketManager():
+    """
+    Class to handle queued messages for foxglove.
+    """
     def __init__(self, timing: PacketTiming | int) -> None:
+        """
+        Create a packet manager.
+        Sets timing for all messages sent through this object.
+        """
         self.thread: Thread
         self.queue = []
         self.delay = timing
         self.allow_sending = True
 
     def start(self) -> None:
+        """
+        Initalize the packet sender.
+        """
         #print newline to ensure we don't get a decode error from previous print
         print("") 
-        # global do_logging
         self.thread = Thread(self.loop)
-        # do_logging = False
     
     def loop(self) -> None:
         while True:
             if self.allow_sending:
                 if len(self.queue) != 0:
                     print(self.queue.pop(0)[1])
-                    # print(brain.timer.system())
             
             sleep(self.delay, TimeUnits.MSEC) #type: ignore
     
@@ -102,6 +108,7 @@ class PacketManager():
         self.queue.append((topic, dumps(data)))
         return True
 
+# setup logging functionality
 do_logging = True
 packet_mgr = PacketManager(PacketTiming.CONTROLLER)
 packet_mgr.start()
@@ -111,37 +118,24 @@ con = Controller(PRIMARY)
 con_2 = Controller(PARTNER)
 
 class control():
+    """
+    Bindings for controller inputs so they can be reassigned here rather than in the code.
+    """
     DRIVE_FORWARD_AXIS =            con.axis3
     DRIVE_TURN_AXIS =               con.axis1
     INTAKE_IN_HOLD =                con.buttonR1
     INTAKE_OUT_HOLD =               con.buttonR2
-    INTAKE_HEIGHT_TOGGLE =          con.buttonLeft
     MOGO_GRABBER_TOGGLE =           con.buttonA
     DOINKER =                       con.buttonRight
-    INTAKE_FLEX_HOLD =              con.buttonL2
     LB_MANUAL_UP =                  con.buttonL1
     LB_MANUAL_DOWN =                con.buttonL2
     LB_MACRO_HOME =                 con.buttonDown
-    BACK_OFF_ALLIANCE_STAKE =       con.buttonX
     LB_MACRO_DESCORE =              con.buttonUp
 
-class control_2():
-    ELEVATION_PRIMARY_PNEUMATICS =  con_2.buttonUp
-    DOINKER =                       con_2.buttonRight
-    DRIVE_MODE =                    con_2.buttonDown
-    AXIS_FORWARDS =                 con_2.axis3
-    AXIS_TILT =                     con_2.axis1
-    PTO_TOGGLE =                    con_2.buttonB
-    INTAKE_IN =                     con_2.buttonR1
-    INTAKE_OUT =                    con_2.buttonR2
-    LB_MANUAL_UP =                  con_2.buttonL1
-    LB_MANUAL_DOWN =                con_2.buttonL2
-    ZERO_ROT_SENSOR =               con_2.buttonLeft
-
 class motor():
-    leftA = Motor( Ports.PORT14, GearSetting.RATIO_6_1, False) # stacked top
+    leftA = Motor(Ports.PORT14, GearSetting.RATIO_6_1, False) # stacked top
     leftB = Motor(Ports.PORT15, GearSetting.RATIO_6_1, False) # rear
-    leftC = Motor( Ports.PORT16, GearSetting.RATIO_6_1, False) # front
+    leftC = Motor(Ports.PORT16, GearSetting.RATIO_6_1, False) # front
 
     rightA = Motor(Ports.PORT11, GearSetting.RATIO_6_1, True) # stacked top
     rightB = Motor(Ports.PORT12, GearSetting.RATIO_6_1, True) # rear
@@ -151,78 +145,50 @@ class motor():
     intakeFlex = Motor(Ports.PORT1, GearSetting.RATIO_6_1, True)
     ladyBrown = Motor(Ports.PORT18, GearSetting.RATIO_36_1,  False)
 
-# PNEUMATICS
 class pneumatic():
     mogo = DigitalOut(brain.three_wire_port.e)
     doinker_left = DigitalOut(brain.three_wire_port.f)
     doinker = DigitalOut(brain.three_wire_port.h)
     intake = DigitalOut(brain.three_wire_port.g)
 
-#### SENSORS
-# ENCODERS
 class sensor():
     groundEncoder = Rotation(Ports.PORT2)
-
     wallEncoder = Rotation(Ports.PORT17)
-    # DISTANCE SENSORS
+
     intakeDistance = Distance(Ports.PORT21)
+    # wallLeftDistance = Distance(Ports.PORT6)
+    # wallBackDistance = Distance(Ports.PORT1)
+    # wallFrontDistance = Distance(Ports.PORT9)
+    # wallRightDistance = Distance(Ports.PORT19)
 
-    wallLeftDistance = Distance(Ports.PORT6)
-    wallBackDistance = Distance(Ports.PORT1)
-    wallFrontDistance = Distance(Ports.PORT9)
-    wallRightDistance = Distance(Ports.PORT19)
-
-    # elevationDistance = Distance(Ports.PORT20) # unplugged
-
-    # MISC SENSORS
     intakeColor = Optical(Ports.PORT4)
     imu = Inertial(Ports.PORT3)
 
 lmg = MotorGroup(motor.leftA, motor.leftB, motor.leftC)
 rmg = MotorGroup(motor.rightA, motor.rightB, motor.rightC)
-"""
-wheelTravel - The circumference of the driven wheels. The default is 300 mm.
-trackWidth - The track width of the drivetrain. The default is 320 mm. 
-    (distance between left and right parts of the drivetrain)
-wheelBase - The wheel base of the Drivetrain. The default is 320 mm.
-    (distance from center of front and rear wheels)
-units - A valid DistanceUnit for the units that wheelTravel, trackWidth and wheelBase are specified in. The default is MM.
-externalGearRatio - The gear ratio used to compensate drive distances if gearing is used.
-"""
+
+# drivetrain for stuff that we want to use the generic drive/turn functions
 drivetrain = SmartDrive(lmg, rmg, sensor.imu)
-"""
-Over Under Settings:
-    drivetrain.set_timeout(2, SECONDS)
-    drivetrain.set_turn_constant(0.28)
-    drivetrain.set_turn_threshold(0.25)
-"""
 
 # Turn on intake color sensor LED for consistency
 sensor.intakeColor.set_light_power(100, PERCENT)
-#endregion Devices####################
-#DO NOT CHANGE THE FOLLOWING LINE:#
-#nada you dont get to mess up my refactor#
-####################
 
 # global functions (no I/O)
-def calibrate_lady_brown():
-    log("calibrating lady brown")
-
-    # motor.ladyBrown.spin_for(REVERSE, 1000, MSEC, 100, PERCENT)
-    sensor.wallEncoder.set_position(0)
-
-    log("lady brown calibration complete")
-
 def calibrate_imu():
     log("calibrating IMU. Minimum calibration time 2.5 seconds.")
     min_duration = brain.timer.system() + 2500
 
     sensor.imu.calibrate()
+    # we use time here instead of sensor.imu.is_calibrating() because from our experience
+    # is_calibrating can return false positives. Only really an issue when practicing
+    # because in a match the robot doesn't start moving before the imu is done calibrating
+    # on it's own.
     while brain.timer.system() < min_duration:
         sleep(10, TimeUnits.MSEC)
 
     log("IMU calibration complete")
 
+# helper math functions
 def dist(p1, p2):
     x1, y1 = p1
     x2, y2 = p2
@@ -235,27 +201,29 @@ def gauss(mu = 0, sigma = 1):
     z = math.sqrt(-2.0 * math.log(u1)) * math.cos(2.0 * math.pi * u2)
     return mu + sigma * z
 
-def sign(num):
-    if num == 0: return 0
-    if num < 0: return -1
-    else: return 1
-# classes
-
 class PurePursuit():
-    def __init__(self, look_ahead_dist, finish_margin, 
-                 path: list[tuple[float, float, float]], checkpoints) -> None:
+    """
+    Class to handle all math involved with path calculations. Create a new instance for each path.
+    """
+    def __init__(self, look_ahead_dist: int, finish_margin: int, 
+                 path: list[tuple[float, float, float]] | list[tuple[float, float]], 
+                 checkpoints: list[int]) -> None:
         """
         Init variables. Robot position is able to be passed in from another source, like a GPS sensor or odometry algorithm.
+        Curvature in the path is optional -- if given, goal_search will also return a value linearly interpolated
+            between the points before and after the found goal point and their curvatures.
         Arguments:
-            path (list[tuple[float, float]])
-
+            look_ahead_dist: distance in mm
+            finish_margin: distance in mm from last point in path to return true on self.path_complete
+            path: list of tuples with three floats x, y, and curvature.
+            checkpoints: list of point indeces to break the path
         """
         self.path = path
         self.look_dist = look_ahead_dist
         self.finish_margin = finish_margin
-        self.last_found_point = 0
+        self.last_found_point: int = 0
 
-        self.path_complete = False
+        self.path_complete: bool = False
 
         self.checkpoints = checkpoints
         if len(self.checkpoints) != 0:
@@ -266,17 +234,24 @@ class PurePursuit():
         else:
             self.checkpoints_complete = True
 
-    def goal_search(self, current_pos):
+    def goal_search(self, current_pos: list[float] | tuple[float, float]
+                    ) -> tuple[tuple[float, float], float]:
         """
         Run every time you want to update your goal position. 
         Returns the point along our path that is look_dist away from the robot
-        and that is closest to the end of the path.
+            and that is closest to the end of the path.
+
+        Arguments
+            current_pos: an iterable of floats representing x, y position of our robot
+        Returns
+            goal_pos: x, y floats of the targeted goal
+            curvature: lerp between the third value in each point along the path
         """
         goal = self.path[self.last_found_point+1][:2]
         curvature = 0.0
 
         # Iterate over every un-crossed point in our path.
-        #if we are close to the finish point, regardless of what has happened, finish the path
+        # if we are close to the finish point, regardless of what has happened, finish the path
         try:
             if dist(current_pos, self.path[len(self.path)-1][:2]) < self.finish_margin:
                 self.path_complete = True      
@@ -298,16 +273,20 @@ class PurePursuit():
                     ax, ay = point1[:2]
                     bx, by = point2[:2]
                     
+                    # this is where divide by zero shows up, never bothered to fix though
                     m = (by - ay) / (bx - ax) # slope of line between point a and b
                     b = m*(-ax) + ay # y-intercept of line
                     r = self.look_dist
                     # quadratic terms
+                    # using math from https://mathworld.wolfram.com/Circle-LineIntersection.html
+                    # see graphs at https://www.desmos.com/calculator/zb3qakxeev 
                     A = (m*m) + 1
                     B = (2*m*(b-k)-(2*h))
                     C = ((h*h) + ((b-k)*(b-k)) - (r*r))
 
                     discriminant = (B*B) - (4*A*C)
                     if discriminant >= 0:
+                        # there is at least one possible solution
                         sol1_x = (-B + math.sqrt(discriminant)) / (2*A)
                         sol1_y = m*sol1_x + b
 
@@ -321,21 +300,24 @@ class PurePursuit():
                         maxX, maxY = max(ax, bx), max(ay, by)
 
                         # general check to see if either point is on the line 
-                        if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) or ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
+                        # based on the limits of the lines
+                        in_bounds_sol1: bool = (minX < sol1_x < maxX) and (minY < sol1_y < maxY)
+                        in_bounds_sol2: bool = (minX < sol2_x < maxX) and (minY < sol2_y < maxY)
+                        if in_bounds_sol1 or in_bounds_sol2:
                             sol1_distance = dist(sol1, point2)
                             sol2_distance = dist(sol2, point2)
 
-                            if ((minX < sol1_x < maxX) and (minY < sol1_y < maxY)) and ((minX < sol2_x < maxX) and (minY < sol2_y < maxY)):
+                            if in_bounds_sol1 and in_bounds_sol2:
                                 # both solutions are within bounds, so we need to compare and decide which is better
-                                # choose based on distance to pt2
 
+                                # choose based on distance to pt2
                                 if sol1_distance < sol2_distance:
                                     goal = sol1
                                 else:
                                     goal = sol2
                             else:
-                                if (minX < sol1_x < maxX) and (minY < sol1_y < maxY):
-                                    # solution 1 is within bounds
+                                # only one solution is in bounds
+                                if in_bounds_sol1:
                                     goal = sol1
                                 else:
                                     goal = sol2
@@ -343,16 +325,13 @@ class PurePursuit():
                             # we have a goal solution at this point in time
                             # we can now get that solutions completion of the line segment
                             # this lets us linearly interpolate between the curvature of point[i] and point[i+1]
-                            segment_length = dist(self.path[i][:2], self.path[i+1][:2])
-                            if goal == sol1: completed_length = sol1_distance
-                            else: completed_length = sol2_distance
+                            if len(self.path[i]) == 3: # lerp for curvature at this point
+                                segment_length = dist(self.path[i][:2], self.path[i+1][:2])
+                                if goal == sol1: completed_length = sol1_distance
+                                else: completed_length = sol2_distance
 
-                            percent = (1 - (completed_length/segment_length))
-                            if len(self.path[i]) >= 3: # we check this to make sure it works with a legacy path
-                                try:
-                                    curvature = (self.path[i][2] * (1 - percent) + self.path[i+1][2] * percent)
-                                except:
-                                    curvature = 0.0
+                                percent = (1 - (completed_length/segment_length))
+                                curvature = (self.path[i][2] * (1 - percent) + self.path[i+1][2] * percent) #type: ignore
                             
                         # first, check if the robot is not close to the end point in the path
                         distance_to_end = dist(current_pos, self.path[len(self.path)-1][:2])
@@ -381,20 +360,19 @@ class PurePursuit():
                                 self.current_checkpoint = self.checkpoints[self.checkpoint_index]
         except ZeroDivisionError:
             log("Pather tried to divide by zero", LogLevel.FATAL)
-    
-        # data = {
-        #     "ix" : self.last_found_point,
-        #     "ip": goal
-        #     # "look_ahead": path_handler.look_dist
-        # }
-        # packet_mgr.add_packet("pix", data)
-        # print("Last: {}. Target: {}, {}".format(self.last_found_point, goal[0], goal[1]))
 
         return goal[:2], curvature
 
 class DeltaPositioning():
+    """Odometry based on tracking wheels."""
     def __init__(self, enc: Rotation | Motor, imu: Inertial) -> None:
-        """Odometry based on tracking wheels."""
+        """
+        This class handled forwards and backwards odom in mm based on changes in tracking wheel
+        angle and inertial change in heading.
+        Arguments:
+            enc: desired encoder(s) to be used for locomotion
+            imu: desired inertial for heading data
+        """
         self.last_time = brain.timer.time()
         self.enc = enc
 
@@ -414,9 +392,10 @@ class DeltaPositioning():
         wheel_diameter = 2 # inches
         self.circumference = (wheel_diameter * 3.14159) * 25.4 * external_gear_ratio
 
-        drift_dist = 80
-        self.drift_circumference = 2 * 3.14159 * drift_dist
-        self.drift_accum = 0
+        # drift stuff is unused because I didn't do it right
+        # drift_dist = 80
+        # self.drift_circumference = 2 * 3.14159 * drift_dist
+        # self.drift_accum = 0
 
     def update(self) -> list[float]:
         """Call constantly to update position."""
@@ -434,12 +413,11 @@ class DeltaPositioning():
 
         # average the position of left & right to get the center of the robot
         # dNet = (dl + dr) / 2 
+        # or use the single tracking wheel
         dNet = d
 
         dx = (dNet * math.sin(h_rad))# + drift_x
         dy = (dNet * math.cos(h_rad))# + drift_y
-
-        # print(round(dh, 2), round(dl, 2), round(dr, 2), round(d_drift, 2))
 
         self.last_time = brain.timer.time()
         self.last_heading = self.imu.heading()
@@ -470,14 +448,13 @@ class MultipurposePID:
         self.derivative = 0
         self.last_error = 0
         self.minimum = MIN
-    def calculate(self, TARGET, INPUT, DELAY = 0) -> int:
+    def calculate(self, TARGET, INPUT) -> int:
         '''
         Calculates the output based on the PID's tuning and the provided target & input
 
         Args:
             TARGET (int): a number that the PID will try to reach
             INPUT (int): the current sensor or other input
-            DELAY (int): the delay for the loop
 
         Returns:
             PID outpit (int)
@@ -508,323 +485,12 @@ class MultipurposePID:
                 else: output = self.minimum
         
         self.last_error = self.error
-        wait(DELAY, MSEC)
+
         return output
-    
-class Laser:
-    def __init__(self, sensor: Distance, offset) -> None:
-        """
-        Create a MCL laser with offsets for build location.
-
-        Arguments:
-        x_offset: offset from the forwards/backwards axis of the robot. forwards on the robot is positive
-        y_offset: offset from the center of the robot left/right. right on the robot is positive.
-        distance_offset: distance LOCAL to the sensor forwards/backwards. Away from the center is positive.
-        """
-        self.offset = offset
-        self.sensor = sensor
-        # self.forward_offset = distance_offset
-
-        # self.distance = math.sqrt((x_offset**2) + (y_offset**2))
-        # self.angle = math.degrees(math.atan2(y_offset, x_offset))
-    
-    def get_distance(self):
-        return self.sensor.object_distance() + self.offset
-
-class MCL:
-    def __init__(self):
-        self.num_lasers = 4
-
-        self.field_size = 3600
-        self.num_particles = 100
-        self.avg_score = 0
-        self.avg_pos = [0, 0]
-
-        self.simulation = set()
-
-    def update_avg_position(self):
-        """Returns the average position of all the points in the simulation set."""
-        avg_x, avg_y = self.avg_pos
-        for point in self.simulation:
-            #* linear average
-            # avg_x = (avg_x + point[1][0]) / 2
-            # avg_y = (avg_y + point[1][1]) / 2
-
-            #! weighted average based on score ( not working?)
-            # if point[0] > 2000: continue
-            # print(point)
-            if self.avg_score:
-                weight = point[0] / self.avg_score * 1.8
-            else:
-                weight = 0
-
-            weight = round(weight, 3) * 5
-            if 1-weight < 0:
-                weight = 1
-            
-            # print(weight)
-
-            avg_x = (avg_x * (weight)) + (point[1][0] * (1-weight))
-            avg_y = (avg_y * (weight)) + (point[1][1] * (1-weight))
-            # print(avg_x, avg_y, weight, 1-weight)
-        
-        self.avg_pos = [avg_x, avg_y]
-        return((avg_x, avg_y))
-
-    def redistribute(self, angle, target, lasers, clear = True, count = None):
-        """
-        Used to continue the algorithm. Resets the current simulation and evenly distributes the points across the map.
-        """
-        if count is None:
-            count = self.num_particles
-        
-        if clear:
-            self.simulation = set()
-        num = int(math.sqrt(count))
-        dist = self.field_size / num
-
-        for x in range(num):
-            for y in range(num):
-                pos = (int(dist*x - 1800 + 5), int(dist*y - 1800 + 5))
-
-                self.simulate_robot(pos, angle, target, lasers)
-
-    def simulate_robot(self, pos: list | tuple, angle, target: list[int], lasers: list):
-        """
-        Returns the error score of a simulated robot at the given pos / angle.
-        Compares to the given target lasers, a list of 4 integers.
-        If a laser is over 2.5m, it should be handled as None.
-        Target list of lasers should move counter clockwise starting at 0*, and have the same length as num_lasers
-        """
-        score = 0
-        for i in range(self.num_lasers):
-            corrected_angle = (angle + i*(360//self.num_lasers) + 90) % 360
-            dist = self.simulate_laser(pos, corrected_angle, lasers[i])
-            # None checking (if a sim laser is out of range, the same real lasers should also be out of range)
-            if target[i] is None:
-                if dist > 2500:
-                    # this means that our found distance is correct (out of range, so keep going)
-                    continue 
-                else:
-                    # one of our points is technically within range, but it should be none
-                    # return
-                    score = 9000
-                    break
-
-            # linear error from the target
-            error = abs(target[i] - dist)
-            score += error
-        
-        self.simulation.add((score, pos))
-
-    def motion_offset(self, motion):
-        dx, dy = motion
-        ns = set()
-        for point in self.simulation:
-            x = point[1][0] + dx + gauss(0, 2)
-            y = point[1][1] - dy - gauss(0, 2)
-            if -1800 <= x <= 1800 and -1800 <= y <= 1800:
-                ns.add((point[0], (x, y)))
-        self.simulation = ns.copy()
-        del ns
-
-    def resample(self, tolerance, angle, target, lasers):
-        """Iterate through our simulated points and destroy they ones with high error.
-        Re-run robot simulation with some noise"""
-        angle = angle % 360
-
-        survived = set()
-        avg_score = 0
-        for point in self.simulation:
-            avg_score = (avg_score + point[0]) / 2
-        self.avg_score = avg_score
-        for point in self.simulation:
-            if point[0] < avg_score:
-                if random() > 0.2:
-                    survived.add(point)
-        
-        if len(survived) != 0:
-            children = self.num_particles // len(survived)
-
-            self.simulation = survived.copy()
-            for point in survived:
-                for i in range(children):
-                    pos = (point[1][0] + (gauss()) * 50, point[1][1] + (gauss()) * 50)
-                    self.simulate_robot(pos, angle, target, lasers)
-
-            # # add in small number of distributed points
-            # self.redistribute(angle, target, 100, False)
-
-            # print(f"Number of points: {len(self.simulation)}")
-    
-    def simulate_laser(self, pos: list | tuple, angle, laser: Laser):
-        """
-        Fire a laser in the direction of the angle at the given pos.
-        Returns the distance that the laser gives from the wall.
-        """
-        # Get the equation of the laser based on slope.
-        # We can then plug in the coordinate of the wall to get the pos that it hit.
-        angle %= 360
-        r_angle = math.radians(angle)
-        x, y = pos
-
-        west_intersect = None
-        east_intersect = None
-        north_intersect = None
-        south_intersect = None
-
-        sin_out = math.sin(r_angle)
-        cos_out = math.cos(r_angle)
-
-        # get the x/y offset based off the lasers position on the robot
-        # we need to have the simulated lasers at that position, not in the center of the robot
-        # x = x - (laser.distance*math.cos(math.radians((laser.angle + angle - 90) % 360)))
-        # y = y + (laser.distance*math.sin(math.radians((laser.angle + angle - 90) % 360)))
-
-        # using an equation we can find the intersection with a certain coordinate
-        # this can give us the intersection with the wall from this simulated position
-        if cos_out != 0:
-            west_intersect = (-1800, y - (((1800 + x) / cos_out) * sin_out))
-            east_intersect = (1800, y + (((1800 - x) / cos_out) * sin_out))
-        if sin_out != 0:
-            north_intersect = (x + (((1800 - y) / sin_out) * cos_out), 1800)
-            south_intersect = (x - (((1800 + y) / sin_out) * cos_out), -1800)
-
-        points = [west_intersect, east_intersect, north_intersect, south_intersect]
-        valid_points = []
-        # start be excluding the points outside of our bounds
-        # because of the order of points, valid_points[0] will be west or east
-        # and valid_points[1] will be north or south
-        for point in points:
-            if point is not None:
-                if (-1800 <= point[0] <= 1800) and (-1800 <= point[1] <= 1800):
-                    valid_points.append((round(point[0]), round(point[1])))
-        
-        # sort by point Y - coordinate
-        valid_points.sort(key=lambda x: x[1], reverse=True)
-        # now determine which point we are looking at via angle
-        # if we are looking up, we take the pos that has a higher y coordinate
-        if len(valid_points) == 0:
-            return 9999
-        if 0 < angle <= 180: laser_point = valid_points[0]
-        else: laser_point = valid_points[1]
-
-        return int(dist(laser_point, pos))
-
-class MCL_Handler:
-    def __init__(self) -> None:
-        self.front = Laser(sensor.wallBackDistance, 60)
-        self.left = Laser(sensor.wallLeftDistance, 0)
-        self.back = Laser(sensor.wallFrontDistance, 180)
-        self.right = Laser(sensor.wallRightDistance, 345)
-        self.all_directions = [self.front, self.left, self.back, self.right]
-        self.lasers = [None, None, None, None]
-        self.prev_pos = [0.0, 0.0]
-
-        # self.sim_center_offset = (60, 165)
-        # self.sim_center_offset = math.sqrt(self.sim_center_offset[0]**2 + self.sim_center_offset[1]**2)
-        self.sim_center_distance = 175.5
-        self.sim_center_angle = 290
-
-        print("ange : " + str(self.sim_center_angle))
-
-        self.mcl = MCL()
-
-        self.is_running = False
-
-    def start(self):
-        self.mcl.redistribute(sensor.imu.heading(), self.lasers, self.all_directions)
-        self.thread = Thread(self.main)
-        self.is_running = True
-
-    def main(self):
-        while True:
-            if self.is_running:
-                # print("start")
-                self.loop()
-                # print("end")
-                sleep(35, TimeUnits.MSEC)
-
-    def filter_lasers(self):
-        # filter each laser and distance it
-        # get distance and add in distance from the center of the robot
-        fd = self.front.get_distance()
-        ld = self.left.get_distance()
-        bd = self.back.get_distance()
-        rd = self.right.get_distance()
-        if fd >= 9000:
-            self.lasers[0] = None
-        elif self.lasers[0] is not None:
-            self.lasers[0] = (self.lasers[0] * 0.9 + fd * 0.1)
-        else:
-            if fd < 300:
-                # don't change anything because we have a ring in the intake
-                #TODO change this to not simulate the front laser if we have a ring in the intake
-                # self.lasers[0] = self.lasers[0]
-                self.lasers[0] = fd
-                # pass
-            else:
-                self.lasers[0] = fd
-
-        if ld >= 9000:
-            self.lasers[1] = None
-        elif self.lasers[1] is not None:
-            self.lasers[1] = (self.lasers[1] * 0.9 + ld * 0.1)
-        else:
-            self.lasers[1] = ld
-
-        if bd >= 9000:
-            self.lasers[2] = None
-        elif self.lasers[2] is not None:
-            self.lasers[2] = (self.lasers[2] * 0.9 + bd * 0.1)
-        else:
-            self.lasers[2] = bd
-
-        if rd >= 9000:
-            self.lasers[3] = None
-        elif self.lasers[3] is not None:
-            self.lasers[3] = (self.lasers[3] * 0.9 + rd * 0.1) # type: ignore
-        else:
-            self.lasers[3] = rd # type: ignore
-
-    def loop(self):
-        self.mcl.resample(1000, sensor.imu.heading(), self.lasers, [self.front, self.left, self.back, self.right])
-        self.mcl.redistribute(sensor.imu.heading(), self.lasers, [self.front, self.left, self.back, self.right], False, 20)
-        # print(len(self.mcl.simulation))
-        out_x, out_y = self.mcl.update_avg_position()
-        # print("")
-        # print(self.mcl.simulation)
-        out_x = (0.6 * self.prev_pos[0]) + (0.4 * out_x)
-        out_y = (0.6 * self.prev_pos[1]) + (0.4 * out_y)
-
-        self.prev_pos = (out_x, out_y)
-
-        # Adjust the calculated center to our robot center based on the offset of the sim center
-        # and robot heading.
-        # self.sim_center_distance = 175.5
-        # self.sim_center_angle = 290
-        out_x = self.prev_pos[0] + self.sim_center_distance * math.sin(math.radians((self.sim_center_angle + 180 + sensor.imu.heading()) % 360))
-        out_y = self.prev_pos[1] + self.sim_center_distance * math.cos(math.radians((self.sim_center_angle + 180 + sensor.imu.heading()) % 360))
-
-        data = {
-            "x": round(out_x / 25.4, 2),
-            "y": round(-out_y / 25.4, 2),
-            "theta": round(math.radians(sensor.imu.heading()), 2)
-        }
-        # packet_mgr.add_packet("odometry", data)
-        # print("out: {}, {}".format(out_x, out_y))
-        # print("raw: {}, {}".format(*self.prev_pos))
-
-        data = {
-            "f": self.lasers[0],
-            "l": self.lasers[1],
-            "b": self.lasers[2],
-            "r": self.lasers[3]
-        }
-        # packet_mgr.add_packet("lsr", data)
-        sleep(35, MSEC)
 
 class Robot():
+    """Small class that allows driver and auton to share data."""
+    # probably not the best way to do this but its better than storing everything globally (?)
     def __init__(self) -> None:
         self.color_sort_controller = ColorSortController(parent=self)
 
@@ -833,7 +499,6 @@ class Robot():
 
         self.LB_PID = LadyBrown(motor.ladyBrown)
 
-        # Autonomous variables
         self.pos = [0.0, 0.0]
         self.heading = 0.0
         self.last_intake_color = 0.0
@@ -858,6 +523,7 @@ class AutonomousCommands:
         motor.rightC.stop(brake)
 
 class AutonomousFlags:
+    # honestly basically a duplicate of flags but only used in auton so i suppose it gets its own class
     intake_halt_tolerance = 60
     intake_auto_halt = False
     intake_flex_auto_halt = False
@@ -873,6 +539,7 @@ class AutonomousFlags:
 
 # robot states
 class AutonomousRoutines:
+    # this is from the output of our GUI program
     red_solo_AWP = [[0,{'pos':[-1550,-350],'angle':330}],[6,'alliance_wall_stake'],[2,[],(('fwd_volt',5.0),('backwards',True),('speed_ramp_time',500),('slowdown_distance',300)),[(-1551.0,-351.0),(-1520.7,-390.8),(-1489.3,-429.6),(-1457.0,-467.9),(-1424.3,-505.7),(-1391.3,-543.2),(-1358.2,-580.7),(-1325.2,-618.2),(-1292.5,-656.1),(-1260.5,-694.5)]],[1,'ladyBrown',-1,12.0],[7,['RIGHT',40,0.0]],[1,'ladyBrown',0,'BRAKE'],[1,'intakeChain',1,12.0],[1,'intakeFlex',1,12.0],[5,True,'intake'],[2,[],(('fwd_volt',5.0),('finish_margin',500)),[(-1240.0,-732.0),(-1239.9,-662.0),(-1241.2,-592.0),(-1242.7,-522.0),(-1244.3,-452.1),(-1245.8,-382.1),(-1247.2,-312.1),(-1248.3,-242.1),(-1249.0,-172.1),(-1249.1,-102.1),(-1249.0,-80.0),(-1247.8,-10.0),(-1247.5,60.0),(-1247.7,130.0),(-1248.0,200.0),(-1248.1,270.0),(-1247.5,340.0)]],[3,(('intake_auto_halt',True),)],[4,125],[5,False,'intake'],[4,75],[1,'intakeFlex',-1,12.0],[2,[],(('fwd_volt',5.0),('min_start_voltage',2.0),('speed_ramp_time',500),('backwards',True),('slowdown_distance',400)),[(-1228.0,214.0),(-1224.6,164.1),(-1216.8,114.8),(-1205.2,66.1),(-1190.3,18.4),(-1172.6,-28.4),(-1152.5,-74.1),(-1130.0,-118.8),(-1105.5,-162.4),(-1079.2,-204.8),(-1051.2,-246.2),(-1021.6,-286.6),(-990.5,-325.8),(-958.2,-363.9),(-924.6,-400.9),(-889.9,-436.9),(-854.1,-471.8),(-817.3,-505.6),(-779.5,-538.4),(-740.9,-570.2),(-701.6,-601.0),(-661.4,-630.8),(-620.5,-659.6),(-579.0,-687.5)]],[5,True,'mogo'],[3,(('intake_auto_halt',False),)],[1,'intakeChain',1,12.0],[1,'intakeFlex',1,12.0],[7,['LEFT',110,0.0]],[4,350],[5,False,'mogo'],[2,[],(('fwd_volt',5.0),),[(-592.0,-733.0),(-591.5,-783.0),(-590.9,-833.0),(-590.3,-883.0),(-589.5,-933.0),(-588.7,-983.0),(-587.7,-1033.0),(-586.6,-1083.0),(-585.6,-1132.9),(-585.0,-1182.9),(-584.6,-1232.9),(-584.4,-1282.9),(-584.2,-1332.9),(-584.1,-1382.9),(-584.1,-1432.9),(-584.0,-1482.9),(-584.0,-1532.9)]],[3,(('intake_auto_halt',True),)],[4,100],[2,[],(('fwd_volt',3.7),('backwards',True),('slowdown_distance',900),('look_ahead_dist',250),('finish_margin',270)),[(-555.0,-1632.0),(-561.8,-1582.5),(-567.1,-1532.8),(-570.3,-1482.9),(-570.8,-1432.9),(-567.5,-1383.0),(-558.6,-1333.8),(-541.8,-1286.8),(-514.3,-1245.3),(-475.8,-1213.6),(-430.1,-1193.6),(-381.3,-1183.1),(-331.5,-1179.1),(-281.5,-1179.3),(-231.6,-1182.3),(-181.8,-1187.2),(-132.2,-1193.4),(-82.7,-1200.4),(-33.3,-1208.1),(16.1,-1216.1)]],[5,True,'mogo'],[2,[('motor_spin',{'motor':'intakeChain','velocity':100,'direction':1},[-634,-1277])],(('fwd_volt',5.0),('timeout',2300)),[(18.0,-1193.0),(-31.2,-1201.7),(-80.6,-1209.8),(-130.0,-1217.2),(-179.5,-1224.2),(-229.1,-1230.9),(-278.7,-1237.3),(-328.3,-1243.5),(-377.9,-1249.5),(-427.6,-1255.5),(-477.2,-1261.4),(-526.8,-1267.4),(-576.5,-1273.5),(-626.1,-1279.6),(-675.7,-1286.0),(-725.3,-1292.6),(-774.8,-1299.4),(-824.3,-1306.6),(-873.7,-1314.1),(-923.1,-1322.0),(-972.4,-1330.5),(-1021.5,-1339.5),(-1070.6,-1349.1),(-1119.5,-1359.4),(-1168.3,-1370.6),(-1216.8,-1382.6),(-1265.0,-1395.7),(-1313.0,-1410.0),(-1360.5,-1425.6),(-1407.5,-1442.7),(-1453.8,-1461.5),(-1499.2,-1482.3),(-1543.6,-1505.4),(-1586.4,-1531.2),(-1627.3,-1559.9),(-1665.6,-1592.0),(-1700.5,-1627.8),(-1730.9,-1667.4),(-1756.0,-1710.7),(-1774.7,-1757.0)]],[1,'intakeChain',1,12.0],[3,(('intake_auto_halt',False),)],[4,200],[2,[],(('fwd_volt',5.0),('backwards',True)),[(-1696.0,-1730.0),(-1664.3,-1691.4),(-1630.3,-1654.7),(-1594.1,-1620.2),(-1555.8,-1588.1),(-1515.5,-1558.5),(-1473.5,-1531.4),(-1430.0,-1506.7),(-1385.5,-1484.0),(-1340.3,-1462.6),(-1294.9,-1441.6),(-1249.8,-1420.1),(-1205.7,-1396.5),(-1163.8,-1369.3),(-1125.6,-1337.1),(-1093.0,-1299.2),(-1067.2,-1256.5),(-1048.2,-1210.2),(-1035.2,-1162.0),(-1026.9,-1112.7),(-1022.3,-1062.9),(-1020.7,-1013.0),(-1021.4,-963.0),(-1023.9,-913.0),(-1028.0,-863.0),(-1028.5,-813.0),(-1032.7,-763.2),(-1044.2,-714.6),(-1069.9,-672.2),(-1112.1,-646.2),(-1160.9,-635.9),(-1210.8,-632.9),(-1260.8,-632.9),(-1310.8,-633.9),(-1360.8,-635.1)]],[2,[],(('fwd_volt',5.0),('speed_ramp_time',500),('slowdown_distance',600),('timeout',1600)),[(-1409.0,-636.0),(-1359.0,-634.5),(-1309.3,-629.8),(-1260.1,-620.7),(-1212.4,-605.8),(-1167.8,-583.4),(-1128.8,-552.4),(-1098.0,-513.1),(-1076.0,-468.3),(-1061.2,-420.5),(-1050.8,-371.6),(-1042.4,-322.4),(-1033.5,-273.1),(-1022.1,-224.5),(-1005.5,-177.4),(-981.6,-133.5),(-949.2,-95.5),(-909.5,-65.3),(-864.9,-43.0),(-817.4,-27.5),(-768.4,-17.3),(-718.8,-11.3),(-668.9,-8.4)]],[1,'intakeChain',0,'COAST'],[1,'intakeFlex',0,'COAST']]
     blue_solo_AWP = [[0,{'pos':[1550,-350],'angle':30}],[6,'alliance_wall_stake'],[2,[],(('fwd_volt',5.0),('backwards',True),('speed_ramp_time',500),('slowdown_distance',300)),[(1551.0,-351.0),(1520.7,-390.8),(1489.3,-429.6),(1457.0,-467.9),(1424.3,-505.7),(1391.3,-543.2),(1358.2,-580.7),(1325.2,-618.2),(1292.5,-656.1),(1260.5,-694.5)]],[1,'ladyBrown',-1,12.0],[7,['LEFT',40,0.0]],[1,'ladyBrown',0,'BRAKE'],[1,'intakeChain',1,12.0],[1,'intakeFlex',1,12.0],[5,True,'intake'],[3,(('intake_flex_extake_on_ring',2),)],[2,[],(('fwd_volt',5.0),('finish_margin',500)),[(1240.0,-732.0),(1239.9,-662.0),(1241.2,-592.0),(1242.7,-522.0),(1244.3,-452.1),(1245.8,-382.1),(1247.2,-312.1),(1248.3,-242.1),(1249.0,-172.1),(1249.1,-102.1),(1249.0,-80.0),(1247.7,-10.0),(1247.6,60.0),(1247.9,130.0),(1248.1,200.0),(1247.4,270.0)]],[3,(('intake_auto_halt',True),)],[4,125],[5,False,'intake'],[4,75],[3,(('intake_flex_extake_on_ring',0),)],[2,[],(('fwd_volt',5.0),('min_start_voltage',2.0),('speed_ramp_time',500),('backwards',True),('slowdown_distance',400)),[(1228.0,214.0),(1224.6,164.1),(1216.8,114.8),(1205.2,66.1),(1190.3,18.4),(1172.6,-28.4),(1152.5,-74.1),(1130.0,-118.8),(1105.5,-162.4),(1079.2,-204.8),(1051.2,-246.2),(1021.6,-286.6),(990.5,-325.8),(958.2,-363.9),(924.6,-400.9),(889.9,-436.9),(854.1,-471.8),(817.3,-505.6),(779.5,-538.4),(740.9,-570.2),(701.6,-601.0),(661.4,-630.8),(620.5,-659.6),(579.0,-687.5)]],[5,True,'mogo'],[3,(('intake_auto_halt',False),)],[1,'intakeChain',1,12.0],[1,'intakeFlex',1,12.0],[7,['RIGHT',105,0.0]],[4,350],[5,False,'mogo'],[2,[],(('fwd_volt',5.0),),[(633.0,-689.0),(632.6,-739.0),(632.5,-789.0),(632.8,-839.0),(633.6,-889.0),(635.1,-939.0),(637.7,-988.9),(641.6,-1038.7),(646.5,-1088.5),(651.2,-1138.3),(654.8,-1188.2),(657.5,-1238.1),(659.5,-1288.0),(660.8,-1338.0),(661.8,-1388.0),(662.4,-1438.0),(662.8,-1488.0),(663.0,-1538.0)]],[3,(('intake_auto_halt',True),)],[4,100],[1,'intakeFlex',-1,12.0],[2,[],(('fwd_volt',3.7),('backwards',True),('slowdown_distance',900),('look_ahead_dist',250),('finish_margin',270)),[(630.0,-1601.0),(637.6,-1551.6),(642.9,-1501.9),(645.0,-1451.9),(642.5,-1402.0),(632.9,-1353.0),(612.9,-1307.3),(579.8,-1270.3),(536.1,-1246.4),(487.6,-1234.3),(437.8,-1230.3),(387.8,-1231.4),(338.0,-1235.7),(288.5,-1242.1),(239.1,-1250.0),(189.9,-1258.9),(140.8,-1268.4),(91.8,-1278.3),(42.8,-1288.5)]],[5,True,'mogo'],[1,'intakeFlex',1,12.0],[2,[('motor_spin',{'motor':'intakeChain','velocity':100,'direction':1},[697,-1254])],(('fwd_volt',5.0),('timeout',2300)),[(-6.0,-1269.0),(44.0,-1270.8),(93.9,-1272.2),(143.9,-1273.4),(193.9,-1274.6),(243.9,-1276.1),(293.9,-1277.8),(343.8,-1279.9),(393.8,-1282.3),(443.7,-1285.1),(493.6,-1288.4),(543.4,-1292.1),(593.3,-1296.3),(643.0,-1301.0),(692.8,-1306.3),(742.4,-1312.2),(792.0,-1318.6),(841.5,-1325.7),(890.9,-1333.4),(940.2,-1341.8),(989.4,-1350.9),(1038.4,-1360.7),(1087.2,-1371.2),(1135.9,-1382.6),(1184.4,-1394.8),(1232.7,-1407.8),(1280.7,-1421.7),(1328.5,-1436.5),(1375.9,-1452.3),(1423.0,-1469.1),(1469.7,-1486.9),(1516.1,-1505.8),(1561.9,-1525.7),(1607.2,-1546.8),(1652.0,-1569.1),(1696.2,-1592.5),(1739.6,-1617.2),(1782.4,-1643.2),(1824.3,-1670.4)]],[4,200],[2,[],(('fwd_volt',5.0),('backwards',True)),[(1696.0,-1730.0),(1664.3,-1691.4),(1630.3,-1654.7),(1594.1,-1620.2),(1555.8,-1588.1),(1515.5,-1558.5),(1473.5,-1531.4),(1430.0,-1506.7),(1385.5,-1484.0),(1340.3,-1462.6),(1294.9,-1441.6),(1249.8,-1420.1),(1205.7,-1396.5),(1163.8,-1369.3),(1125.6,-1337.1),(1093.0,-1299.2),(1067.2,-1256.5),(1048.2,-1210.2),(1035.2,-1162.0),(1026.9,-1112.7),(1022.3,-1062.9),(1020.7,-1013.0),(1021.4,-963.0),(1023.9,-913.0),(1028.0,-863.0),(1030.5,-813.1),(1039.7,-764.0),(1055.6,-716.6),(1077.8,-671.9),(1105.8,-630.5),(1138.6,-592.8),(1175.6,-559.2),(1215.9,-529.7),(1259.0,-504.3),(1304.3,-483.2),(1351.3,-466.3),(1399.7,-453.8),(1449.1,-445.8),(1498.9,-442.7)]],[2,[],(('fwd_volt',5.0),('speed_ramp_time',500),('slowdown_distance',600),('timeout',1600)),[(1489.0,-440.0),(1439.7,-448.0),(1389.7,-448.5),(1340.3,-441.5),(1292.1,-428.1),(1245.8,-409.5),(1201.2,-386.8),(1158.4,-361.0),(1117.0,-333.0),(1076.7,-303.4),(1037.2,-272.7),(998.2,-241.4),(959.4,-209.8),(920.6,-178.4),(881.3,-147.4),(841.3,-117.5),(800.2,-89.0),(757.6,-62.8),(713.3,-39.7),(666.9,-21.0),(618.6,-8.2),(569.0,-2.9)]],[1,'intakeChain',0,'COAST'],[1,'intakeFlex',0,'COAST']]
     
@@ -896,10 +563,6 @@ class Autonomous():
 
         self.positioning_algorithm = DeltaPositioning(sensor.groundEncoder, sensor.imu)
         self.path_controller = PurePursuit
-
-        self.mcl_controller = MCL_Handler()
-        self.run_mcl = False
-        self.run_mcl_lasers = True
 
         self.intake_jam_windup = 0
         self.last_intake_turn = 0
@@ -950,7 +613,7 @@ class Autonomous():
     
     def autonomous_setup(self) -> None:
         """
-        Call at start of auton. Sets up the coordinates n stuff for the loaded path.
+        Calls at start of auton. Sets up the coordinates n stuff for the loaded path.
         """
         try:
             sensor.imu.set_heading(self.initial_pose["angle"])
@@ -986,9 +649,6 @@ class Autonomous():
                 log("Autonomous {} not found in AutonomousRoutines wrapper".format(sequence))
                 raise ModuleNotFoundError("Invalid auton {}".format(sequence))
 
-            # if sequence == "blue_solo_AWP":
-            #     flags.color_setting = ColorSort.EJECT_RED
-            
         elif type(sequence) == list:
             self.sequence = sequence
         
@@ -998,27 +658,22 @@ class Autonomous():
         """
         Runs at end of autonomous. Do not modify.
         """
+        # actually doesn't do anything important lol
         self.end_time = brain.timer.system()
         elapsed_time = self.end_time - self.start_time
         log("Auton complete. Time taken: {}".format(elapsed_time), LogLevel.INFO)
     
     def position_thread(self):
+        """Handle robot pose updates in the background so that is happens regardless of what we
+        are doing in the foreground."""
         while True:
             self.robot.heading = sensor.imu.heading()
             dx, dy = self.positioning_algorithm.update()
 
-            if self.run_mcl:
-                self.mcl_controller.mcl.motion_offset((dx, dy))
-            else:
-                self.robot.pos[0] += dx
-                self.robot.pos[1] += dy
-            
-            if self.run_mcl_lasers:
-                self.mcl_controller.filter_lasers()
+            self.robot.pos[0] += dx
+            self.robot.pos[1] += dy
 
             sleep(20, TimeUnits.MSEC)
-            # print(self.robot.pos)
-            # sleep(100, TimeUnits.MSEC)
     
     def run(self) -> None:
         """
@@ -1051,7 +706,9 @@ class Autonomous():
 
     def read_sequence(self) -> None:
         """
-        Runs commands within a sequence.
+        Runs commands within a sequence. This is setup to handle format of our GUI program which spits out 
+        autons in a python list that gets pasted right into this source code. The list is 2D where each
+        item contains an ID at index 0 then subsequent places contain data for that action.
         """
         """
         POSE = 0
@@ -1104,7 +761,11 @@ class Autonomous():
                             log("[{}] Mismatch flag type {} type {} cannot override {}".format(
                                 i, flag_name, type(value), type(getattr(flags, flag_name))), LogLevel.WARNING)
                     elif hasattr(AutonomousFlags, flag_name):
-                        if type(getattr(AutonomousFlags, flag_name)) == type(value):
+                        if flag_name == "intake_color_kill":
+                            if value == "RED": value = Color.RED
+                            elif value == "BLUE": value = Color.BLUE
+                            else: value = None
+                        if type(getattr(AutonomousFlags, flag_name)) == type(value) or flag_name == "intake_color_kill":
                             if do_logging: old_value = getattr(AutonomousFlags, flag_name)
                             setattr(AutonomousFlags, flag_name, value)
                             if do_logging: log("[{}] Set {} flag to {} from {}".format(i, flag_name, value, old_value))
@@ -1146,6 +807,7 @@ class Autonomous():
                 else:
                     log("[{}] No custom function found for {}".format(i, function[1]))
             elif ID == 7:
+                # Turn command
                 # [7,['RIGHT',90,80]]
                 args = function[1]
                 if hasattr(TurnType, args[0]):
@@ -1165,13 +827,20 @@ class Autonomous():
         log("Starting background thread.")
 
         while True:
+            # handle background things
             self.listeners()
+            # color sort
             self.robot.color_sort_controller.sense()
             self.robot.last_intake_color = sensor.intakeColor.hue()
 
             sleep(35, MSEC)
 
     def listeners(self) -> None:
+        """
+        Collection of background things we might want to run during auton. Includes things like
+        automatically stopping the intake when it gets a ring, reversing the intake on a certain
+        color of ring, and trying to unjam the intake. All of these default to off/not doing anything.
+        """
         auto_flags = AutonomousFlags
 
         # Auto halt intake when we get a ring
@@ -1285,12 +954,17 @@ class Autonomous():
             "max_curvature_speed": 3.0,
             # Minimum look ahead that we will look on the path (curvature based look ahead)
             "min_look_ahead": 300,
+            # curvature things to refine that behavior
             "a_curvature_speed_exp": 0.1,
+            # msec of time until we are at max speed
             "speed_ramp_time": 1,
+            # minimum speed we start at if speed ramp time is non negligible
             "min_start_voltage": 4,
+            # mm distance from end of path to begin slowing down, linearly
             "slowdown_distance": 0,
             "min_slow_voltage": 4,
             "checkpoints": [],
+            # constant forwards speed to drive the path
             "fwd_volt": 5.0,
         }
         # merge params with a dictionary of key/value pairs if the key is in params
@@ -1328,9 +1002,12 @@ class Autonomous():
 
             elapsed_time = current_time - start_time
 
+            # get target point from pure pursuit
             target_point, curvature = path_handler.goal_search(robot.pos)
+            # get heading to target from our current pos
             dx, dy = target_point[0] - robot.pos[0], target_point[1] - robot.pos[1] # type: ignore
             heading_to_target = math.degrees(math.atan2(dx, dy))
+
             distance_to_end = dist(self.robot.pos, path[-1][:2])
 
             if dx < 0:
@@ -1417,6 +1094,7 @@ class Autonomous():
                 if brain.timer.system() >= wait_stop:
                     waiting = False
 
+            # check position-based events
             if events:
                 for i in range(len(events)):
                     event = events[i]
@@ -1492,22 +1170,6 @@ class ControllerFunctions():
         # pneumatic.doinker_left.set(pneumatic.doinker_left.value())
         pneumatic.doinker.set(False)
         pneumatic.doinker_left.set(False)
-
-    @staticmethod
-    def manual_elevation():
-        log("Elevation not on robot!", LogLevel.WARNING)
-        # if pneumatic.elevation_bar_lift_left.value(): # elevation is up
-        #     pneumatic.elevation_bar_lift_left.set(False)
-        #     pneumatic.elevation_bar_lift_right.set(False)
-
-        #     pneumatic.elevation_bar_lower_left.set(True)
-        #     pneumatic.elevation_bar_lower_right.set(True)
-        # else:
-        #     pneumatic.elevation_bar_lift_left.set(True)
-        #     pneumatic.elevation_bar_lift_right.set(True)
-
-        #     pneumatic.elevation_bar_lower_left.set(False)
-        #     pneumatic.elevation_bar_lower_right.set(False)
     
     @staticmethod
     def toggle_PTO():
@@ -1519,13 +1181,6 @@ class ControllerFunctions():
     def zero_lady_brown():
         log("Zeroed wall stake rotation sensor")
         sensor.wallEncoder.set_position(0)
-
-    @staticmethod
-    def wallstake_macro():
-        log("Driving off wall stake")
-        flags.disable_drive = True
-        drivetrain.drive_for(DirectionType.FORWARD, 1.6, DistanceUnits.IN, 80, VelocityUnits.PERCENT)
-        flags.disable_drive = False
 
 class Driver():
     def __init__(self, parent: Robot) -> None:
@@ -1550,18 +1205,17 @@ class Driver():
         # bind controller functions
         control.DOINKER.pressed(ControllerFunctions.switch_doinker)
         control.MOGO_GRABBER_TOGGLE.pressed(ControllerFunctions.switch_mogo)
-        # control.INTAKE_HEIGHT_TOGGLE.pressed(ControllerFunctions.switch_intake_height)
         control.LB_MACRO_HOME.pressed(self.robot.LB_PID.home)
         control.LB_MACRO_DESCORE.pressed(self.robot.LB_PID.descore)
-        # control.BACK_OFF_ALLIANCE_STAKE.pressed(ControllerFunctions.wallstake_macro)
 
         # just in case
         flags.color_setting = ColorSort.NONE
 
     def run(self) -> None:
         """
-        Runs driver control loop.
+        Runs driver control.
         """
+        # probably too much unnecessary nesting here
         self.driver_setup()
         
         while True:
@@ -1620,8 +1274,7 @@ class Driver():
             motor.ladyBrown.stop(BRAKE)
 
     def driver_loop(self) -> None:
-        if not flags.disable_drive:
-            self.drive_controls()
+        self.drive_controls()
         self.intake_controls()
         self.lady_brown_controls()
 
@@ -1805,7 +1458,6 @@ class flags():
     allow_intake_input = True
     elevating = False
     wall_setpoint = 1
-    disable_drive = False
 
 def pull_data(data: dict, robot: Robot):
     """
@@ -1813,12 +1465,15 @@ def pull_data(data: dict, robot: Robot):
     """
     pass
 
+# blank function so that we can define a competition variable without binding anything to it
 def null_function():
     pass
 
 def odom_packets(robot: Robot):
+    # send odometry data if connected to foxglove
     if not foxglove_log:
         return
+    
     while True:
         data = {
             "x": round(robot.pos[0] / 25.4, 2),
@@ -1863,7 +1518,8 @@ def main():
         con.screen.print(data["autons"]["selected"])
 
         pull_data(data, robot) # send data from SD data (local scope) into robot object & subobjects
-        # when connected to the field, do everything normally
+
+        # when connected to the field, do everything normally (no tests)
         if comp.is_field_control() or comp.is_competition_switch():
             log("Connected to field or comp switch.")
             
@@ -1877,6 +1533,7 @@ def main():
 
             log("Ready for match! Disabling log messages.")
             do_logging = False
+            
         # not connected to field, auton test is on
         elif data["config"]["auton_test"]:
             calibrate_imu()
