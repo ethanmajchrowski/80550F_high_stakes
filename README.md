@@ -20,3 +20,4 @@ Other things:
 Configuration program (`config.py`):
     ![configuration program](resources/config.png)
 - `src/driver.py` is essentially a stripped down version of `comp.py` such that there is no autonomous logic or competition variable, it just goes straight into `Driver.run()`. This helps in matches in case the auton doesn't work or the brain power cycles. Switching a program during a match is sketchy (and stopping auton early by stopping the program is a DQ) but if it breaks or power cycles this can be a life saver.
+- We make our autonomous routes using a custom built GUI [here](https://github.com/ethanmajchrowski/80550F_high_stakes)
