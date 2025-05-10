@@ -6,7 +6,6 @@ Codebase for team 80550F and the Over Under Season.
 Big stuff:
 - `Autonomous` class manages all the autons, including setup, execution of the sequence, and cleanup. Also contains the main logic of the `path` function for driving paths with pure pursuit
   - `PurePursuit` contains all the math involved with pure pursuit. Similar logic found on the Purdue SigBots wiki but expanded throughout the year. This is *just* the algorithm, most of the logic is in `Autonomous.path()`.
-    - Check the gif in `resources/pure_pursuit.gif` for a visual on the algorithm
     - ![Pure Pursuit](resources/pure_pursuit.mp4)
   - `Autonomous.path()` is a blocking command used to run a path of points. No arguments are needed except for the list of points. 
   - `main()` on line 1494 is the actual entry point for the code. It basically sets up the robot object and then determines:
